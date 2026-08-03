@@ -4,12 +4,12 @@ import { MARCA } from "@/lib/marca";
 import { CarritoProvider } from "@/components/carrito/CarritoProvider";
 import BarraCarrito from "@/components/carrito/BarraCarrito";
 import Hero from "@/components/catalogo/Hero";
-import Tostador from "@/components/catalogo/Tostador";
+import Barista from "@/components/catalogo/Barista";
 import Catalogo from "@/components/catalogo/Catalogo";
 import PieSitio from "@/components/catalogo/PieSitio";
 
 export const metadata: Metadata = {
-  title: `${MARCA.nombre} — ${MARCA.eslogan}`,
+  title: `${MARCA.nombre} — ${MARCA.oficio}`,
   description: MARCA.descripcion,
 };
 
@@ -38,7 +38,7 @@ export default async function Inicio() {
         <link rel="preload" as="image" href="/metodos.jpg" fetchPriority="low" />
 
         <Hero hero={hero} />
-        <Tostador />
+        <Barista />
         <Catalogo categorias={categorias} />
         <PieSitio />
       </main>

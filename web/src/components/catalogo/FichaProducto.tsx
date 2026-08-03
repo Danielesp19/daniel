@@ -231,7 +231,11 @@ export default function FichaProducto({
                   cursor: producto.agotado ? "not-allowed" : "pointer",
                 }}
               >
-                {producto.agotado ? "Agotado" : "Agregar al pedido"}
+                {producto.agotado
+                  ? "Agotado"
+                  : producto.controla_stock
+                    ? "Agregar al pedido"
+                    : "Agendar por WhatsApp"}
               </button>
             </div>
           </div>

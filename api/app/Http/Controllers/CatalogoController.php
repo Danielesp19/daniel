@@ -59,7 +59,11 @@ class CatalogoController extends Controller
      */
     public function stock()
     {
+        // Solo lo que se cuenta. Los servicios no salen aquí: no tienen
+        // inventario que revalidar, y el carrito los deja pasar sin mirar
+        // este mapa.
         $stock = Producto::where('activo', true)
+            ->where('controla_stock', true)
             ->pluck('stock', 'id')
             ->map(fn ($s) => (int) $s);
 
@@ -98,6 +102,8 @@ class CatalogoController extends Controller
 
             // Inventario expuesto en crudo: el frontend necesita el número para
             // topar el selector de cantidad, no solo un booleano de agotado.
+            // `controla_stock` en false = servicio: no se cuenta ni se agota.
+            'controla_stock' => (bool) $p->controla_stock,
             'stock' => (int) $p->stock,
             'agotado' => $p->agotado(),
             'por_acabarse' => $p->porAcabarse(),

@@ -1,4 +1,4 @@
-# ── ALTURA — backend Laravel para Render ──
+# ── Backend Laravel para Render ──
 # Render no tiene runtime PHP nativo, así que se despliega como contenedor Docker.
 # Imagen mínima PHP 8.4 (lo exige composer.lock: Laravel 13 → symfony 8 pide php >=8.4)
 # + extensiones para PostgreSQL y Filament (gd, zip, bcmath, exif, intl).

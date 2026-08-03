@@ -1,4 +1,4 @@
-# ── ALTURA — blueprint de Render ─────────────────────────────────────────────
+# ── Blueprint de Render ─────────────────────────────────────────────
 # En Render: New → Blueprint → conecta este repo. Render lee este archivo y
 # crea la API, el worker de la cola y una base Postgres, inyectando las
 # credenciales de la base automáticamente (fromDatabase).
@@ -9,15 +9,15 @@
 # El sitio (web/) NO va aquí: se despliega en Vercel. Ver DESPLIEGUE.md.
 
 databases:
-  - name: altura-db
+  - name: barista-db
     plan: free            # gratis ~90 días; suficiente para una demo
-    databaseName: altura
-    user: altura
+    databaseName: barista
+    user: barista
 
 services:
   # ── API ───────────────────────────────────────────────────────────────────
   - type: web
-    name: altura-api
+    name: barista-api
     runtime: docker
     plan: free            # se duerme tras ~15 min sin tráfico (la 1ª petición tarda ~40 s)
     region: oregon
@@ -26,7 +26,7 @@ services:
     healthCheckPath: /up
     envVars:
       - key: APP_NAME
-        value: Altura
+        value: "Daniel Buitrón · Barista"
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
@@ -34,7 +34,7 @@ services:
       - key: APP_KEY
         sync: false        # php artisan key:generate --show  (formato base64:...)
       - key: APP_URL
-        sync: false        # la URL del propio servicio, p.ej. https://altura-api.onrender.com
+        sync: false        # la URL del propio servicio, p.ej. https://barista-api.onrender.com
       - key: APP_LOCALE
         value: es
       - key: LOG_CHANNEL
@@ -46,15 +46,15 @@ services:
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST
-        fromDatabase: { name: altura-db, property: host }
+        fromDatabase: { name: barista-db, property: host }
       - key: DB_PORT
-        fromDatabase: { name: altura-db, property: port }
+        fromDatabase: { name: barista-db, property: port }
       - key: DB_DATABASE
-        fromDatabase: { name: altura-db, property: database }
+        fromDatabase: { name: barista-db, property: database }
       - key: DB_USERNAME
-        fromDatabase: { name: altura-db, property: user }
+        fromDatabase: { name: barista-db, property: user }
       - key: DB_PASSWORD
-        fromDatabase: { name: altura-db, property: password }
+        fromDatabase: { name: barista-db, property: password }
 
       # La cola no es opcional: el chatbot despacha su trabajo ahí.
       - key: QUEUE_CONNECTION
@@ -92,7 +92,7 @@ services:
   # Comparte entorno con la API vía envVarGroup no; aquí se repiten las claves
   # que necesita para conectarse a la misma base y a la misma API de Claude.
   - type: worker
-    name: altura-worker
+    name: barista-worker
     runtime: docker
     plan: free
     region: oregon
@@ -112,15 +112,15 @@ services:
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST
-        fromDatabase: { name: altura-db, property: host }
+        fromDatabase: { name: barista-db, property: host }
       - key: DB_PORT
-        fromDatabase: { name: altura-db, property: port }
+        fromDatabase: { name: barista-db, property: port }
       - key: DB_DATABASE
-        fromDatabase: { name: altura-db, property: database }
+        fromDatabase: { name: barista-db, property: database }
       - key: DB_USERNAME
-        fromDatabase: { name: altura-db, property: user }
+        fromDatabase: { name: barista-db, property: user }
       - key: DB_PASSWORD
-        fromDatabase: { name: altura-db, property: password }
+        fromDatabase: { name: barista-db, property: password }
 
       - key: QUEUE_CONNECTION
         value: database

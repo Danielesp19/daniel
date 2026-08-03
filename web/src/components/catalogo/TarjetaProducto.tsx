@@ -180,7 +180,7 @@ export default function TarjetaProducto({
               e.currentTarget.style.color = "var(--color-acido)";
             }}
           >
-            {producto.agotado ? "Agotado" : "Agregar"}
+            {producto.agotado ? "Agotado" : producto.controla_stock ? "Agregar" : "Agendar"}
           </button>
         </div>
       </div>

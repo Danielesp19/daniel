@@ -25,6 +25,13 @@ export interface Linea {
   gramos: number;
   molienda: Molienda;
   cantidad: number;
+  /**
+   * Se guarda en la línea, no se deduce del mapa de stock: si un servicio
+   * simplemente no apareciera en ese mapa, el carrito no podría distinguir
+   * "esto no se cuenta" de "esto ya no existe", y en el segundo caso sí hay
+   * que sacarlo del pedido.
+   */
+  controla_stock: boolean;
 }
 
 interface Carrito {
@@ -46,7 +53,11 @@ export interface Ajuste {
   disponibles: number;
 }
 
-const LLAVE = "altura:carrito:v1";
+// La versión va en la llave a propósito: al cambiar la forma de una línea
+// guardada, subirla descarta los carritos viejos en vez de leerlos con campos
+// faltantes. Un carrito a medio llenar se pierde; un carrito mal interpretado
+// manda un pedido equivocado.
+const LLAVE = "carrito:v2";
 
 const Contexto = createContext<Carrito | null>(null);
 
@@ -88,11 +99,13 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
     setLineas((previas) => {
       const existente = previas.find((l) => mismaLinea(l, producto.id, molienda));
       if (existente) {
-        // Nunca por encima del stock que conocemos. El tope real se vuelve a
-        // revisar contra el servidor al momento de enviar el pedido.
+        // Nunca por encima del stock que conocemos, salvo en servicios, que no
+        // tienen tope. El límite real se vuelve a revisar contra el servidor
+        // al momento de enviar el pedido.
+        const tope = producto.controla_stock ? producto.stock : Infinity;
         return previas.map((l) =>
           mismaLinea(l, producto.id, molienda)
-            ? { ...l, cantidad: Math.min(l.cantidad + 1, producto.stock) }
+            ? { ...l, cantidad: Math.min(l.cantidad + 1, tope) }
             : l,
         );
       }
@@ -105,6 +118,7 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
           gramos: producto.gramos,
           molienda,
           cantidad: 1,
+          controla_stock: producto.controla_stock,
         },
       ];
     });
@@ -161,6 +175,9 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
       const restante: Record<number, number> = {};
 
       return previas.flatMap((l) => {
+        // Los servicios no se recortan: no hay inventario que revisar.
+        if (!l.controla_stock) return [l];
+
         if (!(l.id in restante)) restante[l.id] = stock[String(l.id)] ?? 0;
 
         const permitidas = Math.min(l.cantidad, Math.max(0, restante[l.id]));

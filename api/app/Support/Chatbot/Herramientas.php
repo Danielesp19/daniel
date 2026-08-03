@@ -153,7 +153,9 @@ class Herramientas
         }
 
         if ($input['solo_agotados'] ?? false) {
-            $query->where('stock', '<=', 0);
+            // Sin el filtro de controla_stock esto arrastraría todos los
+            // servicios, que tienen el contador en cero por definición.
+            $query->where('controla_stock', true)->where('stock', '<=', 0);
         }
 
         $total = (clone $query)->count();
@@ -170,7 +172,9 @@ class Herramientas
 
     private static function resumenInventario(): array
     {
-        $productos = Producto::where('activo', true)->get();
+        // Solo lo que se cuenta: un resumen de inventario que incluyera las
+        // asesorías no sería un resumen de inventario.
+        $productos = Producto::where('activo', true)->where('controla_stock', true)->get();
 
         return [
             'productos_activos' => $productos->count(),
@@ -188,6 +192,10 @@ class Herramientas
         $producto = Producto::find($input['producto_id'] ?? null);
         if (! $producto) {
             return ['error' => 'No existe un producto con ese id. Búscalo primero con buscar_productos.'];
+        }
+
+        if (! $producto->controla_stock) {
+            return ['error' => "\"{$producto->nombre}\" es un servicio: se agenda, no se cuenta en bolsas. No tiene stock que ajustar."];
         }
 
         $accion = (string) ($input['accion'] ?? '');
@@ -260,8 +268,11 @@ class Herramientas
             'categoria' => $p->categoria?->nombre,
             'precio_cop' => (int) $p->precio_cop,
             'gramos' => (int) $p->gramos,
-            'stock' => (int) $p->stock,
-            'stock_minimo' => (int) $p->stock_minimo,
+            // Los servicios no se cuentan en bolsas: se le dice al modelo en
+            // vez de mandarle un stock en cero que interpretaría como agotado.
+            'tipo' => $p->controla_stock ? 'producto' : 'servicio',
+            'stock' => $p->controla_stock ? (int) $p->stock : null,
+            'stock_minimo' => $p->controla_stock ? (int) $p->stock_minimo : null,
             'agotado' => $p->agotado(),
             'por_acabarse' => $p->porAcabarse(),
             'activo' => (bool) $p->activo,

@@ -37,14 +37,18 @@ class ProductoAdminController extends Controller
                 ->orWhere('region', 'like', $termino));
         }
 
+        // Los dos filtros de inventario excluyen los servicios: tienen el
+        // contador en cero por definición y saldrían todos como "agotados".
         if ($request->boolean('solo_agotados')) {
-            $query->where('stock', '<=', 0);
+            $query->where('controla_stock', true)->where('stock', '<=', 0);
         }
 
         if ($request->boolean('solo_por_acabarse')) {
             // Comparación columna contra columna: el umbral es propio de cada
             // producto, no un número global.
-            $query->where('stock', '>', 0)->whereColumn('stock', '<=', 'stock_minimo');
+            $query->where('controla_stock', true)
+                ->where('stock', '>', 0)
+                ->whereColumn('stock', '<=', 'stock_minimo');
         }
 
         return response()->json($query->get()->map(fn ($p) => $this->formato($p)));
@@ -58,7 +62,9 @@ class ProductoAdminController extends Controller
     /** Resumen de inventario: lo primero que un admin pregunta por chat. */
     public function resumen()
     {
-        $productos = Producto::where('activo', true)->get();
+        // Solo lo que se cuenta: un resumen de inventario con las asesorías
+        // adentro no sería un resumen de inventario.
+        $productos = Producto::where('activo', true)->where('controla_stock', true)->get();
 
         return response()->json([
             'total_productos' => $productos->count(),
@@ -78,7 +84,8 @@ class ProductoAdminController extends Controller
             'precio_cop' => 'sometimes|integer|min:0',
             'stock' => 'sometimes|integer|min:0',
             'stock_minimo' => 'sometimes|integer|min:0',
-            'gramos' => 'sometimes|integer|min:1',
+            'gramos' => 'sometimes|integer|min:0',
+            'controla_stock' => 'sometimes|boolean',
             'categoria_id' => ['sometimes', Rule::exists('categorias', 'id')],
             'finca' => 'sometimes|nullable|string|max:255',
             'productor' => 'sometimes|nullable|string|max:255',
@@ -107,6 +114,12 @@ class ProductoAdminController extends Controller
             'accion' => ['required', Rule::in(['fijar', 'sumar', 'restar'])],
             'cantidad' => 'required|integer|min:0|max:100000',
         ]);
+
+        if (! $producto->controla_stock) {
+            return response()->json([
+                'error' => 'Este producto es un servicio: se agenda, no tiene inventario que ajustar.',
+            ], 422);
+        }
 
         [$antes, $nuevo] = $producto->ajustarStock($datos['accion'], $datos['cantidad']);
 
@@ -137,6 +150,7 @@ class ProductoAdminController extends Controller
             'descripcion' => $p->descripcion,
             'precio_cop' => (int) $p->precio_cop,
             'gramos' => (int) $p->gramos,
+            'controla_stock' => (bool) $p->controla_stock,
             'stock' => (int) $p->stock,
             'stock_minimo' => (int) $p->stock_minimo,
             'agotado' => $p->agotado(),

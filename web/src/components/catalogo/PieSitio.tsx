@@ -56,25 +56,37 @@ export default function PieSitio() {
           >
             WhatsApp
           </a>
+          {/* La segunda línea, por si la primera está ocupada. */}
           <div className="cifra" style={{ marginTop: 12, fontSize: 12, color: "var(--apagado)" }}>
-            {MARCA.correo}
+            {MARCA.telefonoAlterno}
           </div>
         </div>
 
         <div>
           <div className="etiqueta" style={{ color: "var(--color-acido)", marginBottom: 14 }}>
-            Dónde
+            Sígueme
           </div>
-          <div style={{ fontSize: 14 }}>{MARCA.ciudad}</div>
-          <a
-            href={MARCA.instagram}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="etiqueta"
-            style={{ display: "inline-block", marginTop: 12, color: "var(--apagado)" }}
-          >
-            Instagram
-          </a>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+            <a
+              href={MARCA.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "var(--color-tinta)", textDecoration: "none", fontSize: 14 }}
+            >
+              Instagram
+            </a>
+            <a
+              href={MARCA.threads}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "var(--color-tinta)", textDecoration: "none", fontSize: 14 }}
+            >
+              Threads
+            </a>
+          </div>
+          <div className="etiqueta" style={{ marginTop: 12, color: "var(--apagado)" }}>
+            {MARCA.ciudad}
+          </div>
         </div>
       </div>
 

@@ -97,8 +97,8 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
     };
   }, [imagenFondo]);
 
-  const titulo = hero?.titulo ?? "Café de altura";
-  const etiqueta = hero?.etiqueta ?? MARCA.eslogan;
+  const titulo = hero?.titulo ?? "Café bien hecho";
+  const etiqueta = hero?.etiqueta ?? MARCA.oficio;
   const subtitulo = hero?.subtitulo ?? MARCA.descripcion;
 
   return (
@@ -302,11 +302,13 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
             animation: "aparecer 1s ease .7s both",
           }}
         >
+          {/* La franja de datos habla de él, no de una finca: es lo que
+              respalda que uno le compre el café a este barista y no a otro. */}
           {[
-            ["Fincas", "10"],
-            ["Regiones", "05"],
-            ["Tueste", "Semanal"],
-            ["Altitud", "1.600–2.100 m"],
+            ["Nacional Arte Latte", "2.º · 2025"],
+            ["Nacional Arte Latte", "2.º · 2024"],
+            ["Reto 4V", "1.º · 2024"],
+            ["Pedidos", "WhatsApp"],
           ].map(([rotulo, valor], i) => (
             <div
               key={rotulo}

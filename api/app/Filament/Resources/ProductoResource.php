@@ -77,12 +77,23 @@ class ProductoResource extends Resource
             Section::make('Inventario')
                 ->description('El stock se cuenta en bolsas. También se puede ajustar por el chatbot de WhatsApp.')
                 ->schema([
+                    Toggle::make('controla_stock')
+                        ->label('Llevar inventario')
+                        ->helperText('Apágalo para servicios (asesorías, barra para eventos): se agendan, no se agotan.')
+                        ->default(true)
+                        ->live()
+                        ->columnSpanFull(),
+
                     TextInput::make('stock')
                         ->label('Bolsas disponibles')
                         ->required()
                         ->numeric()
                         ->default(0)
-                        ->minValue(0),
+                        ->minValue(0)
+                        // Con el inventario apagado estos dos campos no dicen
+                        // nada; esconderlos evita que alguien ponga un número
+                        // ahí y espere que signifique algo.
+                        ->visible(fn ($get) => (bool) $get('controla_stock')),
 
                     TextInput::make('stock_minimo')
                         ->label('Avisar por debajo de')
@@ -90,7 +101,8 @@ class ProductoResource extends Resource
                         ->required()
                         ->numeric()
                         ->default(3)
-                        ->minValue(0),
+                        ->minValue(0)
+                        ->visible(fn ($get) => (bool) $get('controla_stock')),
                 ])->columns(2),
 
             Section::make('Ficha de origen')
@@ -176,9 +188,13 @@ class ProductoResource extends Resource
                 TextColumn::make('stock')
                     ->label('Bolsas')
                     ->badge()
+                    // Un servicio no tiene bolsas: mostrar "0" en gris dice
+                    // más que un cero rojo que parece un problema.
+                    ->formatStateUsing(fn ($state, Producto $p) => $p->controla_stock ? $state : 'Servicio')
                     // El color dice el estado de un vistazo: rojo agotado,
                     // ámbar por acabarse, verde con inventario sano.
                     ->color(fn (Producto $p) => match (true) {
+                        ! $p->controla_stock => 'gray',
                         $p->agotado() => 'danger',
                         $p->porAcabarse() => 'warning',
                         default => 'success',
@@ -193,15 +209,20 @@ class ProductoResource extends Resource
                     ->label('Categoría')
                     ->options(fn () => Categoria::orderBy('orden')->pluck('nombre', 'id')),
 
+                // Los dos filtros de inventario excluyen los servicios: no
+                // tienen stock, así que un "solo agotados" los arrastraría a
+                // todos por tener el contador en cero.
                 Filter::make('agotados')
                     ->label('Solo agotados')
-                    ->query(fn (Builder $q) => $q->where('stock', '<=', 0)),
+                    ->query(fn (Builder $q) => $q->where('controla_stock', true)->where('stock', '<=', 0)),
 
                 Filter::make('por_acabarse')
                     ->label('Solo por acabarse')
                     // Columna contra columna: el umbral es propio de cada
                     // producto, no un número global.
-                    ->query(fn (Builder $q) => $q->where('stock', '>', 0)->whereColumn('stock', '<=', 'stock_minimo')),
+                    ->query(fn (Builder $q) => $q->where('controla_stock', true)
+                        ->where('stock', '>', 0)
+                        ->whereColumn('stock', '<=', 'stock_minimo')),
             ])
             ->actions([
                 // Ajuste rápido sin abrir el formulario completo: es la acción
@@ -209,6 +230,7 @@ class ProductoResource extends Resource
                 Action::make('stock')
                     ->label('Stock')
                     ->icon('heroicon-o-archive-box')
+                    ->visible(fn (Producto $producto) => $producto->controla_stock)
                     ->form([
                         Select::make('accion')
                             ->label('Qué pasó')

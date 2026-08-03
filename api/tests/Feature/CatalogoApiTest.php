@@ -85,6 +85,67 @@ class CatalogoApiTest extends TestCase
         $this->assertStringContainsString('no-store', $respuesta->headers->get('Cache-Control'));
     }
 
+    public function test_un_servicio_nunca_sale_agotado_aunque_tenga_el_contador_en_cero(): void
+    {
+        $categoria = $this->categoria();
+        $this->producto($categoria, [
+            'nombre' => 'Barra para eventos',
+            'stock' => 0,
+            'controla_stock' => false,
+        ]);
+
+        $this->getJson('/api/catalogo')
+            ->assertOk()
+            ->assertJsonPath('0.productos.0.agotado', false)
+            ->assertJsonPath('0.productos.0.por_acabarse', false)
+            ->assertJsonPath('0.productos.0.controla_stock', false);
+    }
+
+    public function test_los_servicios_no_aparecen_en_el_stock_en_vivo(): void
+    {
+        $categoria = $this->categoria();
+        $cafe = $this->producto($categoria, ['nombre' => 'El Mirador', 'stock' => 7]);
+        $servicio = $this->producto($categoria, [
+            'nombre' => 'Asesoría',
+            'controla_stock' => false,
+        ]);
+
+        // El carrito usa este mapa para recortar cantidades. Si un servicio
+        // apareciera con stock 0, lo borraría del pedido al enviarlo.
+        $respuesta = $this->getJson('/api/catalogo/stock')->assertOk();
+        $respuesta->assertJsonPath((string) $cafe->id, 7);
+        $respuesta->assertJsonMissingPath((string) $servicio->id);
+    }
+
+    public function test_no_se_puede_ajustar_el_stock_de_un_servicio(): void
+    {
+        config(['tienda.admin_token' => 'token-de-prueba']);
+        $servicio = $this->producto($this->categoria(), ['controla_stock' => false]);
+
+        $this->withToken('token-de-prueba')
+            ->patchJson("/api/admin/productos/{$servicio->id}/stock", [
+                'accion' => 'sumar',
+                'cantidad' => 5,
+            ])
+            ->assertStatus(422);
+    }
+
+    public function test_el_resumen_de_inventario_ignora_los_servicios(): void
+    {
+        config(['tienda.admin_token' => 'token-de-prueba']);
+        $categoria = $this->categoria();
+        $this->producto($categoria, ['nombre' => 'El Mirador', 'stock' => 4]);
+        $this->producto($categoria, ['nombre' => 'Asesoría', 'controla_stock' => false]);
+
+        $this->withToken('token-de-prueba')
+            ->getJson('/api/admin/productos/resumen')
+            ->assertOk()
+            ->assertJsonPath('total_productos', 1)
+            ->assertJsonPath('bolsas_en_stock', 4)
+            // Sin el filtro, la asesoría saldría listada como agotada.
+            ->assertJsonCount(0, 'agotados');
+    }
+
     public function test_la_api_de_administracion_exige_token(): void
     {
         $this->getJson('/api/admin/productos')->assertUnauthorized();

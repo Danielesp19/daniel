@@ -30,7 +30,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: `${MARCA.nombre} — ${MARCA.eslogan}`,
+  title: `${MARCA.nombre} — ${MARCA.oficio}`,
   description: MARCA.descripcion,
 };
 

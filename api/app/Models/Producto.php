@@ -12,11 +12,28 @@ class Producto extends Model
 
     protected $fillable = [
         'categoria_id', 'nombre', 'slug', 'descripcion', 'precio_cop',
-        'stock', 'stock_minimo', 'gramos',
+        'stock', 'stock_minimo', 'gramos', 'controla_stock',
         'finca', 'productor', 'region', 'altitud_msnm', 'variedad', 'proceso',
         'tueste', 'notas', 'puntaje_sca',
         'imagen', 'video', 'video_poster',
         'activo', 'destacado', 'orden',
+    ];
+
+    /**
+     * Los mismos valores por defecto que tiene la tabla.
+     *
+     * Eloquent NO relee la fila después de un insert, así que sin esto un
+     * producto recién creado tiene estos campos en null hasta que alguien lo
+     * refresque — y `agotado()` y `porAcabarse()`, que los leen, responderían
+     * mal en el mismo request que lo creó.
+     */
+    protected $attributes = [
+        'controla_stock' => true,
+        'stock' => 0,
+        'stock_minimo' => 3,
+        'activo' => true,
+        'destacado' => false,
+        'orden' => 0,
     ];
 
     protected $casts = [
@@ -25,6 +42,7 @@ class Producto extends Model
         'stock' => 'integer',
         'stock_minimo' => 'integer',
         'gramos' => 'integer',
+        'controla_stock' => 'boolean',
         'altitud_msnm' => 'integer',
         'puntaje_sca' => 'decimal:2',
         'notas' => 'array',
@@ -64,9 +82,13 @@ class Producto extends Model
         return $this->hasMany(ProductoImagen::class)->orderBy('orden');
     }
 
+    /**
+     * Un servicio (asesoría, barra para un evento) nunca se agota: se agenda.
+     * Por eso todo lo que dependa del inventario pasa antes por esta bandera.
+     */
     public function agotado(): bool
     {
-        return $this->stock <= 0;
+        return $this->controla_stock && $this->stock <= 0;
     }
 
     /**
@@ -102,7 +124,7 @@ class Producto extends Model
     /** Hay stock pero está por acabarse: dispara el aviso "últimas bolsas". */
     public function porAcabarse(): bool
     {
-        return $this->stock > 0 && $this->stock <= $this->stock_minimo;
+        return $this->controla_stock && $this->stock > 0 && $this->stock <= $this->stock_minimo;
     }
 
     /**

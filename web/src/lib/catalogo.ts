@@ -10,6 +10,8 @@ export interface Producto {
   precio_cop: number;
   gramos: number;
 
+  /** false = servicio (asesoría, barra para eventos): no se cuenta ni se agota. */
+  controla_stock: boolean;
   stock: number;
   agotado: boolean;
   por_acabarse: boolean;

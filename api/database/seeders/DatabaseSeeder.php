@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
         // UserFactory ("password") — cámbiala antes de exponer el panel.
         User::factory()->create([
             'name' => 'Admin',
-            'email' => 'admin@altura.co',
+            'email' => 'admin@barista.co',
         ]);
 
         $this->call(CatalogoSeeder::class);

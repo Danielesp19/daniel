@@ -37,7 +37,7 @@ export default function VitrinaHorizontal({ categoria }: { categoria: Categoria 
       id={`cat-${categoria.slug}`}
       style={{ position: "relative", background: "#0A0A0A" }}
     >
-      {/* Fondo pineado. Ver el mismo bloque comentado en Tostador.tsx. */}
+      {/* Fondo pineado. Ver el mismo bloque comentado en Barista.tsx. */}
       <div
         aria-hidden="true"
         style={{
