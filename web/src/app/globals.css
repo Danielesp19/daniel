@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+/* ─── Sistema de diseño: alto contraste técnico ─────────────────────────────
+   Negro y blanco puros, bordes duros (sin radios), tipografía condensada en
+   mayúsculas para los títulos y monoespaciada para todo dato medible: peso,
+   altitud, puntaje, precio. Un solo acento —verde ácido— reservado para
+   señalar, nunca para decorar: si el verde está en todas partes deja de
+   querer decir "mira esto".
+   ------------------------------------------------------------------------- */
+@theme inline {
+  --color-negro:  #0A0A0A;   /* fondo */
+  --color-carbon: #121212;   /* superficies elevadas (tarjetas, barras) */
+  --color-humo:   #1C1C1C;   /* superficies sobre carbón */
+  --color-tinta:  #FAFAFA;   /* texto principal */
+  --color-acido:  #D8FF3D;   /* acento: datos, estados, foco */
+  --color-alerta: #FF4B2B;   /* agotado */
+
+  --font-display: var(--font-barlow), "Arial Narrow", sans-serif;
+  --font-sans:    var(--font-archivo), sans-serif;
+  --font-mono:    var(--font-plex-mono), ui-monospace, monospace;
+}
+
+:root {
+  --linea: rgba(250, 250, 250, 0.16);
+  --linea-tenue: rgba(250, 250, 250, 0.08);
+  --apagado: rgba(250, 250, 250, 0.55);
+  /* Alto de la barra de categorías. Lo usan el scroll-padding de la página y
+     el `top` de los elementos pegajosos: si cambia, cambia en un solo sitio. */
+  --barra: 56px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Recorte del sangrado horizontal EN LA RAÍZ, no en un contenedor interno:
+   `clip` no crea un contexto de scroll, pero WebKit (iOS Safari) tiene bugs
+   conocidos con `position: sticky` dentro de un ancestro con overflow clip —
+   la barra de categorías re-posicionaba con retraso en cada frame y se veía
+   TEMBLAR al scrollear en iPhone. En la raíz el sticky queda anclado directo
+   al viewport y lo lleva el compositor. (Es el mismo bug por el que los fondos
+   de las vitrinas usan pineado por JS en vez de sticky — ver useFondoPineado.) */
+html, body { overflow-x: clip; }
+
+html {
+  scroll-behavior: smooth;
+  /* Que el ancla de una categoría no quede debajo de la barra pegajosa. */
+  scroll-padding-top: var(--barra);
+}
+
+/* "Scroll anchoring" del navegador desactivado: por defecto, si algo arriba de
+   lo que estás viendo cambia de tamaño mientras scrolleas (el video del hero
+   terminando de cargar, una foto que llega tarde), el navegador mueve el scroll
+   solo para compensar — y eso se siente como si la página peleara con el dedo. */
+* { overflow-anchor: none; }
+
+body {
+  background: var(--color-negro);
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--color-acido); color: var(--color-negro); }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-negro); }
+::-webkit-scrollbar-thumb { background: #303030; }
+
+/* Foco visible y coherente en todo el sitio. Sin radio, como el resto. */
+:focus-visible {
+  outline: 2px solid var(--color-acido);
+  outline-offset: 2px;
+}
+
+/* ─── Piezas tipográficas reutilizables ───────────────────────────────────── */
+
+/* Título grande: condensada, mayúsculas, muy apretada. */
+.titular {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 0.88;
+  letter-spacing: -0.01em;
+}
+
+/* Etiqueta de sección o de dato: pequeñita, monoespaciada, muy espaciada. */
+.etiqueta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+/* Cifra: precios, altitudes, puntajes. Tabular para que las columnas alineen. */
+.cifra {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Número de orden de una sección o producto: 01, 02, 03… */
+.indice {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--color-acido);
+}
+
+/* ─── Animaciones ─────────────────────────────────────────────────────────── */
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes aparecer {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+/* Zoom lentísimo del fondo del hero. Solo transform: lo lleva la GPU. */
+@keyframes acercar {
+  from { transform: scale(1.04); }
+  to   { transform: scale(1.12); }
+}
+@keyframes puntoBaja {
+  0%   { transform: translateY(0);    opacity: 0; }
+  40%  {                              opacity: 1; }
+  80%  { transform: translateY(14px); opacity: 0; }
+  100% {                              opacity: 0; }
+}
+
+.hero-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  animation: acercar 30s ease-in-out infinite alternate, aparecer 1.4s ease both;
+}
+
+.punto-scroll { animation: puntoBaja 1.9s ease-in-out infinite; }
+
+/* Fila de categorías: se pasa deslizando, sin barra de scroll visible. */
+.tiras { scrollbar-width: none; }
+.tiras::-webkit-scrollbar { display: none; }
+
+/* Esqueleto de carga sobre fondo oscuro. */
+.esqueleto {
+  background: linear-gradient(90deg, #141414 25%, #1E1E1E 50%, #141414 75%);
+  background-size: 200% 100%;
+  animation: brillo 1.6s infinite;
+}
+@keyframes brillo {
+  from { background-position: -200% 0; }
+  to   { background-position:  200% 0; }
+}
+
+/* Feedback táctil de las tarjetas. height:100% para que en una fila de la
+   grilla todas queden de la altura de la más alta. */
+.tarjeta { height: 100%; transition: transform .16s ease, border-color .16s ease; }
+.tarjeta:active { transform: scale(0.985); }
+
+/* ─── Movimiento reducido ─────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html { scroll-behavior: auto; }
+}
