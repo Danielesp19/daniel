@@ -1,0 +1,27 @@
+# Dependencias (api/ y web/ tienen además su propio .gitignore con el detalle)
+node_modules/
+vendor/
+
+# Entornos. Las negaciones van DESPUÉS del patrón que las captura; al revés
+# no aplican y los archivos de ejemplo quedarían fuera del repo.
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Salidas de build
+.next/
+.vercel/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.idea/
+.vscode/
+*.swp
