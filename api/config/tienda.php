@@ -20,6 +20,12 @@ return [
     // Zona horaria del negocio.
     'timezone' => env('TIENDA_TIMEZONE', 'America/Bogota'),
 
+    // URL pública del sitio. Se usa para dos cosas: avisarle que el catálogo
+    // cambió (y no esperar el minuto del caché) y darle el enlace al admin
+    // cuando pregunta "¿cómo quedó?".
+    'sitio_url' => rtrim((string) env('SITIO_URL', ''), '/'),
+    'revalidar_secreto' => env('REVALIDAR_SECRETO'),
+
     // Imágenes subidas: lado máximo en píxeles y calidad WebP (30-100).
     'max_image_px' => (int) env('MAX_IMAGE_PX', 1800),
     'image_quality' => (int) env('IMAGE_QUALITY', 87),

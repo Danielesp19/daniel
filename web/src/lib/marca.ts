@@ -11,12 +11,14 @@ export const MARCA = {
   ciudad: "Colombia",
 
   /**
-   * Dos líneas de pedidos, las mismas que publica en Instagram. La primera es
-   * la que usa el sitio para armar los mensajes; la segunda queda visible en
-   * el pie por si la primera está ocupada.
+   * PROVISIONAL: número de pruebas mientras se consigue la línea de WhatsApp
+   * Business. Los pedidos que salgan del sitio llegan acá, así que hay que
+   * cambiarlo por el número real antes de publicar.
+   *
+   * Formato internacional sin "+", sin espacios y sin guiones: es como lo
+   * espera wa.me.
    */
-  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP ?? "573227323425",
-  telefonoAlterno: "3132289390",
+  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP ?? "573222248487",
 
   instagram: "https://www.instagram.com/danielbuitron.barista/",
   threads: "https://www.threads.com/@danielbuitron.barista",

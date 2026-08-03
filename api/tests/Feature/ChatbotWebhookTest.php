@@ -115,6 +115,66 @@ class ChatbotWebhookTest extends TestCase
         Queue::assertPushed(ResponderMensajeChatbot::class, 1);
     }
 
+    public function test_una_foto_con_pie_se_encola_igual_que_un_texto(): void
+    {
+        // Es la vía por la que se cambian las imágenes del sitio sin abrir el
+        // panel: si el webhook descarta las fotos, no hay otra forma.
+        $cuerpo = json_encode([
+            'entry' => [['changes' => [['value' => ['messages' => [[
+                'id' => 'wamid.foto',
+                'from' => self::ADMIN,
+                'type' => 'image',
+                'image' => ['id' => '999888', 'caption' => 'esta es la del mirador'],
+            ]]]]]]],
+        ], JSON_THROW_ON_ERROR);
+
+        $cabeceras = ['X-Hub-Signature-256' => 'sha256='.hash_hmac('sha256', $cuerpo, self::SECRETO)];
+
+        $this->call('POST', '/api/chatbot/webhook', [], [], [], $this->servidor($cabeceras), $cuerpo)
+            ->assertOk();
+
+        Queue::assertPushed(ResponderMensajeChatbot::class, 1);
+    }
+
+    public function test_una_foto_sin_pie_tambien_se_encola(): void
+    {
+        // Manda la foto y en el mensaje siguiente dice de qué producto es.
+        $cuerpo = json_encode([
+            'entry' => [['changes' => [['value' => ['messages' => [[
+                'id' => 'wamid.foto2',
+                'from' => self::ADMIN,
+                'type' => 'image',
+                'image' => ['id' => '999888'],
+            ]]]]]]],
+        ], JSON_THROW_ON_ERROR);
+
+        $cabeceras = ['X-Hub-Signature-256' => 'sha256='.hash_hmac('sha256', $cuerpo, self::SECRETO)];
+
+        $this->call('POST', '/api/chatbot/webhook', [], [], [], $this->servidor($cabeceras), $cuerpo)
+            ->assertOk();
+
+        Queue::assertPushed(ResponderMensajeChatbot::class, 1);
+    }
+
+    public function test_un_audio_se_ignora_sin_reventar(): void
+    {
+        $cuerpo = json_encode([
+            'entry' => [['changes' => [['value' => ['messages' => [[
+                'id' => 'wamid.audio',
+                'from' => self::ADMIN,
+                'type' => 'audio',
+                'audio' => ['id' => '777'],
+            ]]]]]]],
+        ], JSON_THROW_ON_ERROR);
+
+        $cabeceras = ['X-Hub-Signature-256' => 'sha256='.hash_hmac('sha256', $cuerpo, self::SECRETO)];
+
+        $this->call('POST', '/api/chatbot/webhook', [], [], [], $this->servidor($cabeceras), $cuerpo)
+            ->assertOk();
+
+        Queue::assertNothingPushed();
+    }
+
     public function test_la_verificacion_inicial_devuelve_el_reto_de_meta(): void
     {
         $this->get('/api/chatbot/webhook?hub_mode=subscribe&hub_verify_token=token-de-verificacion&hub_challenge=12345')

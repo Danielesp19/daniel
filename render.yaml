@@ -69,6 +69,10 @@ services:
         generateValue: true   # Render genera uno aleatorio y lo comparte con el worker
       - key: CORS_ALLOWED_ORIGINS
         sync: false           # el dominio del sitio en Vercel, sin barra final
+      - key: SITIO_URL
+        sync: false           # el mismo dominio: se usa para revalidar y para dar el enlace
+      - key: REVALIDAR_SECRETO
+        sync: false           # EXACTAMENTE el mismo valor que en Vercel
 
       # ── Chatbot ────────────────────────────────────────────────────────────
       # Sin CHATBOT_ADMINS el bot ignora todos los mensajes; sin
@@ -135,3 +139,10 @@ services:
         sync: false
       - key: CHATBOT_MODELO
         value: claude-opus-5
+
+      # El worker es quien de verdad ejecuta los cambios del chat, así que es
+      # el que tiene que poder avisarle al sitio que se regenere.
+      - key: SITIO_URL
+        sync: false
+      - key: REVALIDAR_SECRETO
+        sync: false

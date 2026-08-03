@@ -38,14 +38,19 @@ class Asistente
      * Procesa un mensaje y devuelve la respuesta lista para enviar.
      *
      * @param  string  $de  Número del admin en E.164 sin "+". Es la llave de la memoria.
+     * @param  string|null  $mediaId  Id del medio en Meta si mandó una foto.
      */
-    public function responder(string $texto, string $de): string
+    public function responder(string $texto, string $de, ?string $mediaId = null): string
     {
+        if ($mediaId !== null) {
+            $texto = $this->recibirFoto($mediaId, $de, $texto);
+        }
+
         $historial = $this->historial($de);
         $mensajes = [...$historial, ['role' => 'user', 'content' => $texto]];
 
         try {
-            $respuesta = $this->conversar($mensajes);
+            $respuesta = $this->conversar($mensajes, $de);
         } catch (\Throwable $e) {
             Log::error('Chatbot: falló la conversación con Claude', [
                 'de' => substr($de, -4),  // solo los últimos 4 dígitos en el log
@@ -67,8 +72,39 @@ class Asistente
         return $respuesta;
     }
 
+    /**
+     * Baja la foto, la deja en espera y arma el texto que verá el modelo.
+     *
+     * La imagen se guarda YA, antes de hablar con el modelo: si se esperara a
+     * que él decidiera, habría que sostener la URL temporal de Meta —que
+     * caduca— durante toda la conversación. Queda apuntada como "pendiente"
+     * para este número, y `asignar_foto` la engancha al producto que él diga,
+     * aunque lo diga en el mensaje siguiente.
+     */
+    private function recibirFoto(string $mediaId, string $de, string $pieDeFoto): string
+    {
+        $ruta = (new WhatsApp)->descargarFoto($mediaId);
+
+        if ($ruta === null) {
+            return trim($pieDeFoto."\n\n[Sistema: el admin mandó una foto pero no se pudo procesar. "
+                .'Dile que la reenvíe, y que sea una imagen (no un archivo ni un video).]');
+        }
+
+        Cache::put(
+            $this->llaveFoto($de),
+            $ruta,
+            now()->addMinutes((int) config('tienda.chatbot.memoria_minutos', 30)),
+        );
+
+        $aviso = '[Sistema: el admin acaba de enviar una foto y ya quedó guardada. '
+            .'Para ponérsela a un producto usa asignar_foto con el id del producto. '
+            .'Si no dijo de cuál es, pregúntaselo.]';
+
+        return $pieDeFoto === '' ? $aviso : $pieDeFoto."\n\n".$aviso;
+    }
+
     /** @param array<int, array<string, mixed>> $mensajes */
-    private function conversar(array $mensajes): string
+    private function conversar(array $mensajes, string $de): string
     {
         $herramientas = Herramientas::definiciones();
 
@@ -125,7 +161,9 @@ class Asistente
                     'type' => 'tool_result',
                     'toolUseID' => $bloque->id,
                     'content' => json_encode(
-                        Herramientas::ejecutar($bloque->name, $bloque->input),
+                        // El número va como contexto: `asignar_foto` necesita
+                        // saber de quién es la foto que quedó en espera.
+                        Herramientas::ejecutar($bloque->name, $bloque->input, $de),
                         JSON_UNESCAPED_UNICODE,
                     ),
                 ];
@@ -157,24 +195,40 @@ class Asistente
         $categorias = Herramientas::contextoCategorias();
 
         return <<<TXT
-        Eres el asistente de inventario de un barista profesional colombiano que vende café
-        de especialidad y también presta servicios (asesorías, clases y barra para eventos).
-        Hablas por WhatsApp con un administrador del negocio ya autenticado, así que puedes
-        consultar y modificar el catálogo sin pedir credenciales.
+        Administras el sitio web de un barista profesional colombiano que vende café de
+        especialidad y presta servicios (asesorías, clases y barra para eventos).
+
+        Hablas por WhatsApp con el dueño del negocio, ya autenticado. ESTE CHAT ES SU PANEL
+        DE ADMINISTRACIÓN: no tiene otro, y no quiere abrir un navegador para nada. Todo lo
+        que te pida sobre su página lo resuelves aquí — precios, textos, fotos, productos
+        nuevos, secciones. Nunca lo mandes a "entrar al panel" ni le digas que algo hay que
+        hacerlo por computador; si de verdad no puedes hacer algo, dilo claro y punto.
 
         Categorías del catálogo: {$categorias}.
 
-        Cada producto trae un campo "tipo". Los de tipo "servicio" se agendan, no se cuentan
-        en bolsas: no tienen stock y no se pueden ajustar. Si el admin te pide cambiarle el
-        inventario a uno, explícale eso; su precio y su descripción sí se pueden editar.
+        # Cosas del negocio que tienes que tener claras
+        - Cada producto trae un campo "tipo". Los de tipo "servicio" se agendan, no se cuentan
+          en bolsas: no tienen stock y no se les puede ajustar. Su precio y su descripción sí
+          se editan.
+        - AGOTADO y OCULTO no son lo mismo, y confundirlos le borra un producto de la página:
+          · "se acabó", "sin stock", "no hay" → ajustar_stock con fijar 0. El producto SIGUE
+            visible en la página con un sello de AGOTADO, solo que no se puede pedir.
+          · "quítalo", "bájalo de la página", "que no aparezca" → editar_producto con activo
+            en false. Eso sí lo desaparece del sitio.
+          Si no queda claro cuál de las dos quiere, pregúntale.
+        - Los precios son enteros de pesos: 48000. Nunca decimales.
 
         # Cómo trabajas
         - Busca siempre el producto antes de modificarlo. Nunca inventes un id.
-        - Si la búsqueda devuelve varios productos parecidos, pregunta cuál antes de tocar nada.
-        - Antes de cambiar un precio o desactivar un producto, confirma con el admin. Ajustar
-          stock no necesita confirmación: es la operación del día a día y es fácil de revertir.
-        - Si el mensaje no deja claro si el número es lo que llegó, lo que salió o lo que queda,
-          pregunta. Equivocarse de acción descuadra el inventario.
+        - Si la búsqueda devuelve varios parecidos, pregunta cuál antes de tocar nada.
+        - Antes de cambiar un precio, esconder un producto o esconder una sección entera,
+          confirma con él. Ajustar stock y arreglar textos no necesitan confirmación: son el
+          día a día y se revierten fácil.
+        - Si el mensaje no deja claro si el número es lo que llegó, lo que salió o lo que
+          queda, pregunta. Equivocarse de acción descuadra el inventario.
+        - Cuando te mande una foto, ya queda guardada. Solo necesitas saber de qué producto
+          es: si no lo dijo, pregúntale. Si te la manda antes de crear el producto, créalo
+          primero y después asígnasela.
         - Cuando termines un cambio, di el antes y el después con números concretos.
         - Avisa por tu cuenta cuando un producto quede agotado o por acabarse tras un ajuste.
 
@@ -183,7 +237,8 @@ class Asistente
         - Sin markdown: WhatsApp no lo renderiza. Nada de #, ** ni tablas. Listas con guiones.
         - Los precios en pesos con puntos de mil: 48.000, no 48000 ni \$48000.00.
         - El stock se cuenta en bolsas.
-        - Si algo falla, dilo en una frase y sigue; no te disculpes de más ni expliques el error técnico.
+        - Si algo falla, dilo en una frase y sigue; no te disculpes de más ni expliques el
+          error técnico.
         TXT;
     }
 
@@ -219,5 +274,16 @@ class Asistente
     private function llave(string $de): string
     {
         return 'chatbot:hist:'.sha1($de);
+    }
+
+    /** Dónde queda apuntada la última foto que mandó este número. */
+    public static function llaveFotoDe(string $de): string
+    {
+        return 'chatbot:foto:'.sha1($de);
+    }
+
+    private function llaveFoto(string $de): string
+    {
+        return self::llaveFotoDe($de);
     }
 }

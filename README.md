@@ -21,9 +21,9 @@ datos —año, competencia, puesto— en vez de una lista de adjetivos.
 - **Catálogo con fichas técnicas.** Los datos duros del café son el diseño, no
   un adorno: región, altura, variedad, proceso y puntaje SCA van en una rejilla
   monoespaciada en cada tarjeta.
-- **Tres formas de mostrar una categoría**, configurables desde el panel:
-  grilla de tarjetas, vitrina vertical (filas alternadas sobre foto fija) y
-  vitrina de a uno (se pasa deslizando, pensada para los videos de métodos).
+- **Tres formas de mostrar una categoría**, que se eligen por chat: grilla de
+  tarjetas, vitrina vertical (filas alternadas sobre foto fija) y vitrina de a
+  uno (se pasa deslizando, pensada para los videos de métodos).
 - **Productos y servicios conviven.** Un café se cuenta en bolsas y se agota;
   una asesoría se agenda y nunca se agota. Lo distingue la bandera
   `controla_stock`, y de ahí en adelante todo se comporta distinto: el botón
@@ -32,8 +32,10 @@ datos —año, competencia, puesto— en vez de una lista de adjetivos.
 - **Carrito que va a WhatsApp.** No hay pasarela de pago: se arma el mensaje
   con el pedido y se abre el chat. Antes de abrirlo se revalida el stock contra
   el servidor, porque el catálogo se sirve cacheado.
-- **Inventario por chat.** Le escribes al bot de WhatsApp ("¿cuánto queda del
-  bourbon rosado?", "llegaron 12 bolsas") y él consulta o ajusta.
+- **La página se administra por WhatsApp.** No hay que abrir un panel: se le
+  escribe al bot ("llegaron 12 bolsas", "el geisha se acabó", "cámbiale el
+  precio") y hasta se le mandan las fotos de los productos. Ver
+  [WhatsApp es el panel de administración](#whatsapp-es-el-panel-de-administración).
 
 ## Levantar el proyecto
 
@@ -70,10 +72,16 @@ Los datos del negocio están centralizados; no hay que buscarlos por el código.
 
 | Qué | Dónde |
 |---|---|
-| Nombre, logros, redes, teléfonos | `web/src/lib/marca.ts` |
-| Número de WhatsApp de pedidos | `NEXT_PUBLIC_WHATSAPP` (o el valor por defecto en `marca.ts`) |
-| Productos, precios y fotos reales | Panel en `/admin` — el seeder trae datos de ejemplo |
-| Texto de la portada | Panel → Portada |
+| Nombre, logros, redes | `web/src/lib/marca.ts` |
+| Número de WhatsApp de pedidos | `NEXT_PUBLIC_WHATSAPP` |
+| Número de WhatsApp Business del bot | `CHATBOT_PHONE_ID` / `CHATBOT_ACCESS_TOKEN` |
+| Números autorizados para administrar | `CHATBOT_ADMINS` |
+| Productos, precios y fotos reales | Por WhatsApp — el seeder trae datos de ejemplo |
+| Texto de la portada | Por WhatsApp |
+
+> **Los teléfonos son provisionales.** Todo apunta a `573222248487`, un número
+> de pruebas, mientras se consigue la línea de WhatsApp Business. Hay que
+> cambiarlo en `marca.ts` (o vía `NEXT_PUBLIC_WHATSAPP`) y en `CHATBOT_ADMINS`.
 
 > El palmarés en `marca.ts` tiene **tres** logros (Nacional Arte Latte 2025 y
 > 2024, Reto 4V 2024). En el Instagram hay un cuarto que empieza por "Ranci…"
@@ -123,16 +131,47 @@ escrito al lado:
 - `src/hooks/useRevelar.ts` — un solo IntersectionObserver para toda la
   página, con cola para que los elementos no aparezcan todos en bloque.
 
-## El chatbot de inventario
+## WhatsApp es el panel de administración
 
-Le escribes por WhatsApp y Claude interpreta el mensaje, consulta el catálogo
-con herramientas y responde. Puede buscar productos, dar un resumen del
-inventario, ajustar stock y editar datos de un producto.
+No es un extra: **es la única forma prevista de administrar el sitio.** La idea
+es que quien atiende el negocio no abra nunca un navegador — le escribe al bot
+desde el celular y el sitio cambia.
+
+Le escribes y Claude interpreta el mensaje, usa las herramientas que necesite y
+responde. Lo que puede hacer:
+
+| Le dices | Hace |
+|---|---|
+| "¿cuánto queda del bourbon?" | Busca y responde con el stock |
+| "llegaron 12 bolsas del mirador" | Suma 12 |
+| "el geisha se acabó" | Lo deja en 0 → sale con el sello **AGOTADO**, pero sigue en la página |
+| "quita el descafeinado de la página" | Lo oculta del catálogo (te lo confirma antes) |
+| "súbele el precio a 52.000" | Cambia el precio (te lo confirma antes) |
+| *(manda una foto)* "esta es la del mirador" | Le pone la foto al producto |
+| "agrega un café nuevo, Tabi del Quindío a 74.000" | Crea el producto y te pide lo que falte |
+| "cambia el título de la portada" | Edita los textos del hero |
+| "crea una sección de suscripciones" | Crea la categoría y elige cómo se muestra |
+
+**Agotado y oculto no son lo mismo**, y el bot está entrenado para no
+confundirlos: lo primero deja el producto visible con su sello, lo segundo lo
+borra de la página. Si el mensaje es ambiguo, pregunta.
+
+Las **fotos** son la pieza que hace que esto sustituya al panel de verdad: es
+lo único que no se puede hacer escribiendo. Cuando llega una imagen, se baja de
+Meta, se reduce y se pasa a WebP, y queda en espera hasta que digas de qué
+producto es — puede ser en el mismo mensaje o en el siguiente.
+
+Después de cada cambio el backend le avisa al sitio que se regenere, así que no
+hay que esperar el minuto del caché para ver el resultado.
 
 El flujo es: Meta llama al webhook → se valida la firma HMAC del cuerpo crudo
 → se revisa que el número esté en la lista blanca → se descarta si el mensaje
 ya se procesó → se encola. El trabajo real ocurre en la cola porque WhatsApp
 espera un 200 en segundos y una vuelta del modelo con herramientas tarda más.
+
+> El panel de Filament en `/admin` sigue existiendo, pero como red de
+> seguridad: para trabajo en lote o para destrabar algo que el bot no pueda.
+> El camino normal es el chat.
 
 Para que funcione hace falta un worker vivo:
 
@@ -152,7 +191,7 @@ Configuración en `.env` (ver `api/.env.example` para el detalle):
 ## Pruebas
 
 ```bash
-cd api && php artisan test          # 24 pruebas
+cd api && php artisan test          # 42 pruebas
 cd web && npx tsc --noEmit && npx eslint src
 ```
 

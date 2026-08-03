@@ -27,6 +27,11 @@ ADMIN_TOKEN=
 # Dominios del sitio, separados por coma y sin barra final.
 CORS_ALLOWED_ORIGINS=https://tudominio.co
 
+# URL del sitio y secreto para pedirle que se regenere después de cada cambio
+# hecho por WhatsApp. El secreto debe ser el mismo que el de Vercel.
+SITIO_URL=https://tudominio.co
+REVALIDAR_SECRETO=
+
 # La cola es obligatoria: el chatbot despacha su trabajo ahí.
 QUEUE_CONNECTION=database
 ```
@@ -63,8 +68,14 @@ En Vercel, con el directorio raíz apuntando a `web/`.
 
 ```bash
 BACKEND_URL=https://api.tudominio.co      # a dónde apunta el proxy
-NEXT_PUBLIC_WHATSAPP=573001112233         # sin "+", sin espacios
+NEXT_PUBLIC_WHATSAPP=573222248487         # sin "+", sin espacios
+REVALIDAR_SECRETO=                        # el MISMO valor que en el backend
 ```
+
+`REVALIDAR_SECRETO` es lo que permite que un cambio hecho por WhatsApp se vea
+en la página de una, sin esperar el minuto del caché. Si los dos valores no
+coinciden, el backend recibe un 401 y el sitio se refresca solo por tiempo —
+no se rompe nada, pero se pierde la inmediatez.
 
 `BACKEND_URL` es de servidor, no lleva `NEXT_PUBLIC_`: el navegador no debe
 conocer la URL del backend. Todas las peticiones salen por `/api-tienda/*` y

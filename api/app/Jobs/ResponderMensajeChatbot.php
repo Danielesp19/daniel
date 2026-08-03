@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\Log;
  *
  * Va en cola porque Meta espera un 200 del webhook en pocos segundos y da el
  * mensaje por fallido si no llega — mientras que una vuelta del modelo con
- * herramientas puede tardar bastante más. El webhook responde de inmediato y
- * el trabajo de verdad ocurre acá.
+ * herramientas, más la descarga de una foto, puede tardar bastante más. El
+ * webhook responde de inmediato y el trabajo de verdad ocurre acá.
  */
 class ResponderMensajeChatbot implements ShouldQueue
 {
@@ -26,14 +26,23 @@ class ResponderMensajeChatbot implements ShouldQueue
     /** Tope duro por si el modelo se queda pensando de más. */
     public int $timeout = 180;
 
+    /**
+     * @param  string  $de  Número del admin en E.164 sin "+".
+     * @param  string  $texto  El mensaje, o el pie de foto si mandó una imagen.
+     * @param  string|null  $mediaId  Id del medio en Meta cuando mandó una foto.
+     */
     public function __construct(
         private string $de,
         private string $texto,
+        private ?string $mediaId = null,
     ) {}
 
     public function handle(Asistente $asistente, WhatsApp $whatsapp): void
     {
-        $whatsapp->enviar($this->de, $asistente->responder($this->texto, $this->de));
+        $whatsapp->enviar(
+            $this->de,
+            $asistente->responder($this->texto, $this->de, $this->mediaId),
+        );
     }
 
     public function failed(\Throwable $e): void

@@ -100,12 +100,15 @@ class ChatbotWebhookController extends Controller
     }
 
     /**
-     * Extrae los mensajes de texto del sobre que manda Meta.
+     * Extrae del sobre que manda Meta los mensajes que sabemos atender.
      *
      * El payload trae de todo (acuses de entrega, cambios de estado,
-     * reacciones); solo nos interesan los mensajes de texto entrantes.
+     * reacciones); solo interesan dos cosas: texto y fotos. Una foto puede
+     * venir con pie de foto o sin él —"esta es la del bourbon" o nada—, así
+     * que el pie viaja como el texto del mensaje y el asistente decide qué
+     * hacer con la imagen.
      *
-     * @return array<int, array{id: string, de: string, texto: string}>
+     * @return array<int, array{id: string, de: string, texto: string, foto: ?string}>
      */
     private function mensajesDe(Request $request): array
     {
@@ -114,17 +117,29 @@ class ChatbotWebhookController extends Controller
         foreach ($request->input('entry', []) as $entrada) {
             foreach ($entrada['changes'] ?? [] as $cambio) {
                 foreach ($cambio['value']['messages'] ?? [] as $mensaje) {
-                    if (($mensaje['type'] ?? null) !== 'text') {
+                    $tipo = $mensaje['type'] ?? null;
+
+                    $texto = '';
+                    $foto = null;
+
+                    if ($tipo === 'text') {
+                        $texto = trim((string) ($mensaje['text']['body'] ?? ''));
+                    } elseif ($tipo === 'image') {
+                        $foto = (string) ($mensaje['image']['id'] ?? '') ?: null;
+                        $texto = trim((string) ($mensaje['image']['caption'] ?? ''));
+                    }
+
+                    // Un mensaje sin nada que procesar (un sticker, un audio)
+                    // se ignora en silencio.
+                    if ($texto === '' && $foto === null) {
                         continue;
                     }
-                    $texto = trim((string) ($mensaje['text']['body'] ?? ''));
-                    if ($texto === '') {
-                        continue;
-                    }
+
                     $mensajes[] = [
                         'id' => (string) ($mensaje['id'] ?? ''),
                         'de' => (string) ($mensaje['from'] ?? ''),
                         'texto' => $texto,
+                        'foto' => $foto,
                     ];
                 }
             }
@@ -133,7 +148,7 @@ class ChatbotWebhookController extends Controller
         return $mensajes;
     }
 
-    /** @param array{id: string, de: string, texto: string} $mensaje */
+    /** @param array{id: string, de: string, texto: string, foto: ?string} $mensaje */
     private function encolar(array $mensaje): void
     {
         $admins = (array) config('tienda.chatbot.admins');
@@ -155,6 +170,6 @@ class ChatbotWebhookController extends Controller
             return;
         }
 
-        ResponderMensajeChatbot::dispatch($mensaje['de'], $mensaje['texto']);
+        ResponderMensajeChatbot::dispatch($mensaje['de'], $mensaje['texto'], $mensaje['foto']);
     }
 }

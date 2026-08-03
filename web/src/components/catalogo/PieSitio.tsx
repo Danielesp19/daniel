@@ -56,10 +56,6 @@ export default function PieSitio() {
           >
             WhatsApp
           </a>
-          {/* La segunda línea, por si la primera está ocupada. */}
-          <div className="cifra" style={{ marginTop: 12, fontSize: 12, color: "var(--apagado)" }}>
-            {MARCA.telefonoAlterno}
-          </div>
         </div>
 
         <div>
