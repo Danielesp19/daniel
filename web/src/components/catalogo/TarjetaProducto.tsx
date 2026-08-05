@@ -33,7 +33,9 @@ export default function TarjetaProducto({
         display: "flex",
         flexDirection: "column",
         border: "1px solid var(--linea)",
+        borderRadius: "var(--radio-lg)",
         background: "var(--color-carbon)",
+        overflow: "hidden",
         ...entrada(visible),
       }}
     >
@@ -49,7 +51,7 @@ export default function TarjetaProducto({
           aspectRatio: "1/1",
           padding: 0,
           border: "none",
-          borderBottom: "1px solid var(--linea)",
+          borderBottom: "1px solid var(--linea-tenue)",
           background: "var(--color-humo)",
           cursor: "pointer",
           overflow: "hidden",
@@ -64,8 +66,8 @@ export default function TarjetaProducto({
             draggable={false}
             style={{
               objectFit: "cover",
-              // Agotado en escala de grises: se entiende sin leer el sello.
-              filter: producto.agotado ? "grayscale(1) brightness(0.55)" : undefined,
+              // Agotado apagado y sin color: se entiende sin leer el sello.
+              filter: producto.agotado ? "saturate(0.25) brightness(0.5)" : undefined,
             }}
           />
         ) : (
@@ -80,7 +82,7 @@ export default function TarjetaProducto({
               alignItems: "center",
               justifyContent: "center",
               fontSize: "clamp(48px,9vw,88px)",
-              color: "rgba(250,250,250,0.07)",
+              color: "rgba(243,233,217,0.07)",
             }}
           >
             {producto.nombre.charAt(0)}
@@ -94,8 +96,9 @@ export default function TarjetaProducto({
             position: "absolute",
             top: 10,
             left: 10,
-            padding: "3px 6px",
-            background: "rgba(10,10,10,0.75)",
+            padding: "4px 9px",
+            borderRadius: "var(--radio-pildora)",
+            background: "rgba(18,12,8,0.78)",
           }}
         >
           {String(indice + 1).padStart(2, "0")}
@@ -158,10 +161,11 @@ export default function TarjetaProducto({
             style={{
               alignSelf: "center",
               padding: "10px 14px",
-              border: `1px solid ${producto.agotado ? "var(--linea)" : "var(--color-acido)"}`,
+              border: `1px solid ${producto.agotado ? "var(--linea)" : "var(--color-acento)"}`,
+              borderRadius: "var(--radio-pildora)",
               background: "transparent",
-              color: producto.agotado ? "var(--apagado)" : "var(--color-acido)",
-              fontFamily: "var(--font-mono)",
+              color: producto.agotado ? "var(--apagado)" : "var(--color-acento)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
@@ -171,13 +175,13 @@ export default function TarjetaProducto({
             }}
             onMouseEnter={(e) => {
               if (producto.agotado) return;
-              e.currentTarget.style.background = "var(--color-acido)";
-              e.currentTarget.style.color = "#0A0A0A";
+              e.currentTarget.style.background = "var(--color-acento)";
+              e.currentTarget.style.color = "var(--color-negro)";
             }}
             onMouseLeave={(e) => {
               if (producto.agotado) return;
               e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = "var(--color-acido)";
+              e.currentTarget.style.color = "var(--color-acento)";
             }}
           >
             {producto.agotado ? "Agotado" : producto.controla_stock ? "Agregar" : "Agendar"}

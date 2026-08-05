@@ -90,10 +90,11 @@ export function Notas({ notas, alineado = "left" }: { notas: string[]; alineado?
           key={nota}
           className="etiqueta"
           style={{
-            padding: "4px 8px",
-            border: "1px solid var(--linea)",
-            color: "var(--apagado)",
-            fontSize: 9,
+            padding: "5px 11px",
+            borderRadius: "var(--radio-pildora)",
+            border: "1px solid rgba(200,211,173,0.28)",
+            color: "var(--color-salvia)",
+            fontSize: 10,
           }}
         >
           {nota}
@@ -113,9 +114,10 @@ export function SelloEstado({ producto }: { producto: Producto }) {
     <span
       className="etiqueta"
       style={{
-        padding: "4px 8px",
-        background: agotado ? "var(--color-alerta)" : "var(--color-acido)",
-        color: "#0A0A0A",
+        padding: "5px 11px",
+        borderRadius: "var(--radio-pildora)",
+        background: agotado ? "var(--color-alerta)" : "var(--color-acento)",
+        color: "var(--color-negro)",
         fontSize: 9,
         whiteSpace: "nowrap",
       }}

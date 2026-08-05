@@ -6,9 +6,9 @@
  * competencias reales, no adjetivos.
  */
 export const MARCA = {
-  nombre: "DANIEL BUITRÓN",
+  nombre: "Daniel Buitrón",
   oficio: "Barista profesional",
-  ciudad: "Colombia",
+  ciudad: "Pitalito, Huila",
 
   /**
    * PROVISIONAL: número de pruebas mientras se consigue la línea de WhatsApp
@@ -24,7 +24,7 @@ export const MARCA = {
   threads: "https://www.threads.com/@danielbuitron.barista",
 
   descripcion:
-    "Café de especialidad recién tostado, asesoría para tu barra y servicio de barra para eventos.",
+    "Subcampeón Nacional de Arte Latte. Cursos, experiencias y café de especialidad del Huila.",
 
   /**
    * Palmarés. Se pinta como una tabla de datos, no como una lista de elogios:

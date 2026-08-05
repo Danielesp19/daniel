@@ -25,9 +25,9 @@ class CatalogoSeeder extends Seeder
     public function run(): void
     {
         Hero::create([
-            'etiqueta' => 'Barista profesional',
-            'titulo' => 'Café bien hecho',
-            'subtitulo' => 'Vendo el mismo café que uso yo, asesoro barras que quieren mejorar y monto la barra de tu evento.',
+            'etiqueta' => 'Arte latte · Café de especialidad · Huila',
+            'titulo' => 'El arte del café, en cada taza',
+            'subtitulo' => 'Subcampeón Nacional de Arte Latte. Cursos, experiencias y café de especialidad del Huila.',
             'cta_texto' => 'Ver el catálogo',
             'cta_url' => '#catalogo',
             'activo' => true,

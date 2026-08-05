@@ -1,29 +1,42 @@
 @import "tailwindcss";
 
-/* ─── Sistema de diseño: alto contraste técnico ─────────────────────────────
-   Negro y blanco puros, bordes duros (sin radios), tipografía condensada en
-   mayúsculas para los títulos y monoespaciada para todo dato medible: peso,
-   altitud, puntaje, precio. Un solo acento —verde ácido— reservado para
-   señalar, nunca para decorar: si el verde está en todas partes deja de
-   querer decir "mira esto".
+/* ─── Sistema de diseño: cálido y redondo ───────────────────────────────────
+   Tomado del sistema "Organic" (animacion.zip) aplicado sobre fondo oscuro,
+   como en la maqueta: tierra tostada de fondo, texto crema, terracota y oro
+   como acentos y salvia como segunda voz. Todo se redondea —contenedores
+   generosos, botones en píldora— y la display es Caprasimo, gruesa y con
+   personalidad, sobre Figtree para el texto corrido.
+
+   Regla que sostiene el conjunto: nada de esquinas duras ni de grises. El
+   calor es el punto; si algo se ve gris, está mal.
    ------------------------------------------------------------------------- */
 @theme inline {
-  --color-negro:  #0A0A0A;   /* fondo */
-  --color-carbon: #121212;   /* superficies elevadas (tarjetas, barras) */
-  --color-humo:   #1C1C1C;   /* superficies sobre carbón */
-  --color-tinta:  #FAFAFA;   /* texto principal */
-  --color-acido:  #D8FF3D;   /* acento: datos, estados, foco */
-  --color-alerta: #FF4B2B;   /* agotado */
+  --color-negro:  #120C08;   /* fondo de la página, marrón casi negro */
+  --color-carbon: #241811;   /* superficies: tarjetas, barras, paneles */
+  --color-humo:   #2E2016;   /* superficies sobre carbón */
+  --color-tinta:  #F3E9D9;   /* texto principal, crema */
+  --color-acento: #D67F48;   /* terracota: acciones y señales */
+  --color-oro:    #D9B877;   /* oro: cifras y detalles finos */
+  --color-salvia: #C8D3AD;   /* segunda voz, para lo vivo (notas de cata) */
+  --color-alerta: #E5643C;   /* agotado */
 
-  --font-display: var(--font-barlow), "Arial Narrow", sans-serif;
-  --font-sans:    var(--font-archivo), sans-serif;
-  --font-mono:    var(--font-plex-mono), ui-monospace, monospace;
+  --font-display: var(--font-caprasimo), Georgia, serif;
+  --font-sans:    var(--font-figtree), system-ui, sans-serif;
 }
 
 :root {
-  --linea: rgba(250, 250, 250, 0.16);
-  --linea-tenue: rgba(250, 250, 250, 0.08);
-  --apagado: rgba(250, 250, 250, 0.55);
+  /* Las líneas van tintadas de crema, no de blanco: sobre un fondo cálido un
+     borde gris se ve sucio. */
+  --linea: rgba(243, 233, 217, 0.16);
+  --linea-tenue: rgba(243, 233, 217, 0.08);
+  --apagado: rgba(243, 233, 217, 0.62);
+
+  /* Radios del sistema. Se usan siempre estos, nunca un número suelto. */
+  --radio-sm: 8px;
+  --radio-md: 16px;
+  --radio-lg: 28px;
+  --radio-pildora: 999px;
+
   /* Alto de la barra de categorías. Lo usan el scroll-padding de la página y
      el `top` de los elementos pegajosos: si cambia, cambia en un solo sitio. */
   --barra: 56px;
@@ -60,52 +73,64 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-::selection { background: var(--color-acido); color: var(--color-negro); }
+::selection { background: rgba(214, 127, 72, 0.35); color: var(--color-tinta); }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--color-negro); }
-::-webkit-scrollbar-thumb { background: #303030; }
+::-webkit-scrollbar-thumb { background: #4A3527; border-radius: var(--radio-pildora); }
 
-/* Foco visible y coherente en todo el sitio. Sin radio, como el resto. */
+/* Foco visible y coherente en todo el sitio. */
 :focus-visible {
-  outline: 2px solid var(--color-acido);
+  outline: 2px solid var(--color-acento);
   outline-offset: 2px;
+  border-radius: var(--radio-sm);
 }
 
 /* ─── Piezas tipográficas reutilizables ───────────────────────────────────── */
 
-/* Título grande: condensada, mayúsculas, muy apretada. */
+/* Título: Caprasimo. Es gruesa y redonda, con mucha personalidad — pide aire
+   y NO va en mayúsculas: en caja alta se empasta y pierde justo lo que la
+   hace bonita, que son las minúsculas. */
 .titular {
   font-family: var(--font-display);
-  font-weight: 700;
-  text-transform: uppercase;
-  line-height: 0.88;
-  letter-spacing: -0.01em;
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -0.005em;
 }
 
-/* Etiqueta de sección o de dato: pequeñita, monoespaciada, muy espaciada. */
+/* Etiqueta de sección o de dato: pequeña, espaciada, en caja alta. */
 .etiqueta {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.22em;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
-/* Cifra: precios, altitudes, puntajes. Tabular para que las columnas alineen. */
+/* Cifra: precios, altitudes, puntajes. Tabular para que las columnas alineen
+   aunque cambien los dígitos. */
 .cifra {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 /* Número de orden de una sección o producto: 01, 02, 03… */
 .indice {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--color-acido);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--color-oro);
 }
+
+/* Píldora: la forma por defecto de todo lo que se toca. */
+.pildora {
+  border-radius: var(--radio-pildora);
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease, transform .18s ease;
+}
+.pildora:active { transform: scale(0.97); }
 
 /* ─── Animaciones ─────────────────────────────────────────────────────────── */
 @keyframes entrar {
@@ -147,21 +172,129 @@ body {
 .tiras { scrollbar-width: none; }
 .tiras::-webkit-scrollbar { display: none; }
 
-/* Esqueleto de carga sobre fondo oscuro. */
-.esqueleto {
-  background: linear-gradient(90deg, #141414 25%, #1E1E1E 50%, #141414 75%);
+/* ─── Revelado "fantasma" ───────────────────────────────────────────────────
+   Es el efecto de la maqueta de Cafés de origen: mientras la sección va
+   llegando se ve un esqueleto que respira, y al entrar en cuadro el esqueleto
+   se desvanece y el contenido real sube a ocupar su lugar.
+
+   El esqueleto ocupa el mismo sitio que el contenido (uno encima del otro en
+   la misma celda de grid), así que al cambiar no hay salto de altura: la
+   sección ya medía lo que va a medir.
+   ------------------------------------------------------------------------- */
+.fantasma { display: grid; }
+.fantasma > * { grid-area: 1 / 1; }
+
+/* El hueso va bastante más claro que el fondo: si se queda en el mismo tono no
+   se lee como "algo que está por llegar", solo como un hueco oscuro. */
+.fantasma-hueso {
+  background: linear-gradient(90deg,
+    rgba(243, 233, 217, 0.05) 25%,
+    rgba(243, 233, 217, 0.13) 50%,
+    rgba(243, 233, 217, 0.05) 75%);
   background-size: 200% 100%;
-  animation: brillo 1.6s infinite;
+  border-radius: var(--radio-md);
+  animation: brillo 1.8s linear infinite;
+  transition: opacity .5s ease;
+  pointer-events: none;
 }
+.fantasma-real {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity .6s ease, transform .6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.fantasma[data-visible="si"] .fantasma-hueso { opacity: 0; }
+.fantasma[data-visible="si"] .fantasma-real  { opacity: 1; transform: none; }
+
 @keyframes brillo {
-  from { background-position: -200% 0; }
-  to   { background-position:  200% 0; }
+  from { background-position:  200% 0; }
+  to   { background-position: -200% 0; }
 }
 
 /* Feedback táctil de las tarjetas. height:100% para que en una fila de la
    grilla todas queden de la altura de la más alta. */
 .tarjeta { height: 100%; transition: transform .16s ease, border-color .16s ease; }
 .tarjeta:active { transform: scale(0.985); }
+
+/* ─── Cortina de entrada ────────────────────────────────────────────────────
+   Una jarra vierte sobre una taza y dibuja una rosetta. Todo en CSS: sin
+   estado que hidratar y, si el JavaScript no llega, la cortina se va igual
+   porque la animación termina en `visibility: hidden` con `forwards`.
+   ------------------------------------------------------------------------- */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 3vw, 30px);
+  background: radial-gradient(circle at 50% 42%, #2E2016, #120C08 72%);
+  animation: introSale .9s ease 2.9s forwards;
+}
+
+.intro-escena { width: min(62vw, 300px); aspect-ratio: 1/1; }
+
+/* La taza aparece primero; el resto ocurre encima. */
+.intro-crema { animation: introTaza .7s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+
+.intro-jarra { transform-origin: 170px 60px; animation: introVierte 2.6s ease both; }
+
+/* El tallo se "dibuja" acortando el hueco del trazo discontinuo. Con
+   pathLength=1 el largo es 1 sin importar la geometría real. */
+.intro-tallo {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: introTrazo .5s ease .45s forwards;
+}
+
+.intro-hoja {
+  opacity: 0;
+  transform-origin: 120px 130px;
+  animation: introHoja .45s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.intro-chorro {
+  opacity: 0;
+  animation: introChorro 2.6s ease both;
+}
+
+.intro-firma {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  animation: entrar .8s cubic-bezier(0.2, 0.7, 0.2, 1) 1.5s both;
+}
+.intro-firma .titular { font-size: clamp(26px, 5vw, 40px); }
+.intro-firma .etiqueta { color: var(--color-acento); }
+
+@keyframes introSale {
+  to { opacity: 0; visibility: hidden; pointer-events: none; }
+}
+@keyframes introTaza {
+  from { opacity: 0; transform: scale(.82); transform-origin: 120px 130px; }
+  to   { opacity: 1; transform: scale(1);   transform-origin: 120px 130px; }
+}
+@keyframes introTrazo { to { stroke-dashoffset: 0; } }
+@keyframes introHoja {
+  from { opacity: 0; transform: scaleX(.3); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+@keyframes introVierte {
+  0%   { transform: translate(40px, -70px) rotate(6deg); opacity: 0; }
+  12%  { transform: translate(0, 0) rotate(6deg);        opacity: 1; }
+  26%  { transform: translate(-6px, 6px) rotate(-24deg); }
+  74%  { transform: translate(-6px, 6px) rotate(-24deg); }
+  88%  { transform: translate(0, 0) rotate(6deg); opacity: 1; }
+  100% { transform: translate(34px, -46px) rotate(8deg); opacity: 0; }
+}
+@keyframes introChorro {
+  0%, 22%   { opacity: 0; }
+  28%, 72%  { opacity: .95; }
+  80%, 100% { opacity: 0; }
+}
 
 /* ─── Movimiento reducido ─────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
@@ -171,4 +304,18 @@ body {
     transition-duration: 0.01ms !important;
   }
   html { scroll-behavior: auto; }
+
+  /* Sin esto el revelado quedaría a medias: las transiciones se anulan pero
+     el contenido nace en opacity 0 y solo lo despierta el observer. Acá se
+     muestra de una y el esqueleto no llega a verse. */
+  .fantasma-real { opacity: 1; transform: none; }
+  .fantasma-hueso { display: none; }
+
+  /* La cortina de entrada no se muestra: es puro adorno y con el movimiento
+     anulado se quedaría congelada tapando la página. */
+  .intro { display: none; }
 }
+
+/* La red de seguridad para "sin JavaScript" vive en un <noscript> del layout,
+   no aquí: hacerlo con una clase en el <html> obligaba a mutarla por script y
+   eso le rompía la hidratación a React. */

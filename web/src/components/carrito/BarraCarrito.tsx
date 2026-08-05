@@ -93,8 +93,8 @@ export default function BarraCarrito() {
           right: 0,
           bottom: 0,
           zIndex: 60,
-          borderTop: "1px solid var(--color-acido)",
-          background: "rgba(10,10,10,0.94)",
+          borderTop: "1px solid var(--color-acento)",
+          background: "rgba(18,12,8,0.94)",
           backdropFilter: "blur(10px)",
           // Respeta la barra de gestos de iOS.
           paddingBottom: "env(safe-area-inset-bottom)",
@@ -120,7 +120,7 @@ export default function BarraCarrito() {
           }}
         >
           <span style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
-            <span className="cifra" style={{ fontSize: 12, color: "var(--color-acido)" }}>
+            <span className="cifra" style={{ fontSize: 12, color: "var(--color-acento)" }}>
               {String(carrito.unidades).padStart(2, "0")}
             </span>
             <span className="etiqueta" style={{ color: "var(--apagado)" }}>
@@ -133,11 +133,11 @@ export default function BarraCarrito() {
               ${pesos(carrito.total)}
             </span>
             <span
-              className="etiqueta"
+              className="etiqueta pildora"
               style={{
-                padding: "9px 16px",
-                background: "var(--color-acido)",
-                color: "#0A0A0A",
+                padding: "10px 18px",
+                background: "var(--color-acento)",
+                color: "var(--color-negro)",
                 whiteSpace: "nowrap",
               }}
             >
@@ -158,7 +158,7 @@ export default function BarraCarrito() {
             position: "fixed",
             inset: 0,
             zIndex: 70,
-            background: "rgba(10,10,10,0.8)",
+            background: "rgba(18,12,8,0.8)",
             backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "flex-end",
@@ -176,6 +176,7 @@ export default function BarraCarrito() {
               background: "var(--color-carbon)",
               border: "1px solid var(--linea)",
               borderBottom: "none",
+              borderRadius: "var(--radio-lg) var(--radio-lg) 0 0",
               animation: "entrar .28s cubic-bezier(0.2,0.7,0.2,1) both",
             }}
           >
@@ -201,10 +202,11 @@ export default function BarraCarrito() {
                 aria-label="Cerrar"
                 style={{
                   border: "1px solid var(--linea)",
+                  borderRadius: "var(--radio-pildora)",
                   background: "transparent",
                   color: "var(--color-tinta)",
-                  width: 34,
-                  height: 34,
+                  width: 36,
+                  height: 36,
                   cursor: "pointer",
                   fontSize: 16,
                   lineHeight: 1,
@@ -264,9 +266,10 @@ export default function BarraCarrito() {
                           background: "var(--color-humo)",
                           color: "var(--color-tinta)",
                           border: "1px solid var(--linea)",
-                          padding: "8px 10px",
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 11,
+                          borderRadius: "var(--radio-pildora)",
+                          padding: "8px 14px",
+                          fontFamily: "var(--font-sans)",
+                          fontSize: 12,
                         }}
                       >
                         {MOLIENDAS.map((m) => (
@@ -279,7 +282,7 @@ export default function BarraCarrito() {
                       <span />
                     )}
 
-                    <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--linea)" }}>
+                    <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--linea)", borderRadius: "var(--radio-pildora)" }}>
                       <BotonCantidad
                         etiqueta={`Quitar una unidad de ${l.nombre}`}
                         onClick={() => carrito.cambiarCantidad(l.id, l.molienda, l.cantidad - 1)}
@@ -309,8 +312,9 @@ export default function BarraCarrito() {
                   role="status"
                   style={{
                     marginTop: 18,
-                    padding: 14,
+                    padding: 16,
                     border: "1px solid var(--color-alerta)",
+                    borderRadius: "var(--radio-md)",
                     fontSize: 13,
                     lineHeight: 1.6,
                   }}
@@ -350,11 +354,12 @@ export default function BarraCarrito() {
                 disabled={enviando}
                 style={{
                   width: "100%",
-                  padding: "16px",
+                  padding: "17px",
                   border: "none",
-                  background: "var(--color-acido)",
-                  color: "#0A0A0A",
-                  fontFamily: "var(--font-mono)",
+                  borderRadius: "var(--radio-pildora)",
+                  background: "var(--color-acento)",
+                  color: "var(--color-negro)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 12,
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
@@ -390,7 +395,7 @@ export default function BarraCarrito() {
                   border: "none",
                   background: "transparent",
                   color: "var(--apagado)",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 11,
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",

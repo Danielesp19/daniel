@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import type { Categoria, Producto } from "@/lib/catalogo";
 import { entrada, useRevelar } from "@/hooks/useRevelar";
-import { useFondoPineado } from "@/hooks/useFondoPineado";
+import FondoPineado from "./FondoPineado";
 
 /**
  * Vitrina de a uno: se ve un solo producto a la vez y se pasa deslizando o
@@ -20,7 +20,6 @@ const PROPORCION = 1.4;
 
 export default function VitrinaHorizontal({ categoria }: { categoria: Categoria }) {
   const seccion = useRef<HTMLElement>(null);
-  const pin = useFondoPineado(seccion);
   const { ref: refCabecera, visible: cabeceraVisible } = useRevelar<HTMLDivElement>();
   const [indice, setIndice] = useState(0);
 
@@ -35,31 +34,9 @@ export default function VitrinaHorizontal({ categoria }: { categoria: Categoria 
     <section
       ref={seccion}
       id={`cat-${categoria.slug}`}
-      style={{ position: "relative", background: "#0A0A0A" }}
+      style={{ position: "relative", background: "var(--color-negro)" }}
     >
-      {/* Fondo pineado. Ver el mismo bloque comentado en Barista.tsx. */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: pin === "durante" ? "fixed" : "absolute",
-          top: pin === "despues" ? "auto" : 0,
-          bottom: pin === "despues" ? 0 : "auto",
-          left: 0,
-          right: 0,
-          height:
-            pin === "corta" ? "100%" : pin === "durante" ? "100svh" : "calc(100svh + 120px)",
-          zIndex: 0,
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(180deg, rgba(10,10,10,0.88) 0%, rgba(10,10,10,0.9) 45%, rgba(10,10,10,0.97) 100%), url(/metodos.jpg) center 38%/cover no-repeat",
-          }}
-        />
-      </div>
+      <FondoPineado seccion={seccion} imagen="/metodos.jpg" posicion="center 38%" velo={0.88} />
 
       <div
         style={{
@@ -72,7 +49,7 @@ export default function VitrinaHorizontal({ categoria }: { categoria: Categoria 
         }}
       >
         <div ref={refCabecera} style={{ textAlign: "center" }}>
-          <div className="etiqueta" style={{ color: "var(--color-acido)", ...entrada(cabeceraVisible) }}>
+          <div className="etiqueta" style={{ color: "var(--color-acento)", ...entrada(cabeceraVisible) }}>
             En la barra
           </div>
           <h2
@@ -200,6 +177,7 @@ function Diapositiva({
             margin: "0 auto",
             aspectRatio: "1/1",
             border: "1px solid var(--linea)",
+            borderRadius: "var(--radio-lg)",
             background: "var(--color-humo)",
             overflow: "hidden",
           }}
@@ -235,7 +213,7 @@ function Diapositiva({
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 90,
-                color: "rgba(250,250,250,0.07)",
+                color: "rgba(243,233,217,0.07)",
               }}
             >
               {producto.nombre.charAt(0)}
@@ -293,12 +271,13 @@ function Flecha({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 36,
-        height: 48,
+        width: 44,
+        height: 44,
         padding: 0,
         border: "1px solid var(--linea)",
+        borderRadius: "var(--radio-pildora)",
         background: "transparent",
-        color: "var(--color-acido)",
+        color: "var(--color-acento)",
         cursor: "pointer",
       }}
     >

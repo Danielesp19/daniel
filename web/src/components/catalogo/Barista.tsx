@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { entrada, useRevelar } from "@/hooks/useRevelar";
-import { useFondoPineado } from "@/hooks/useFondoPineado";
+import FondoPineado from "./FondoPineado";
 import { MARCA } from "@/lib/marca";
 
 /**
@@ -21,27 +21,33 @@ import { MARCA } from "@/lib/marca";
 const QUE_HACE = [
   {
     n: "01",
-    titulo: "Vende café",
-    texto:
-      "Lotes de especialidad con fecha de tueste reciente. Se muele al momento y para el método que uses.",
+    titulo: "Cursos y talleres de barismo",
+    texto: "Desde tu primer espresso hasta técnica avanzada.",
   },
   {
     n: "02",
-    titulo: "Enseña",
-    texto:
-      "Asesoría para negocios que quieren dejar de quemar el café, y para quien está montando su barra en casa.",
+    titulo: "Clases de arte latte",
+    texto: "Rosettas, tulipanes y free pour con un competidor nacional.",
   },
   {
     n: "03",
-    titulo: "Monta barra",
-    texto:
-      "Servicio de barra para eventos: café de especialidad, arte latte y coctelería con café.",
+    titulo: "Asesoría para cafeterías",
+    texto: "Carta, recetas, capacitación de personal y montaje.",
+  },
+  {
+    n: "04",
+    titulo: "Barista para eventos",
+    texto: "Barra de café en vivo para bodas, lanzamientos y encuentros.",
+  },
+  {
+    n: "05",
+    titulo: "Catación y experiencias",
+    texto: "Cata guiada por orígenes, métodos y perfiles de taza.",
   },
 ];
 
 export default function Barista() {
   const seccion = useRef<HTMLElement>(null);
-  const pin = useFondoPineado(seccion);
   const { ref: refCabecera, visible: cabeceraVisible } = useRevelar<HTMLDivElement>();
   const { ref: refLogros, visible: logrosVisible } = useRevelar<HTMLDivElement>();
 
@@ -49,40 +55,9 @@ export default function Barista() {
     <section
       ref={seccion}
       id="barista"
-      style={{ position: "relative", background: "#0A0A0A", zIndex: 2 }}
+      style={{ position: "relative", background: "var(--color-negro)", zIndex: 2 }}
     >
-      {/* Foto de fondo a pantalla completa, quieta durante toda la sección.
-          Ver useFondoPineado para por qué esto no usa position:sticky.
-          Los +120px en "antes"/"despues" son un colchón: esos dos estados se
-          mueven con el scroll normal y dependen de que el estado de React ya
-          se haya actualizado; el listener va con un frame de retraso (rAF) y
-          sin el colchón asomaba una franja negra en el borde. */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: pin === "durante" ? "fixed" : "absolute",
-          top: pin === "despues" ? "auto" : 0,
-          bottom: pin === "despues" ? 0 : "auto",
-          left: 0,
-          right: 0,
-          height:
-            pin === "corta" ? "100%" : pin === "durante" ? "100svh" : "calc(100svh + 120px)",
-          zIndex: 0,
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            // Sin `filter` de CSS: un filtro sobre una capa a pantalla completa
-            // obliga a la GPU a re-renderizarla en cada frame de scroll, y en
-            // iPhone eso se siente como scroll pesado. El oscurecido va en el
-            // degradado, que es gratis.
-            background:
-              "linear-gradient(180deg, rgba(10,10,10,0.93) 0%, rgba(10,10,10,0.86) 45%, rgba(10,10,10,0.97) 100%), url(/image.webp) center/cover no-repeat",
-          }}
-        />
-      </div>
+      <FondoPineado seccion={seccion} imagen="/cafe-planta.webp" velo={0.93} />
 
       <div
         style={{
@@ -97,7 +72,7 @@ export default function Barista() {
         <div ref={refCabecera}>
           <div
             className="etiqueta"
-            style={{ color: "var(--color-acido)", ...entrada(cabeceraVisible) }}
+            style={{ color: "var(--color-acento)", ...entrada(cabeceraVisible) }}
           >
             Quién está detrás
           </div>
@@ -113,7 +88,7 @@ export default function Barista() {
           >
             El café es tan bueno
             <br />
-            como <span style={{ color: "var(--color-acido)" }}>quien lo prepara</span>
+            como <span style={{ color: "var(--color-acento)" }}>quien lo prepara</span>
           </h2>
 
           <p
@@ -169,13 +144,13 @@ export default function Barista() {
                 >
                   {logro.competencia}
                 </dd>
-                {/* El puesto en verde: es el dato que el ojo busca en la fila. */}
+                {/* El puesto en terracota: es el dato que el ojo busca en la fila. */}
                 <span
                   className="cifra"
                   style={{
                     flex: "0 0 auto",
                     fontSize: "clamp(15px,2vw,22px)",
-                    color: "var(--color-acido)",
+                    color: "var(--color-acento)",
                   }}
                 >
                   {logro.puesto}
@@ -185,17 +160,19 @@ export default function Barista() {
           </dl>
         </div>
 
-        {/* Las tres cosas que vende. */}
+        {/* Lo que ofrece, como tarjetas separadas por aire. En un sistema
+            redondo las divisiones a filo no funcionan: las formas necesitan
+            espacio para leerse como suaves. */}
         <div
           style={{
             marginTop: "clamp(52px,7vw,96px)",
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
-            borderTop: "1px solid var(--linea)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
+            gap: "clamp(12px,1.6vw,18px)",
           }}
         >
-          {QUE_HACE.map((item, i) => (
-            <Servicio key={item.n} item={item} primero={i === 0} />
+          {QUE_HACE.map((item) => (
+            <Servicio key={item.n} item={item} />
           ))}
         </div>
       </div>
@@ -203,26 +180,58 @@ export default function Barista() {
   );
 }
 
-function Servicio({ item, primero }: { item: (typeof QUE_HACE)[number]; primero: boolean }) {
+function Servicio({ item }: { item: (typeof QUE_HACE)[number] }) {
   const { ref, visible } = useRevelar<HTMLDivElement>();
 
   return (
     <div
       ref={ref}
       style={{
-        padding: "clamp(26px,3.5vw,40px) clamp(20px,2.5vw,34px)",
-        borderLeft: primero ? "none" : "1px solid var(--linea-tenue)",
-        borderBottom: "1px solid var(--linea)",
+        display: "flex",
+        gap: 16,
+        padding: "clamp(20px,2.6vw,26px)",
+        border: "1px solid var(--linea-tenue)",
+        borderRadius: "var(--radio-lg)",
+        background: "var(--color-carbon)",
+        transition: "border-color .25s ease, transform .25s ease",
         ...entrada(visible),
       }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = "rgba(214,127,72,0.55)";
+        e.currentTarget.style.transform = "translateY(-3px)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = "var(--linea-tenue)";
+        e.currentTarget.style.transform = "none";
+      }}
     >
-      <div className="indice">{item.n}</div>
-      <h3 className="titular" style={{ fontSize: "clamp(22px,2.6vw,30px)", margin: "14px 0 0" }}>
-        {item.titulo}
-      </h3>
-      <p style={{ margin: "12px 0 0", fontSize: 14, lineHeight: 1.65, color: "var(--apagado)" }}>
-        {item.texto}
-      </p>
+      {/* El número en un cuadro redondeado, como los iconos de la maqueta. */}
+      <span
+        aria-hidden="true"
+        className="indice"
+        style={{
+          flex: "0 0 auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 42,
+          height: 42,
+          borderRadius: "var(--radio-md)",
+          background: "rgba(214,127,72,0.14)",
+          color: "var(--color-acento)",
+        }}
+      >
+        {item.n}
+      </span>
+
+      <div style={{ minWidth: 0 }}>
+        <h3 className="titular" style={{ fontSize: "clamp(19px,2.1vw,23px)", margin: 0 }}>
+          {item.titulo}
+        </h3>
+        <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6, color: "var(--apagado)" }}>
+          {item.texto}
+        </p>
+      </div>
     </div>
   );
 }

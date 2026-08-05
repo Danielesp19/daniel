@@ -46,7 +46,7 @@ export default function BarraCategorias({
         top: 0,
         zIndex: 40,
         height: "var(--barra)",
-        background: "rgba(10,10,10,0.92)",
+        background: "rgba(18,12,8,0.92)",
         backdropFilter: "blur(10px)",
         borderBottom: "1px solid var(--linea)",
       }}
@@ -78,16 +78,18 @@ export default function BarraCategorias({
               className="etiqueta"
               style={{
                 flexShrink: 0,
-                padding: "0 16px",
+                alignSelf: "center",
+                padding: "8px 16px",
                 border: "none",
-                // El subrayado verde es el único indicador de selección: en un
-                // sistema sin radios ni rellenos, la línea hace el trabajo.
-                borderBottom: `2px solid ${esActiva ? "var(--color-acido)" : "transparent"}`,
-                background: "transparent",
-                color: esActiva ? "var(--color-acido)" : "var(--apagado)",
+                // En un sistema redondo la selección se marca con un relleno
+                // en píldora, no con una línea: la línea era el recurso del
+                // sistema anterior, que no tenía ni radios ni rellenos.
+                borderRadius: "var(--radio-pildora)",
+                background: esActiva ? "var(--color-acento)" : "transparent",
+                color: esActiva ? "var(--color-negro)" : "var(--apagado)",
                 cursor: "pointer",
                 whiteSpace: "nowrap",
-                transition: "color .18s",
+                transition: "background-color .2s ease, color .2s ease",
               }}
             >
               {opcion.nombre}

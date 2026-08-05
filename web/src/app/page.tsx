@@ -3,6 +3,7 @@ import { getCatalogo, getHero, type Categoria, type Hero as HeroDatos } from "@/
 import { MARCA } from "@/lib/marca";
 import { CarritoProvider } from "@/components/carrito/CarritoProvider";
 import BarraCarrito from "@/components/carrito/BarraCarrito";
+import Intro from "@/components/catalogo/Intro";
 import Hero from "@/components/catalogo/Hero";
 import Barista from "@/components/catalogo/Barista";
 import Catalogo from "@/components/catalogo/Catalogo";
@@ -37,6 +38,7 @@ export default async function Inicio() {
         <link rel="preload" as="image" href="/image.webp" fetchPriority="low" />
         <link rel="preload" as="image" href="/metodos.jpg" fetchPriority="low" />
 
+        <Intro />
         <Hero hero={hero} />
         <Barista />
         <Catalogo categorias={categorias} />

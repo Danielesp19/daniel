@@ -25,3 +25,8 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Insumos de diseño que se bajan aparte (maquetas, exportes del sistema).
+# Pesan y no se consumen desde el código: los assets que sí se usan viven en
+# web/public/.
+*.zip

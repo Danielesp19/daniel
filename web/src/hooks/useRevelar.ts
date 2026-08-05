@@ -16,7 +16,13 @@ import { useEffect, useRef, useState } from "react";
  * observer las dispara todas juntas.
  */
 let observador: IntersectionObserver | null = null;
-const avisos = new WeakMap<Element, () => void>();
+
+/**
+ * El registro se guarda envuelto en un objeto, no como la función pelada,
+ * para poder comparar identidades en la limpieza. Ver el porqué abajo.
+ */
+type Registro = { alRevelar: () => void };
+const avisos = new WeakMap<Element, Registro>();
 
 function observar(el: Element, alRevelar: () => void): () => void {
   if (typeof IntersectionObserver === "undefined") {
@@ -28,7 +34,7 @@ function observar(el: Element, alRevelar: () => void): () => void {
       (entradas) => {
         for (const e of entradas) {
           if (!e.isIntersecting) continue;
-          avisos.get(e.target)?.();
+          avisos.get(e.target)?.alRevelar();
           avisos.delete(e.target);
           observador!.unobserve(e.target);
         }
@@ -36,11 +42,24 @@ function observar(el: Element, alRevelar: () => void): () => void {
       { rootMargin: "-8% 0px -18% 0px", threshold: 0.15 },
     );
   }
-  avisos.set(el, alRevelar);
+
+  const registro: Registro = { alRevelar };
+  avisos.set(el, registro);
   observador.observe(el);
+
   return () => {
-    avisos.delete(el);
-    observador?.unobserve(el);
+    // Solo se suelta el elemento si el registro sigue siendo EL NUESTRO.
+    //
+    // React monta el efecto, lo limpia y lo vuelve a montar (StrictMode en
+    // desarrollo, y en producción al recuperar estado). En esa secuencia el
+    // segundo montaje ya registró y volvió a observar el elemento ANTES de
+    // que corra esta limpieza del primero; sin el chequeo, este `unobserve`
+    // cancelaba la observación recién hecha y el elemento no se revelaba
+    // nunca — se quedaba en su esqueleto para siempre.
+    if (avisos.get(el) === registro) {
+      avisos.delete(el);
+      observador?.unobserve(el);
+    }
   };
 }
 
@@ -99,5 +118,36 @@ export function entrada(visible: boolean, retraso = 0): React.CSSProperties {
     animation: visible
       ? `entrar .75s cubic-bezier(0.2,0.7,0.2,1) ${retraso}s both`
       : undefined,
+  };
+}
+
+/**
+ * Revelado "fantasma": mientras la pieza va llegando se ve un esqueleto que
+ * respira, y al entrar en cuadro el esqueleto se desvanece y el contenido real
+ * sube a ocupar su lugar. Es el efecto de la maqueta de Cafés de origen.
+ *
+ * Se usa así:
+ *
+ *   const { ref, props } = useFantasma<HTMLDivElement>();
+ *   <div ref={ref} {...props}>
+ *     <div className="fantasma-hueso" aria-hidden="true" />
+ *     <div className="fantasma-real">…contenido…</div>
+ *   </div>
+ *
+ * El esqueleto y el contenido se apilan en la misma celda de grid, así que la
+ * pieza ya mide lo que va a medir y no hay salto de altura al cambiar.
+ */
+export function useFantasma<T extends HTMLElement>(enCola = true) {
+  const { ref, visible } = useRevelar<T>(enCola);
+
+  return {
+    ref,
+    visible,
+    props: {
+      className: "fantasma",
+      // Un atributo, no una clase condicional: así el CSS lleva toda la
+      // lógica de la transición y aquí solo se dice "ya llegó".
+      "data-visible": visible ? "si" : "no",
+    } as const,
   };
 }

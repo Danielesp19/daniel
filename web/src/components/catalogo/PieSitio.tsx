@@ -6,7 +6,7 @@ export default function PieSitio() {
       style={{
         position: "relative",
         zIndex: 2,
-        background: "#0A0A0A",
+        background: "var(--color-negro)",
         borderTop: "1px solid var(--linea)",
       }}
     >
@@ -38,7 +38,7 @@ export default function PieSitio() {
         </div>
 
         <div>
-          <div className="etiqueta" style={{ color: "var(--color-acido)", marginBottom: 14 }}>
+          <div className="etiqueta" style={{ color: "var(--color-acento)", marginBottom: 14 }}>
             Pedidos
           </div>
           <a
@@ -50,7 +50,7 @@ export default function PieSitio() {
               color: "var(--color-tinta)",
               textDecoration: "none",
               fontSize: 14,
-              borderBottom: "1px solid var(--color-acido)",
+              borderBottom: "1px solid var(--color-acento)",
               paddingBottom: 2,
             }}
           >
@@ -59,7 +59,7 @@ export default function PieSitio() {
         </div>
 
         <div>
-          <div className="etiqueta" style={{ color: "var(--color-acido)", marginBottom: 14 }}>
+          <div className="etiqueta" style={{ color: "var(--color-acento)", marginBottom: 14 }}>
             Sígueme
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>

@@ -41,7 +41,7 @@ export default function FichaProducto({
         position: "fixed",
         inset: 0,
         zIndex: 80,
-        background: "rgba(10,10,10,0.86)",
+        background: "rgba(18,12,8,0.86)",
         backdropFilter: "blur(4px)",
         display: "flex",
         alignItems: "center",
@@ -59,6 +59,7 @@ export default function FichaProducto({
           overflowY: "auto",
           background: "var(--color-carbon)",
           border: "1px solid var(--linea)",
+          borderRadius: "var(--radio-lg)",
           animation: "entrar .28s cubic-bezier(0.2,0.7,0.2,1) both",
         }}
       >
@@ -79,10 +80,11 @@ export default function FichaProducto({
             aria-label="Cerrar"
             style={{
               border: "1px solid var(--linea)",
+              borderRadius: "var(--radio-pildora)",
               background: "transparent",
               color: "var(--color-tinta)",
-              width: 34,
-              height: 34,
+              width: 36,
+              height: 36,
               cursor: "pointer",
               fontSize: 16,
               lineHeight: 1,
@@ -106,6 +108,7 @@ export default function FichaProducto({
               position: "relative",
               aspectRatio: "1/1",
               border: "1px solid var(--linea)",
+              borderRadius: "var(--radio-lg)",
               background: "var(--color-humo)",
               overflow: "hidden",
             }}
@@ -128,7 +131,7 @@ export default function FichaProducto({
                 sizes="(max-width: 760px) 100vw, 440px"
                 style={{
                   objectFit: "cover",
-                  filter: producto.agotado ? "grayscale(1) brightness(0.55)" : undefined,
+                  filter: producto.agotado ? "saturate(0.25) brightness(0.5)" : undefined,
                 }}
               />
             ) : (
@@ -142,7 +145,7 @@ export default function FichaProducto({
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: 130,
-                  color: "rgba(250,250,250,0.07)",
+                  color: "rgba(243,233,217,0.07)",
                 }}
               >
                 {producto.nombre.charAt(0)}
@@ -153,7 +156,7 @@ export default function FichaProducto({
           <div style={{ padding: "clamp(16px,3vw,28px) 0 0 clamp(0px,3vw,28px)", minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               {producto.finca && (
-                <span className="etiqueta" style={{ color: "var(--color-acido)" }}>
+                <span className="etiqueta" style={{ color: "var(--color-acento)" }}>
                   {producto.finca}
                 </span>
               )}
@@ -221,10 +224,11 @@ export default function FichaProducto({
                 style={{
                   flex: "1 1 160px",
                   padding: "14px 22px",
-                  border: `1px solid ${producto.agotado ? "var(--linea)" : "var(--color-acido)"}`,
-                  background: producto.agotado ? "transparent" : "var(--color-acido)",
-                  color: producto.agotado ? "var(--apagado)" : "#0A0A0A",
-                  fontFamily: "var(--font-mono)",
+                  border: `1px solid ${producto.agotado ? "var(--linea)" : "var(--color-acento)"}`,
+              borderRadius: "var(--radio-pildora)",
+                  background: producto.agotado ? "transparent" : "var(--color-acento)",
+                  color: producto.agotado ? "var(--apagado)" : "var(--color-negro)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 11,
                   letterSpacing: "0.15em",
                   textTransform: "uppercase",

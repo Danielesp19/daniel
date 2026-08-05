@@ -102,7 +102,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
   const subtitulo = hero?.subtitulo ?? MARCA.descripcion;
 
   return (
-    <div ref={contenedor} style={{ position: "relative", background: "#0A0A0A" }}>
+    <div ref={contenedor} style={{ position: "relative", background: "var(--color-negro)" }}>
       {/* "svh", no "dvh": dvh se recalcula en vivo cuando el navegador móvil
           esconde y muestra la barra de direcciones al scrollear, y en una
           sección a pantalla completa eso se ve como que el hero cambia de
@@ -114,7 +114,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
           height: "100svh",
           minHeight: 560,
           overflow: "hidden",
-          background: "#0A0A0A",
+          background: "var(--color-negro)",
         }}
       >
         {imagenFondo ? (
@@ -148,7 +148,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(90deg, rgba(10,10,10,0.94) 0%, rgba(10,10,10,0.72) 45%, rgba(10,10,10,0.5) 100%)",
+              "linear-gradient(90deg, rgba(18,12,8,0.94) 0%, rgba(18,12,8,0.72) 45%, rgba(18,12,8,0.5) 100%)",
           }}
         />
         <div
@@ -156,7 +156,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(180deg, rgba(10,10,10,0.7) 0%, transparent 30%, rgba(10,10,10,0.95) 100%)",
+            background: "linear-gradient(180deg, rgba(18,12,8,0.7) 0%, transparent 30%, rgba(18,12,8,0.95) 100%)",
           }}
         />
 
@@ -167,7 +167,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
             position: "absolute",
             inset: 0,
             backgroundImage:
-              "linear-gradient(rgba(250,250,250,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(250,250,250,0.045) 1px, transparent 1px)",
+              "linear-gradient(rgba(243,233,217,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(243,233,217,0.045) 1px, transparent 1px)",
             backgroundSize: "72px 72px",
             maskImage: "radial-gradient(120% 90% at 20% 40%, #000 20%, transparent 78%)",
             WebkitMaskImage: "radial-gradient(120% 90% at 20% 40%, #000 20%, transparent 78%)",
@@ -224,8 +224,8 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
                 animation: "entrar .8s cubic-bezier(0.2,0.7,0.2,1) .1s both",
               }}
             >
-              <span style={{ width: 28, height: 2, background: "var(--color-acido)" }} />
-              <span className="etiqueta" style={{ color: "var(--color-acido)" }}>
+              <span style={{ width: 28, height: 2, background: "var(--color-acento)" }} />
+              <span className="etiqueta" style={{ color: "var(--color-acento)" }}>
                 {etiqueta}
               </span>
             </div>
@@ -261,12 +261,13 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 14,
-                padding: "15px 30px",
-                border: "1px solid var(--color-acido)",
-                background: "transparent",
-                color: "var(--color-acido)",
+                padding: "16px 32px",
+                border: "1px solid var(--color-acento)",
+                borderRadius: "var(--radio-pildora)",
+                background: "var(--color-acento)",
+                color: "var(--color-negro)",
                 textDecoration: "none",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 12,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
@@ -274,12 +275,12 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
                 animation: "entrar .9s cubic-bezier(0.2,0.7,0.2,1) .44s both",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "var(--color-acido)";
-                e.currentTarget.style.color = "#0A0A0A";
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "var(--color-acento)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "var(--color-acido)";
+                e.currentTarget.style.background = "var(--color-acento)";
+                e.currentTarget.style.color = "var(--color-negro)";
               }}
             >
               {hero?.cta_texto ?? "Ver el catálogo"}
@@ -319,7 +320,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
                 // de cada fila puede llevar borde: es un detalle que casi no
                 // se ve sobre el degradado y no vale una media query.
                 borderLeft: i === 0 ? "none" : "1px solid var(--linea-tenue)",
-                background: "rgba(10,10,10,0.55)",
+                background: "rgba(36,24,17,0.55)",
                 backdropFilter: "blur(6px)",
               }}
             >
@@ -360,7 +361,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
                 left: -1,
                 width: 3,
                 height: 8,
-                background: "var(--color-acido)",
+                background: "var(--color-acento)",
               }}
             />
           </span>

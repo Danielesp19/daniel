@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Categoria, Producto } from "@/lib/catalogo";
 import { entrada, useRevelar } from "@/hooks/useRevelar";
 import BarraCategorias from "./BarraCategorias";
@@ -8,6 +8,7 @@ import TarjetaProducto from "./TarjetaProducto";
 import VitrinaVertical from "./VitrinaVertical";
 import VitrinaHorizontal from "./VitrinaHorizontal";
 import FichaProducto from "./FichaProducto";
+import FondoPineado from "./FondoPineado";
 
 /**
  * El catálogo completo. Cada categoría se dibuja según su `modo_vitrina`,
@@ -23,7 +24,7 @@ export default function Catalogo({ categorias }: { categorias: Categoria[] }) {
   const visibles = activa === null ? categorias : categorias.filter((c) => c.id === activa);
 
   return (
-    <div id="catalogo" style={{ position: "relative", zIndex: 2, background: "#0A0A0A" }}>
+    <div id="catalogo" style={{ position: "relative", zIndex: 2, background: "var(--color-negro)" }}>
       <BarraCategorias categorias={categorias} activa={activa} onCambiar={setActiva} />
 
       {visibles.length === 0 ? (
@@ -38,14 +39,23 @@ export default function Catalogo({ categorias }: { categorias: Categoria[] }) {
           No hay nada en esta categoría por ahora.
         </p>
       ) : (
-        visibles.map((categoria) => {
+        visibles.map((categoria, i) => {
           if (categoria.modo_vitrina === "vertical") {
             return <VitrinaVertical key={categoria.id} categoria={categoria} onAbrir={setAbierto} />;
           }
           if (categoria.modo_vitrina === "horizontal") {
             return <VitrinaHorizontal key={categoria.id} categoria={categoria} />;
           }
-          return <Grilla key={categoria.id} categoria={categoria} onAbrir={setAbierto} />;
+          return (
+            <Grilla
+              key={categoria.id}
+              categoria={categoria}
+              onAbrir={setAbierto}
+              // Se alterna la foto de fondo para que dos grillas seguidas no
+              // se vean como la misma sala.
+              fondo={i % 2 === 0 ? "/cafe-planta.webp" : "/image.webp"}
+            />
+          );
         })
       )}
 
@@ -57,22 +67,35 @@ export default function Catalogo({ categorias }: { categorias: Categoria[] }) {
 function Grilla({
   categoria,
   onAbrir,
+  fondo,
 }: {
   categoria: Categoria;
   onAbrir: (p: Producto) => void;
+  fondo: string;
 }) {
+  const seccion = useRef<HTMLElement>(null);
   const { ref: refCabecera, visible: cabeceraVisible } = useRevelar<HTMLDivElement>();
 
   return (
     <section
+      ref={seccion}
       id={`cat-${categoria.slug}`}
-      style={{
-        maxWidth: 1400,
-        margin: "0 auto",
-        padding: "clamp(56px,8vw,104px) clamp(20px,5vw,56px)",
-        borderTop: "1px solid var(--linea)",
-      }}
+      style={{ position: "relative", background: "var(--color-negro)" }}
     >
+      {/* El mismo fondo quieto de las vitrinas: bajar por el catálogo se
+          siente como pasar de una sala a otra, no como recorrer una lista. */}
+      <FondoPineado seccion={seccion} imagen={fondo} velo={0.93} />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          maxWidth: 1400,
+          margin: "0 auto",
+          padding: "clamp(56px,8vw,104px) clamp(20px,5vw,56px)",
+          borderTop: "1px solid var(--linea)",
+        }}
+      >
       <div
         ref={refCabecera}
         style={{
@@ -125,8 +148,9 @@ function Grilla({
         }}
       >
         {categoria.productos.map((producto, i) => (
-          <TarjetaProducto key={producto.id} producto={producto} indice={i} onAbrir={onAbrir} />
-        ))}
+            <TarjetaProducto key={producto.id} producto={producto} indice={i} onAbrir={onAbrir} />
+          ))}
+        </div>
       </div>
     </section>
   );
