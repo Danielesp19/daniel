@@ -1,21 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Caprasimo, Figtree } from "next/font/google";
+import { Inter } from "next/font/google";
 import { MARCA } from "@/lib/marca";
 import "./globals.css";
 
-// La display del sistema: gruesa, redonda y con mucha personalidad. Solo trae
-// un peso, y va en minúsculas — en caja alta se empasta.
-const caprasimo = Caprasimo({
-  variable: "--font-caprasimo",
-  subsets: ["latin"],
-  weight: ["400"],
-  display: "swap",
-});
-
-// Figtree para todo el texto corrido y también para los datos: el sistema no
-// tiene monoespaciada, así que las cifras se alinean con tabular-nums.
-const figtree = Figtree({
-  variable: "--font-figtree",
+// Una sola familia para todo el sitio, como en las dos referencias (Inter en
+// cocinare, Open Sans en normcore). La jerarquía la hace el peso y el tracking,
+// no una segunda tipografía: en cuanto entra una display con personalidad, la
+// página deja de parecerse a ellas.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
@@ -27,12 +20,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#120C08",
+  themeColor: "#FFFFFF",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${caprasimo.variable} ${figtree.variable}`}>
+    <html lang="es" className={inter.variable}>
       <head>
         {/*
           El revelado por scroll nace en opacity 0 y lo despierta un observer.
@@ -47,7 +40,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           React controla.
         */}
         <noscript>
-          <style>{`.fantasma-real{opacity:1;transform:none}.fantasma-hueso{display:none}`}</style>
+          <style>{`.revelar{opacity:1;transform:none}`}</style>
         </noscript>
       </head>
       <body className="min-h-dvh antialiased">{children}</body>

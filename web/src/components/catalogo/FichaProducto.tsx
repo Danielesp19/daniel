@@ -3,9 +3,10 @@
 import { useEffect } from "react";
 import Image from "next/image";
 import type { Producto } from "@/lib/catalogo";
-import { pesos } from "@/lib/formato";
+import { pesos, gramos } from "@/lib/formato";
 import { useCarrito } from "@/components/carrito/CarritoProvider";
 import { FichaTecnica, Notas, SelloEstado } from "./FichaTecnica";
+import { MarcaGrano } from "./TeselaFoto";
 
 /** Detalle de un producto: foto grande, ficha completa y botón de agregar. */
 export default function FichaProducto({
@@ -31,6 +32,8 @@ export default function FichaProducto({
     };
   }, [onCerrar]);
 
+  const peso = gramos(producto.gramos);
+
   return (
     <div
       role="dialog"
@@ -41,12 +44,11 @@ export default function FichaProducto({
         position: "fixed",
         inset: 0,
         zIndex: 80,
-        background: "rgba(18,12,8,0.86)",
-        backdropFilter: "blur(4px)",
+        background: "rgba(23,22,20,0.45)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "clamp(0px,3vw,32px)",
+        padding: "clamp(0px, 3vw, 32px)",
         animation: "aparecer .2s ease both",
       }}
     >
@@ -54,11 +56,10 @@ export default function FichaProducto({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
-          maxWidth: 900,
+          maxWidth: 940,
           maxHeight: "94dvh",
           overflowY: "auto",
-          background: "var(--color-carbon)",
-          border: "1px solid var(--linea)",
+          background: "var(--color-papel)",
           borderRadius: "var(--radio-lg)",
           animation: "entrar .28s cubic-bezier(0.2,0.7,0.2,1) both",
         }}
@@ -67,10 +68,10 @@ export default function FichaProducto({
           style={{
             display: "flex",
             justifyContent: "flex-end",
-            padding: 12,
+            padding: 14,
             position: "sticky",
             top: 0,
-            background: "var(--color-carbon)",
+            background: "var(--color-papel)",
             zIndex: 2,
           }}
         >
@@ -80,7 +81,7 @@ export default function FichaProducto({
             aria-label="Cerrar"
             style={{
               border: "1px solid var(--linea)",
-              borderRadius: "var(--radio-pildora)",
+              borderRadius: 999,
               background: "transparent",
               color: "var(--color-tinta)",
               width: 36,
@@ -97,22 +98,13 @@ export default function FichaProducto({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
-            gap: 0,
-            padding: "0 clamp(16px,3vw,28px) clamp(24px,3vw,32px)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+            gap: "clamp(20px, 3vw, 40px)",
+            padding: "0 clamp(18px, 3vw, 32px) clamp(28px, 4vw, 40px)",
             alignItems: "start",
           }}
         >
-          <div
-            style={{
-              position: "relative",
-              aspectRatio: "1/1",
-              border: "1px solid var(--linea)",
-              borderRadius: "var(--radio-lg)",
-              background: "var(--color-humo)",
-              overflow: "hidden",
-            }}
-          >
+          <div className="tesela" style={{ aspectRatio: "1/1", background: "var(--color-hueso)" }}>
             {producto.video_url ? (
               <video
                 src={producto.video_url}
@@ -121,67 +113,52 @@ export default function FichaProducto({
                 muted
                 loop
                 playsInline
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                style={{ display: "block" }}
               />
             ) : producto.imagen_url ? (
               <Image
                 src={producto.imagen_url}
                 alt={producto.nombre}
                 fill
-                sizes="(max-width: 760px) 100vw, 440px"
+                sizes="(max-width: 760px) 100vw, 460px"
                 style={{
                   objectFit: "cover",
-                  filter: producto.agotado ? "saturate(0.25) brightness(0.5)" : undefined,
+                  filter: producto.agotado ? "saturate(0.15) opacity(0.55)" : undefined,
                 }}
               />
             ) : (
-              <span
-                aria-hidden="true"
-                className="titular"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 130,
-                  color: "rgba(243,233,217,0.07)",
-                }}
-              >
-                {producto.nombre.charAt(0)}
-              </span>
+              <MarcaGrano />
             )}
           </div>
 
-          <div style={{ padding: "clamp(16px,3vw,28px) 0 0 clamp(0px,3vw,28px)", minWidth: 0 }}>
+          <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              {producto.finca && (
-                <span className="etiqueta" style={{ color: "var(--color-acento)" }}>
-                  {producto.finca}
-                </span>
-              )}
+              {producto.finca && <span className="epigrafe">{producto.finca}</span>}
               <SelloEstado producto={producto} />
             </div>
 
-            <h2 className="titular" style={{ fontSize: "clamp(32px,5vw,52px)", margin: "10px 0 0" }}>
+            <h2
+              className="titular"
+              style={{ fontSize: "clamp(26px, 3.4vw, 40px)", margin: producto.finca ? "12px 0 0" : 0 }}
+            >
               {producto.nombre}
             </h2>
 
             {producto.productor && (
-              <div className="etiqueta" style={{ color: "var(--apagado)", marginTop: 10 }}>
+              <div style={{ marginTop: 8, fontSize: 13, color: "var(--color-grafito)" }}>
                 Productor · {producto.productor}
               </div>
             )}
 
             {producto.descripcion && (
-              <p style={{ margin: "16px 0 0", fontSize: 14, lineHeight: 1.75, color: "var(--apagado)" }}>
+              <p style={{ margin: "18px 0 0", fontSize: 15, lineHeight: 1.75, color: "var(--color-grafito)" }}>
                 {producto.descripcion}
               </p>
             )}
 
             {producto.notas.length > 0 && (
               <div style={{ marginTop: 20 }}>
-                <div className="etiqueta" style={{ color: "var(--apagado)", marginBottom: 9, fontSize: 9 }}>
+                <div className="epigrafe" style={{ marginBottom: 7 }}>
                   Notas de cata
                 </div>
                 <Notas notas={producto.notas} />
@@ -189,7 +166,7 @@ export default function FichaProducto({
             )}
 
             {producto.tiene_ficha && (
-              <div style={{ marginTop: 22 }}>
+              <div style={{ marginTop: 26 }}>
                 <FichaTecnica producto={producto} />
               </div>
             )}
@@ -198,41 +175,28 @@ export default function FichaProducto({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 16,
-                marginTop: 24,
+                gap: 18,
+                marginTop: 28,
                 flexWrap: "wrap",
               }}
             >
-              <div>
-                <span className="cifra" style={{ fontSize: 24 }}>
-                  ${pesos(producto.precio_cop)}
-                </span>
-                {producto.gramos > 0 && (
-                  <span className="etiqueta" style={{ color: "var(--apagado)", marginLeft: 10, fontSize: 9 }}>
-                    {producto.gramos} g
+              <span className="cifra" style={{ fontSize: 24, fontWeight: 600 }}>
+                ${pesos(producto.precio_cop)}
+                {peso && (
+                  <span style={{ marginLeft: 9, fontSize: 13, fontWeight: 400, color: "var(--color-grafito)" }}>
+                    {peso}
                   </span>
                 )}
-              </div>
+              </span>
 
               <button
                 type="button"
+                className="boton boton-solido"
+                style={{ flex: "1 1 190px" }}
                 disabled={producto.agotado}
                 onClick={() => {
                   carrito.agregar(producto);
                   onCerrar();
-                }}
-                style={{
-                  flex: "1 1 160px",
-                  padding: "14px 22px",
-                  border: `1px solid ${producto.agotado ? "var(--linea)" : "var(--color-acento)"}`,
-              borderRadius: "var(--radio-pildora)",
-                  background: producto.agotado ? "transparent" : "var(--color-acento)",
-                  color: producto.agotado ? "var(--apagado)" : "var(--color-negro)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 11,
-                  letterSpacing: "0.15em",
-                  textTransform: "uppercase",
-                  cursor: producto.agotado ? "not-allowed" : "pointer",
                 }}
               >
                 {producto.agotado

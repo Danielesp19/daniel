@@ -1,45 +1,54 @@
 @import "tailwindcss";
 
-/* ─── Sistema de diseño: cálido y redondo ───────────────────────────────────
-   Tomado del sistema "Organic" (animacion.zip) aplicado sobre fondo oscuro,
-   como en la maqueta: tierra tostada de fondo, texto crema, terracota y oro
-   como acentos y salvia como segunda voz. Todo se redondea —contenedores
-   generosos, botones en píldora— y la display es Caprasimo, gruesa y con
-   personalidad, sobre Figtree para el texto corrido.
+/* ─── Sistema de diseño: papel ──────────────────────────────────────────────
+   Calcado del lenguaje de cocinare.com y normcorewares.com, que son las dos
+   referencias que pidió Daniel. Lo que define ese lenguaje, y lo que hay que
+   respetar aunque incomode:
 
-   Regla que sostiene el conjunto: nada de esquinas duras ni de grises. El
-   calor es el punto; si algo se ve gris, está mal.
+   · Fondo blanco. El color lo pone la foto del producto, nunca el fondo.
+   · Una sola familia sans (allí Inter y Open Sans; acá Inter). Sin serif de
+     display, sin segunda tipografía "con personalidad".
+   · Dos registros de texto y nada más: titulares en negrita con el tracking
+     cerrado, y epígrafes diminutos en caja alta muy espaciados. El resto es
+     texto normal de 14-16px.
+   · Esquinas casi rectas y bordes de un pelo. Nada de píldoras ni de sombras.
+   · El aire entre secciones es el que separa; no hacen falta cajas ni fondos
+     alternos en cada bloque.
+   · Un único bloque oscuro, al final, como cierre. Las dos referencias lo
+     hacen y es lo que le da el punto final a la página.
+
+   Regla que sostiene el conjunto: si algo pide atención por color o por forma
+   en vez de por jerarquía, está mal.
    ------------------------------------------------------------------------- */
 @theme inline {
-  --color-negro:  #120C08;   /* fondo de la página, marrón casi negro */
-  --color-carbon: #241811;   /* superficies: tarjetas, barras, paneles */
-  --color-humo:   #2E2016;   /* superficies sobre carbón */
-  --color-tinta:  #F3E9D9;   /* texto principal, crema */
-  --color-acento: #D67F48;   /* terracota: acciones y señales */
-  --color-oro:    #D9B877;   /* oro: cifras y detalles finos */
-  --color-salvia: #C8D3AD;   /* segunda voz, para lo vivo (notas de cata) */
-  --color-alerta: #E5643C;   /* agotado */
+  --color-papel:   #FFFFFF;  /* fondo de la página */
+  --color-hueso:   #F4F3F1;  /* bandas y teselas de foto */
+  --color-hueso-2: #EBE9E5;  /* hueso sobre hueso */
+  --color-tinta:   #171614;  /* texto principal y bloque de cierre */
+  --color-grafito: #6E6A64;  /* texto secundario */
+  --color-acento:  #A86A3C;  /* caramelo tostado: solo acciones y señales */
+  --color-alerta:  #A8342A;  /* agotado */
 
-  --font-display: var(--font-caprasimo), Georgia, serif;
-  --font-sans:    var(--font-figtree), system-ui, sans-serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
 }
 
 :root {
-  /* Las líneas van tintadas de crema, no de blanco: sobre un fondo cálido un
-     borde gris se ve sucio. */
-  --linea: rgba(243, 233, 217, 0.16);
-  --linea-tenue: rgba(243, 233, 217, 0.08);
-  --apagado: rgba(243, 233, 217, 0.62);
+  --linea: #E4E1DC;
+  --linea-tenue: #EFEDE9;
 
-  /* Radios del sistema. Se usan siempre estos, nunca un número suelto. */
-  --radio-sm: 8px;
-  --radio-md: 16px;
-  --radio-lg: 28px;
-  --radio-pildora: 999px;
+  /* Radios: casi rectos. Las referencias no redondean casi nada y en cuanto
+     se suben, la página deja de parecerse a ellas. */
+  --radio-sm: 3px;
+  --radio-md: 6px;
+  --radio-lg: 12px;
 
-  /* Alto de la barra de categorías. Lo usan el scroll-padding de la página y
-     el `top` de los elementos pegajosos: si cambia, cambia en un solo sitio. */
-  --barra: 56px;
+  /* Alto de la cabecera fija. Lo usan el scroll-padding y los pegajosos: si
+     cambia, cambia en un solo sitio. */
+  --barra: 60px;
+
+  /* Ancho útil y respiración vertical de cada sección. */
+  --ancho: 1360px;
+  --aire: clamp(72px, 9vw, 140px);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -49,14 +58,13 @@
    conocidos con `position: sticky` dentro de un ancestro con overflow clip —
    la barra de categorías re-posicionaba con retraso en cada frame y se veía
    TEMBLAR al scrollear en iPhone. En la raíz el sticky queda anclado directo
-   al viewport y lo lleva el compositor. (Es el mismo bug por el que los fondos
-   de las vitrinas usan pineado por JS en vez de sticky — ver useFondoPineado.) */
+   al viewport y lo lleva el compositor. */
 html, body { overflow-x: clip; }
 
 html {
   scroll-behavior: smooth;
-  /* Que el ancla de una categoría no quede debajo de la barra pegajosa. */
-  scroll-padding-top: var(--barra);
+  /* Que el ancla de una categoría no quede debajo de la cabecera fija. */
+  scroll-padding-top: calc(var(--barra) + 52px);
 }
 
 /* "Scroll anchoring" del navegador desactivado: por defecto, si algo arriba de
@@ -66,75 +74,113 @@ html {
 * { overflow-anchor: none; }
 
 body {
-  background: var(--color-negro);
+  background: var(--color-papel);
   color: var(--color-tinta);
   font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-::selection { background: rgba(214, 127, 72, 0.35); color: var(--color-tinta); }
+::selection { background: rgba(168, 106, 60, 0.18); color: var(--color-tinta); }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--color-negro); }
-::-webkit-scrollbar-thumb { background: #4A3527; border-radius: var(--radio-pildora); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--color-hueso); }
+::-webkit-scrollbar-thumb { background: #CFCBC4; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #B8B3AB; }
 
-/* Foco visible y coherente en todo el sitio. */
 :focus-visible {
-  outline: 2px solid var(--color-acento);
+  outline: 2px solid var(--color-tinta);
   outline-offset: 2px;
   border-radius: var(--radio-sm);
 }
 
-/* ─── Piezas tipográficas reutilizables ───────────────────────────────────── */
+/* ─── Piezas tipográficas ───────────────────────────────────────────────────
+   Son solo dos, a propósito. En las referencias todo el sitio se sostiene con
+   un titular en negrita y un epígrafe diminuto; agregar una tercera voz es lo
+   que hacía que la versión anterior se viera recargada. */
 
-/* Título: Caprasimo. Es gruesa y redonda, con mucha personalidad — pide aire
-   y NO va en mayúsculas: en caja alta se empasta y pierde justo lo que la
-   hace bonita, que son las minúsculas. */
+/* Titular: Inter en negrita con el tracking cerrado. Cuanto más grande, más
+   negativo — así se ve compacto en vez de desparramado. */
 .titular {
-  font-family: var(--font-display);
-  font-weight: 400;
-  line-height: 1.04;
-  letter-spacing: -0.005em;
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -0.032em;
 }
 
-/* Etiqueta de sección o de dato: pequeña, espaciada, en caja alta. */
-.etiqueta {
-  font-family: var(--font-sans);
+/* Epígrafe: el rótulo diminuto en caja alta que va encima de cada sección.
+   Es el sello de normcore y lo que ordena la página sin gritar. */
+.epigrafe {
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
+  font-weight: 500;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
+  color: var(--color-grafito);
 }
 
 /* Cifra: precios, altitudes, puntajes. Tabular para que las columnas alineen
    aunque cambien los dígitos. */
 .cifra {
-  font-family: var(--font-sans);
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
-/* Número de orden de una sección o producto: 01, 02, 03… */
-.indice {
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  color: var(--color-oro);
+/* ─── Contenedores ────────────────────────────────────────────────────────── */
+.contenedor {
+  width: 100%;
+  max-width: var(--ancho);
+  margin-inline: auto;
+  padding-inline: clamp(16px, 4vw, 40px);
 }
 
-/* Píldora: la forma por defecto de todo lo que se toca. */
-.pildora {
-  border-radius: var(--radio-pildora);
-  transition: background-color .2s ease, color .2s ease, border-color .2s ease, transform .18s ease;
+.seccion { padding-block: var(--aire); }
+
+/* ─── Botones ───────────────────────────────────────────────────────────────
+   Rectangulares y de un solo trazo. El sólido es para la acción principal de
+   la página; el de contorno para todo lo demás. */
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding-inline: 22px;
+  border-radius: var(--radio-sm);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: background-color .18s ease, color .18s ease, border-color .18s ease;
 }
-.pildora:active { transform: scale(0.97); }
+.boton-solido {
+  background: var(--color-tinta);
+  color: var(--color-papel);
+  border: 1px solid var(--color-tinta);
+}
+.boton-solido:hover { background: var(--color-acento); border-color: var(--color-acento); }
+
+.boton-linea {
+  background: transparent;
+  color: var(--color-tinta);
+  border: 1px solid var(--linea);
+}
+.boton-linea:hover { border-color: var(--color-tinta); }
+
+/* Sobre foto o sobre el bloque oscuro, el contorno se invierte. */
+.boton-claro {
+  background: transparent;
+  color: #FFF;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+}
+.boton-claro:hover { background: #FFF; color: var(--color-tinta); border-color: #FFF; }
+
+.boton:disabled { opacity: .45; cursor: not-allowed; }
 
 /* ─── Animaciones ─────────────────────────────────────────────────────────── */
 @keyframes entrar {
-  from { opacity: 0; transform: translateY(18px); }
+  from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: none; }
 }
 @keyframes aparecer {
@@ -143,13 +189,13 @@ body {
 }
 /* Zoom lentísimo del fondo del hero. Solo transform: lo lleva la GPU. */
 @keyframes acercar {
-  from { transform: scale(1.04); }
-  to   { transform: scale(1.12); }
+  from { transform: scale(1.02); }
+  to   { transform: scale(1.1); }
 }
 @keyframes puntoBaja {
   0%   { transform: translateY(0);    opacity: 0; }
   40%  {                              opacity: 1; }
-  80%  { transform: translateY(14px); opacity: 0; }
+  80%  { transform: translateY(12px); opacity: 0; }
   100% {                              opacity: 0; }
 }
 
@@ -163,62 +209,55 @@ body {
   will-change: transform;
   backface-visibility: hidden;
   transform: translateZ(0);
-  animation: acercar 30s ease-in-out infinite alternate, aparecer 1.4s ease both;
+  animation: acercar 34s ease-in-out infinite alternate, aparecer 1.2s ease both;
 }
 
 .punto-scroll { animation: puntoBaja 1.9s ease-in-out infinite; }
 
-/* Fila de categorías: se pasa deslizando, sin barra de scroll visible. */
+/* Filas que se pasan deslizando, sin barra de scroll visible. */
 .tiras { scrollbar-width: none; }
 .tiras::-webkit-scrollbar { display: none; }
 
-/* ─── Revelado "fantasma" ───────────────────────────────────────────────────
-   Es el efecto de la maqueta de Cafés de origen: mientras la sección va
-   llegando se ve un esqueleto que respira, y al entrar en cuadro el esqueleto
-   se desvanece y el contenido real sube a ocupar su lugar.
-
-   El esqueleto ocupa el mismo sitio que el contenido (uno encima del otro en
-   la misma celda de grid), así que al cambiar no hay salto de altura: la
-   sección ya medía lo que va a medir.
+/* ─── Revelado por scroll ───────────────────────────────────────────────────
+   Un fundido corto hacia arriba y nada más. La versión anterior usaba un
+   esqueleto que brillaba mientras la sección llegaba; en fondo blanco y con
+   este lenguaje se veía como una página cargando mal, no como un efecto.
    ------------------------------------------------------------------------- */
-.fantasma { display: grid; }
-.fantasma > * { grid-area: 1 / 1; }
-
-/* El hueso va bastante más claro que el fondo: si se queda en el mismo tono no
-   se lee como "algo que está por llegar", solo como un hueco oscuro. */
-.fantasma-hueso {
-  background: linear-gradient(90deg,
-    rgba(243, 233, 217, 0.05) 25%,
-    rgba(243, 233, 217, 0.13) 50%,
-    rgba(243, 233, 217, 0.05) 75%);
-  background-size: 200% 100%;
-  border-radius: var(--radio-md);
-  animation: brillo 1.8s linear infinite;
-  transition: opacity .5s ease;
-  pointer-events: none;
-}
-.fantasma-real {
+.revelar {
   opacity: 0;
-  transform: translateY(14px);
-  transition: opacity .6s ease, transform .6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transform: translateY(18px);
+  transition: opacity .7s ease, transform .7s cubic-bezier(0.22, 0.7, 0.2, 1);
 }
-.fantasma[data-visible="si"] .fantasma-hueso { opacity: 0; }
-.fantasma[data-visible="si"] .fantasma-real  { opacity: 1; transform: none; }
+[data-visible="si"].revelar,
+[data-visible="si"] .revelar { opacity: 1; transform: none; }
 
-@keyframes brillo {
-  from { background-position:  200% 0; }
-  to   { background-position: -200% 0; }
+/* ─── Tesela de foto ────────────────────────────────────────────────────────
+   El marco donde vive cada foto de producto: fondo hueso, la imagen centrada
+   y un acercamiento muy leve al pasar el mouse, como en las dos referencias.
+   ------------------------------------------------------------------------- */
+.tesela {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-hueso);
+  border-radius: var(--radio-md);
 }
+.tesela img,
+.tesela video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .7s cubic-bezier(0.22, 0.7, 0.2, 1);
+}
+.tarjeta:hover .tesela img,
+.tarjeta:hover .tesela video { transform: scale(1.04); }
 
-/* Feedback táctil de las tarjetas. height:100% para que en una fila de la
-   grilla todas queden de la altura de la más alta. */
-.tarjeta { height: 100%; transition: transform .16s ease, border-color .16s ease; }
-.tarjeta:active { transform: scale(0.985); }
+.tarjeta { display: flex; flex-direction: column; height: 100%; }
 
 /* ─── Cortina de entrada ────────────────────────────────────────────────────
-   Una jarra vierte sobre una taza y dibuja una rosetta. Todo en CSS: sin
-   estado que hidratar y, si el JavaScript no llega, la cortina se va igual
+   Una jarra vierte sobre una taza y dibuja una rosetta. Sigue siendo puro CSS:
+   sin estado que hidratar y, si el JavaScript no llega, la cortina se va igual
    porque la animación termina en `visibility: hidden` con `forwards`.
+   Ahora sobre papel, para que el corte hacia la página no se note.
    ------------------------------------------------------------------------- */
 .intro {
   position: fixed;
@@ -228,12 +267,12 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(18px, 3vw, 30px);
-  background: radial-gradient(circle at 50% 42%, #2E2016, #120C08 72%);
-  animation: introSale .9s ease 2.9s forwards;
+  gap: clamp(20px, 3vw, 34px);
+  background: var(--color-papel);
+  animation: introSale .8s ease 2.9s forwards;
 }
 
-.intro-escena { width: min(62vw, 300px); aspect-ratio: 1/1; }
+.intro-escena { width: min(58vw, 260px); aspect-ratio: 1/1; }
 
 /* La taza aparece primero; el resto ocurre encima. */
 .intro-crema { animation: introTaza .7s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
@@ -263,12 +302,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   text-align: center;
-  animation: entrar .8s cubic-bezier(0.2, 0.7, 0.2, 1) 1.5s both;
+  animation: entrar .8s cubic-bezier(0.2, 0.7, 0.2, 1) 1.4s both;
 }
-.intro-firma .titular { font-size: clamp(26px, 5vw, 40px); }
-.intro-firma .etiqueta { color: var(--color-acento); }
+.intro-firma .titular { font-size: clamp(24px, 4.4vw, 36px); }
 
 @keyframes introSale {
   to { opacity: 0; visibility: hidden; pointer-events: none; }
@@ -306,10 +344,8 @@ body {
   html { scroll-behavior: auto; }
 
   /* Sin esto el revelado quedaría a medias: las transiciones se anulan pero
-     el contenido nace en opacity 0 y solo lo despierta el observer. Acá se
-     muestra de una y el esqueleto no llega a verse. */
-  .fantasma-real { opacity: 1; transform: none; }
-  .fantasma-hueso { display: none; }
+     el contenido nace en opacity 0 y solo lo despierta el observer. */
+  .revelar { opacity: 1; transform: none; }
 
   /* La cortina de entrada no se muestra: es puro adorno y con el movimiento
      anulado se quedaría congelada tapando la página. */

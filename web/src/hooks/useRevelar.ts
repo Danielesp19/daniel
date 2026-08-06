@@ -111,43 +111,28 @@ export function useRevelar<T extends HTMLElement>(enCola = true) {
   return { ref, visible };
 }
 
-/** Estilo de entrada listo para pegar en un `style`. */
-export function entrada(visible: boolean, retraso = 0): React.CSSProperties {
-  return {
-    opacity: visible ? 1 : 0,
-    animation: visible
-      ? `entrar .75s cubic-bezier(0.2,0.7,0.2,1) ${retraso}s both`
-      : undefined,
-  };
-}
-
 /**
- * Revelado "fantasma": mientras la pieza va llegando se ve un esqueleto que
- * respira, y al entrar en cuadro el esqueleto se desvanece y el contenido real
- * sube a ocupar su lugar. Es el efecto de la maqueta de Cafés de origen.
+ * Marca un contenedor como revelado cuando entra en cuadro. Todo lo que lleve
+ * la clase `.revelar` dentro (o el contenedor mismo) hace su fundido hacia
+ * arriba en ese momento.
  *
  * Se usa así:
  *
- *   const { ref, props } = useFantasma<HTMLDivElement>();
- *   <div ref={ref} {...props}>
- *     <div className="fantasma-hueso" aria-hidden="true" />
- *     <div className="fantasma-real">…contenido…</div>
- *   </div>
+ *   const { ref, props } = useRevelado<HTMLDivElement>();
+ *   <section ref={ref} {...props}>
+ *     <h2 className="revelar">…</h2>
+ *     <p  className="revelar" style={{ transitionDelay: "80ms" }}>…</p>
+ *   </section>
  *
- * El esqueleto y el contenido se apilan en la misma celda de grid, así que la
- * pieza ya mide lo que va a medir y no hay salto de altura al cambiar.
+ * El estado va en un atributo y no en una clase condicional: así el CSS lleva
+ * toda la lógica de la transición y aquí solo se dice "ya llegó".
  */
-export function useFantasma<T extends HTMLElement>(enCola = true) {
+export function useRevelado<T extends HTMLElement>(enCola = true) {
   const { ref, visible } = useRevelar<T>(enCola);
 
   return {
     ref,
     visible,
-    props: {
-      className: "fantasma",
-      // Un atributo, no una clase condicional: así el CSS lleva toda la
-      // lógica de la transición y aquí solo se dice "ya llegó".
-      "data-visible": visible ? "si" : "no",
-    } as const,
+    props: { "data-visible": visible ? "si" : "no" } as const,
   };
 }

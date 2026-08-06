@@ -3,13 +3,16 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import type { Categoria, Producto } from "@/lib/catalogo";
-import { entrada, useRevelar } from "@/hooks/useRevelar";
-import FondoPineado from "./FondoPineado";
+import { useRevelado } from "@/hooks/useRevelar";
+import { MarcaGrano } from "./TeselaFoto";
 
 /**
- * Vitrina de a uno: se ve un solo producto a la vez y se pasa deslizando o
- * con las flechas. Pensada para los métodos de preparación, donde cada ficha
- * lleva video y ponerlos todos en una grilla sería reproducir cinco a la vez.
+ * Vitrina de a uno: se ve un solo producto a la vez y se pasa deslizando o con
+ * las flechas. Pensada para los métodos de preparación, donde cada ficha lleva
+ * video y ponerlos todos en una grilla sería reproducir cinco a la vez.
+ *
+ * Es la única sección sobre hueso en vez de papel. Sirve de respiro a mitad de
+ * página, igual que la banda gris de "Our looks" en normcore.
  */
 
 // Recorrido horizontal mínimo (px) para contar como deslizada, y cuánto más
@@ -19,8 +22,7 @@ const MIN_PX = 45;
 const PROPORCION = 1.4;
 
 export default function VitrinaHorizontal({ categoria }: { categoria: Categoria }) {
-  const seccion = useRef<HTMLElement>(null);
-  const { ref: refCabecera, visible: cabeceraVisible } = useRevelar<HTMLDivElement>();
+  const { ref, props } = useRevelado<HTMLDivElement>();
   const [indice, setIndice] = useState(0);
 
   if (!categoria.productos.length) return null;
@@ -32,45 +34,29 @@ export default function VitrinaHorizontal({ categoria }: { categoria: Categoria 
 
   return (
     <section
-      ref={seccion}
       id={`cat-${categoria.slug}`}
-      style={{ position: "relative", background: "var(--color-negro)" }}
+      className="seccion"
+      style={{ background: "var(--color-hueso)" }}
     >
-      <FondoPineado seccion={seccion} imagen="/metodos.jpg" posicion="center 38%" velo={0.88} />
-
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          maxWidth: 1100,
-          margin: "0 auto",
-          padding: "clamp(64px,9vw,120px) clamp(20px,5vw,56px)",
-          borderTop: "1px solid var(--linea)",
-        }}
-      >
-        <div ref={refCabecera} style={{ textAlign: "center" }}>
-          <div className="etiqueta" style={{ color: "var(--color-acento)", ...entrada(cabeceraVisible) }}>
-            En la barra
-          </div>
+      <div className="contenedor" style={{ maxWidth: 1000 }}>
+        <div ref={ref} {...props} style={{ textAlign: "center" }}>
+          <span className="epigrafe revelar">En la barra</span>
           <h2
-            className="titular"
-            style={{
-              fontSize: "clamp(40px,8vw,96px)",
-              margin: "14px 0 0",
-              ...entrada(cabeceraVisible, 0.08),
-            }}
+            className="titular revelar"
+            style={{ fontSize: "clamp(28px, 3.6vw, 44px)", margin: "12px 0 0", transitionDelay: "60ms" }}
           >
             {categoria.nombre}
           </h2>
           {categoria.descripcion && (
             <p
+              className="revelar"
               style={{
-                margin: "16px auto 0",
-                maxWidth: 460,
-                fontSize: 14,
+                margin: "14px auto 0",
+                maxWidth: 480,
+                fontSize: 15,
                 lineHeight: 1.7,
-                color: "var(--apagado)",
-                ...entrada(cabeceraVisible, 0.16),
+                color: "var(--color-grafito)",
+                transitionDelay: "120ms",
               }}
             >
               {categoria.descripcion}
@@ -90,18 +76,26 @@ export default function VitrinaHorizontal({ categoria }: { categoria: Categoria 
         />
 
         {total > 1 && (
-          <div style={{ textAlign: "center", marginTop: 26 }}>
-            <span className="cifra" style={{ fontSize: 12, color: "var(--apagado)" }}>
-              {String(indice + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
-            </span>
-            {/* Que se puede deslizar no se ve. Sin decirlo, mucha gente usaría
-                solo las flechas. Se muestra hasta el primer cambio: después ya
-                quedó claro cómo se pasa. */}
-            {indice === 0 && (
-              <div className="etiqueta" style={{ marginTop: 8, color: "var(--apagado)", fontSize: 9 }}>
-                ‹ desliza ›
-              </div>
-            )}
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 30 }}>
+            {categoria.productos.map((p, i) => (
+              <button
+                key={p.id}
+                type="button"
+                aria-label={`Ver ${p.nombre}`}
+                aria-current={i === indice}
+                onClick={() => setIndice(i)}
+                style={{
+                  width: i === indice ? 22 : 7,
+                  height: 7,
+                  padding: 0,
+                  border: "none",
+                  borderRadius: 999,
+                  background: i === indice ? "var(--color-tinta)" : "#CFCAC1",
+                  cursor: "pointer",
+                  transition: "width .25s ease, background-color .25s ease",
+                }}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -154,10 +148,10 @@ function Diapositiva({
       // mitad de camino: el pointerup nunca llega y la deslizada no hace nada.
       onDragStart={(e) => e.preventDefault()}
       style={{
-        marginTop: "clamp(36px,5vw,60px)",
+        marginTop: "clamp(34px, 5vw, 56px)",
         display: "flex",
         alignItems: "center",
-        gap: "clamp(10px,2vw,24px)",
+        gap: "clamp(10px, 2vw, 28px)",
         animation: "aparecer .4s ease both",
         // pan-y: el scroll vertical del catálogo sigue siendo del navegador,
         // pero el movimiento horizontal queda para nosotros.
@@ -171,15 +165,12 @@ function Diapositiva({
 
       <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
         <div
+          className="tesela"
           style={{
-            position: "relative",
-            width: "min(100%, 320px)",
+            width: "min(100%, 420px)",
             margin: "0 auto",
             aspectRatio: "1/1",
-            border: "1px solid var(--linea)",
-            borderRadius: "var(--radio-lg)",
-            background: "var(--color-humo)",
-            overflow: "hidden",
+            background: "var(--color-papel)",
           }}
         >
           {producto.video_url ? (
@@ -191,51 +182,34 @@ function Diapositiva({
               loop
               playsInline
               draggable={false}
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              style={{ display: "block" }}
             />
           ) : producto.imagen_url ? (
             <Image
               src={producto.imagen_url}
               alt={producto.nombre}
               fill
-              sizes="320px"
+              sizes="420px"
               draggable={false}
               style={{ objectFit: "cover" }}
             />
           ) : (
-            <span
-              aria-hidden="true"
-              className="titular"
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 90,
-                color: "rgba(243,233,217,0.07)",
-              }}
-            >
-              {producto.nombre.charAt(0)}
-            </span>
+            <MarcaGrano />
           )}
         </div>
 
-        <h3
-          className="titular"
-          style={{ fontSize: "clamp(28px,5vw,46px)", margin: "24px 0 0" }}
-        >
+        <h3 className="titular" style={{ fontSize: "clamp(22px, 2.8vw, 32px)", margin: "26px 0 0" }}>
           {producto.nombre}
         </h3>
 
         {producto.descripcion && (
           <p
             style={{
-              margin: "14px auto 0",
-              maxWidth: 400,
-              fontSize: 14,
+              margin: "12px auto 0",
+              maxWidth: 420,
+              fontSize: 15,
               lineHeight: 1.7,
-              color: "var(--apagado)",
+              color: "var(--color-grafito)",
             }}
           >
             {producto.descripcion}
@@ -259,7 +233,7 @@ function Flecha({
 }) {
   // Cuando no hay a dónde ir se deja el hueco en vez de quitar el botón: si
   // desapareciera, el bloque central se correría de lado al llegar al final.
-  if (!visible) return <span style={{ flex: "0 0 36px" }} aria-hidden="true" />;
+  if (!visible) return <span style={{ flex: "0 0 44px" }} aria-hidden="true" />;
 
   return (
     <button
@@ -267,7 +241,7 @@ function Flecha({
       aria-label={direccion === "izquierda" ? "Anterior" : "Siguiente"}
       onClick={onClick}
       style={{
-        flex: "0 0 36px",
+        flex: "0 0 44px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -275,20 +249,29 @@ function Flecha({
         height: 44,
         padding: 0,
         border: "1px solid var(--linea)",
-        borderRadius: "var(--radio-pildora)",
-        background: "transparent",
-        color: "var(--color-acento)",
+        borderRadius: 999,
+        background: "var(--color-papel)",
+        color: "var(--color-tinta)",
         cursor: "pointer",
+        transition: "background-color .18s ease, color .18s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "var(--color-tinta)";
+        e.currentTarget.style.color = "#FFF";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "var(--color-papel)";
+        e.currentTarget.style.color = "var(--color-tinta)";
       }}
     >
       <svg
-        width="18"
-        height="18"
+        width="17"
+        height="17"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="square"
+        strokeWidth="1.8"
+        strokeLinecap="round"
         aria-hidden="true"
       >
         {direccion === "izquierda" ? (

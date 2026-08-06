@@ -24,19 +24,20 @@ export default function Intro() {
             {/* La crema: más clara en el borde que en el centro, como se ve
                 una taza real desde arriba. */}
             <radialGradient id="crema" cx="42%" cy="34%" r="72%">
-              <stop offset="0%" stopColor="#8A5C36" />
-              <stop offset="55%" stopColor="#5E3A21" />
-              <stop offset="100%" stopColor="#3A2214" />
+              <stop offset="0%" stopColor="#A9784F" />
+              <stop offset="55%" stopColor="#7A5133" />
+              <stop offset="100%" stopColor="#4E3221" />
             </radialGradient>
           </defs>
 
-          {/* Taza vista desde arriba */}
-          <circle cx="120" cy="130" r="82" fill="#241811" />
+          {/* Taza vista desde arriba. El borde va en hueso, no en negro: sobre
+              papel un anillo oscuro se ve como un agujero. */}
+          <circle cx="120" cy="130" r="82" fill="#EBE9E5" />
           <circle cx="120" cy="130" r="74" fill="url(#crema)" className="intro-crema" />
 
           {/* Rosetta: el tallo se dibuja y las hojas van saliendo por pares,
               de atrás hacia adelante, como cuando se vierte de verdad. */}
-          <g className="intro-rosetta" stroke="#F3E9D9" fill="none" strokeLinecap="round">
+          <g className="intro-rosetta" stroke="#FFFFFF" fill="none" strokeLinecap="round">
             <path
               className="intro-tallo"
               d="M120 176 L120 96"
@@ -65,14 +66,14 @@ export default function Intro() {
           <g className="intro-jarra">
             <path
               d="M150 34 h44 a9 9 0 0 1 9 9 v30 a9 9 0 0 1 -9 9 h-44 a9 9 0 0 1 -9 -9 v-30 a9 9 0 0 1 9 -9 z"
-              fill="#F3E9D9"
+              fill="#171614"
             />
             {/* Pico */}
-            <path d="M141 44 L118 62 L141 66 z" fill="#F3E9D9" />
+            <path d="M141 44 L118 62 L141 66 z" fill="#171614" />
             {/* Asa */}
             <path
               d="M203 48 q14 6 0 20"
-              stroke="#F3E9D9"
+              stroke="#171614"
               strokeWidth="6"
               fill="none"
               strokeLinecap="round"
@@ -83,7 +84,7 @@ export default function Intro() {
           <path
             className="intro-chorro"
             d="M118 64 Q116 82 120 100"
-            stroke="#F3E9D9"
+            stroke="#FFFFFF"
             strokeWidth="5"
             fill="none"
             strokeLinecap="round"
@@ -93,7 +94,7 @@ export default function Intro() {
 
       <div className="intro-firma">
         <span className="titular">{MARCA.nombre}</span>
-        <span className="etiqueta">{MARCA.oficio}</span>
+        <span className="epigrafe">{MARCA.oficio}</span>
       </div>
     </div>
   );

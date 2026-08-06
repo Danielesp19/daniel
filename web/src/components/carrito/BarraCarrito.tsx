@@ -93,9 +93,9 @@ export default function BarraCarrito() {
           right: 0,
           bottom: 0,
           zIndex: 60,
-          borderTop: "1px solid var(--color-acento)",
-          background: "rgba(18,12,8,0.94)",
-          backdropFilter: "blur(10px)",
+          borderTop: "1px solid var(--linea)",
+          background: "rgba(255,255,255,0.96)",
+          backdropFilter: "saturate(180%) blur(12px)",
           // Respeta la barra de gestos de iOS.
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
@@ -103,15 +103,13 @@ export default function BarraCarrito() {
         <button
           type="button"
           onClick={() => setAbierto(true)}
+          className="contenedor"
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             gap: 16,
-            width: "100%",
-            maxWidth: 1400,
-            margin: "0 auto",
-            padding: "14px clamp(20px,5vw,56px)",
+            paddingBlock: 12,
             background: "transparent",
             border: "none",
             color: "var(--color-tinta)",
@@ -119,28 +117,15 @@ export default function BarraCarrito() {
             textAlign: "left",
           }}
         >
-          <span style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
-            <span className="cifra" style={{ fontSize: 12, color: "var(--color-acento)" }}>
-              {String(carrito.unidades).padStart(2, "0")}
-            </span>
-            <span className="etiqueta" style={{ color: "var(--apagado)" }}>
-              {carrito.unidades === 1 ? "producto" : "productos"}
-            </span>
+          <span className="epigrafe">
+            {carrito.unidades} {carrito.unidades === 1 ? "producto" : "productos"}
           </span>
 
           <span style={{ display: "flex", alignItems: "center", gap: 18 }}>
-            <span className="cifra" style={{ fontSize: 16 }}>
+            <span className="cifra" style={{ fontSize: 15, fontWeight: 600 }}>
               ${pesos(carrito.total)}
             </span>
-            <span
-              className="etiqueta pildora"
-              style={{
-                padding: "10px 18px",
-                background: "var(--color-acento)",
-                color: "var(--color-negro)",
-                whiteSpace: "nowrap",
-              }}
-            >
+            <span className="boton boton-solido" style={{ height: 38 }}>
               Ver pedido
             </span>
           </span>
@@ -158,8 +143,7 @@ export default function BarraCarrito() {
             position: "fixed",
             inset: 0,
             zIndex: 70,
-            background: "rgba(18,12,8,0.8)",
-            backdropFilter: "blur(4px)",
+            background: "rgba(23,22,20,0.45)",
             display: "flex",
             alignItems: "flex-end",
             justifyContent: "center",
@@ -173,9 +157,7 @@ export default function BarraCarrito() {
               maxWidth: 620,
               maxHeight: "90dvh",
               overflowY: "auto",
-              background: "var(--color-carbon)",
-              border: "1px solid var(--linea)",
-              borderBottom: "none",
+              background: "var(--color-papel)",
               borderRadius: "var(--radio-lg) var(--radio-lg) 0 0",
               animation: "entrar .28s cubic-bezier(0.2,0.7,0.2,1) both",
             }}
@@ -185,15 +167,15 @@ export default function BarraCarrito() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                padding: "18px 20px",
+                padding: "20px 22px",
                 borderBottom: "1px solid var(--linea)",
                 position: "sticky",
                 top: 0,
-                background: "var(--color-carbon)",
+                background: "var(--color-papel)",
                 zIndex: 1,
               }}
             >
-              <h2 className="titular" style={{ fontSize: 24, margin: 0 }}>
+              <h2 className="titular" style={{ fontSize: 22, margin: 0 }}>
                 Tu pedido
               </h2>
               <button
@@ -202,7 +184,7 @@ export default function BarraCarrito() {
                 aria-label="Cerrar"
                 style={{
                   border: "1px solid var(--linea)",
-                  borderRadius: "var(--radio-pildora)",
+                  borderRadius: 999,
                   background: "transparent",
                   color: "var(--color-tinta)",
                   width: 36,
@@ -216,7 +198,7 @@ export default function BarraCarrito() {
               </button>
             </div>
 
-            <div style={{ padding: "4px 20px 20px" }}>
+            <div style={{ padding: "4px 22px 24px" }}>
               {carrito.lineas.map((l) => (
                 <div
                   key={`${l.id}-${l.molienda}`}
@@ -224,22 +206,17 @@ export default function BarraCarrito() {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 14 }}>
                     <div style={{ minWidth: 0 }}>
-                      <div
-                        className="titular"
-                        style={{ fontSize: 19, lineHeight: 1.05 }}
-                      >
-                        {l.nombre}
-                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 600 }}>{l.nombre}</div>
                       {l.gramos > 0 && (
                         <div
                           className="cifra"
-                          style={{ fontSize: 11, color: "var(--apagado)", marginTop: 5 }}
+                          style={{ fontSize: 12, color: "var(--color-grafito)", marginTop: 4 }}
                         >
                           {l.gramos} g · ${pesos(l.precio_cop)} c/u
                         </div>
                       )}
                     </div>
-                    <div className="cifra" style={{ fontSize: 15, whiteSpace: "nowrap" }}>
+                    <div className="cifra" style={{ fontSize: 15, fontWeight: 600, whiteSpace: "nowrap" }}>
                       ${pesos(l.cantidad * l.precio_cop)}
                     </div>
                   </div>
@@ -263,13 +240,13 @@ export default function BarraCarrito() {
                           carrito.cambiarMolienda(l.id, l.molienda, e.target.value as Molienda)
                         }
                         style={{
-                          background: "var(--color-humo)",
+                          background: "var(--color-papel)",
                           color: "var(--color-tinta)",
                           border: "1px solid var(--linea)",
-                          borderRadius: "var(--radio-pildora)",
-                          padding: "8px 14px",
-                          fontFamily: "var(--font-sans)",
-                          fontSize: 12,
+                          borderRadius: "var(--radio-sm)",
+                          padding: "9px 12px",
+                          fontFamily: "inherit",
+                          fontSize: 13,
                         }}
                       >
                         {MOLIENDAS.map((m) => (
@@ -282,17 +259,21 @@ export default function BarraCarrito() {
                       <span />
                     )}
 
-                    <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--linea)", borderRadius: "var(--radio-pildora)" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        border: "1px solid var(--linea)",
+                        borderRadius: "var(--radio-sm)",
+                      }}
+                    >
                       <BotonCantidad
                         etiqueta={`Quitar una unidad de ${l.nombre}`}
                         onClick={() => carrito.cambiarCantidad(l.id, l.molienda, l.cantidad - 1)}
                       >
                         −
                       </BotonCantidad>
-                      <span
-                        className="cifra"
-                        style={{ minWidth: 34, textAlign: "center", fontSize: 13 }}
-                      >
+                      <span className="cifra" style={{ minWidth: 34, textAlign: "center", fontSize: 13 }}>
                         {l.cantidad}
                       </span>
                       <BotonCantidad
@@ -319,11 +300,9 @@ export default function BarraCarrito() {
                     lineHeight: 1.6,
                   }}
                 >
-                  <strong style={{ display: "block", marginBottom: 6 }}>
-                    Ajustamos tu pedido
-                  </strong>
+                  <strong style={{ display: "block", marginBottom: 6 }}>Ajustamos tu pedido</strong>
                   {ajustes.map((a) => (
-                    <div key={a.nombre} style={{ color: "var(--apagado)" }}>
+                    <div key={a.nombre} style={{ color: "var(--color-grafito)" }}>
                       {a.nombre}: pediste {a.pedidas} y{" "}
                       {a.disponibles === 0 ? "ya no queda" : `solo quedan ${a.disponibles}`}.
                     </div>
@@ -337,13 +316,11 @@ export default function BarraCarrito() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "baseline",
-                  margin: "22px 0 16px",
+                  margin: "24px 0 18px",
                 }}
               >
-                <span className="etiqueta" style={{ color: "var(--apagado)" }}>
-                  Total
-                </span>
-                <span className="cifra" style={{ fontSize: 24 }}>
+                <span className="epigrafe">Total</span>
+                <span className="cifra" style={{ fontSize: 24, fontWeight: 700 }}>
                   ${pesos(carrito.total)}
                 </span>
               </div>
@@ -352,20 +329,8 @@ export default function BarraCarrito() {
                 type="button"
                 onClick={pedir}
                 disabled={enviando}
-                style={{
-                  width: "100%",
-                  padding: "17px",
-                  border: "none",
-                  borderRadius: "var(--radio-pildora)",
-                  background: "var(--color-acento)",
-                  color: "var(--color-negro)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 12,
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
-                  cursor: enviando ? "wait" : "pointer",
-                  opacity: enviando ? 0.7 : 1,
-                }}
+                className="boton boton-solido"
+                style={{ width: "100%", height: 50 }}
               >
                 {enviando ? "Verificando…" : "Pedir por WhatsApp"}
               </button>
@@ -373,9 +338,9 @@ export default function BarraCarrito() {
               <p
                 style={{
                   margin: "12px 0 0",
-                  fontSize: 11,
+                  fontSize: 12,
                   lineHeight: 1.6,
-                  color: "var(--apagado)",
+                  color: "var(--color-grafito)",
                   textAlign: "center",
                 }}
               >
@@ -389,16 +354,12 @@ export default function BarraCarrito() {
                   carrito.vaciar();
                   setAbierto(false);
                 }}
+                className="epigrafe"
                 style={{
                   display: "block",
-                  margin: "16px auto 0",
+                  margin: "18px auto 0",
                   border: "none",
                   background: "transparent",
-                  color: "var(--apagado)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 11,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
                   cursor: "pointer",
                 }}
               >
@@ -427,8 +388,8 @@ function BotonCantidad({
       aria-label={etiqueta}
       onClick={onClick}
       style={{
-        width: 34,
-        height: 34,
+        width: 36,
+        height: 36,
         border: "none",
         background: "transparent",
         color: "var(--color-tinta)",

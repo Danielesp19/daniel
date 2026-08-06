@@ -3,64 +3,47 @@ import { altitud } from "@/lib/formato";
 
 /**
  * El bloque de datos duros de un café: región, altura, variedad, proceso,
- * tueste y puntaje. Es la pieza que define el diseño del catálogo — una
- * etiqueta de laboratorio, no una descripción de menú.
+ * tueste y puntaje.
+ *
+ * Vive SOLO en el detalle del producto. En la tarjeta del catálogo ya no va:
+ * en las dos referencias la tarjeta lleva foto, nombre y precio, y meterle
+ * seis datos más al mismo tamaño es justo lo que hacía que la versión anterior
+ * se viera recargada. Quien quiere la ficha, la abre.
  *
  * Solo se pintan los campos que existen: un molino o una prensa comparten
  * tabla con los cafés pero no tienen finca ni altitud, y una rejilla con
  * casillas vacías se ve rota.
  */
-export function FichaTecnica({ producto, compacta = false }: { producto: Producto; compacta?: boolean }) {
+export function FichaTecnica({ producto }: { producto: Producto }) {
   const filas: Array<[string, string]> = [];
 
   if (producto.region) filas.push(["Región", producto.region]);
+  if (producto.finca) filas.push(["Finca", producto.finca]);
+  if (producto.productor) filas.push(["Productor", producto.productor]);
   if (producto.altitud_msnm) filas.push(["Altura", altitud(producto.altitud_msnm)]);
   if (producto.variedad) filas.push(["Variedad", producto.variedad]);
   if (producto.proceso) filas.push(["Proceso", producto.proceso]);
   if (producto.tueste) filas.push(["Tueste", producto.tueste]);
-  if (producto.puntaje_sca) filas.push(["SCA", producto.puntaje_sca.toFixed(2)]);
+  if (producto.puntaje_sca) filas.push(["Puntaje SCA", producto.puntaje_sca.toFixed(2)]);
 
   if (filas.length === 0) return null;
 
-  // En la tarjeta solo caben los cuatro datos que más pesan a la hora de
-  // elegir; la ficha completa vive en el detalle del producto.
-  const visibles = compacta ? filas.slice(0, 4) : filas;
-
   return (
-    <dl
-      style={{
-        display: "grid",
-        gridTemplateColumns: compacta ? "repeat(2, 1fr)" : "repeat(auto-fit, minmax(130px, 1fr))",
-        gap: 0,
-        margin: 0,
-        borderTop: "1px solid var(--linea-tenue)",
-      }}
-    >
-      {visibles.map(([rotulo, valor], i) => (
+    <dl style={{ margin: 0, borderTop: "1px solid var(--linea)" }}>
+      {filas.map(([rotulo, valor]) => (
         <div
           key={rotulo}
           style={{
-            padding: compacta ? "9px 10px" : "13px 14px",
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 20,
+            padding: "11px 0",
             borderBottom: "1px solid var(--linea-tenue)",
-            // Línea vertical entre columnas: se omite en la primera de cada
-            // fila para que el borde no se duplique contra el del contenedor.
-            borderLeft: compacta && i % 2 === 0 ? "none" : "1px solid var(--linea-tenue)",
-            minWidth: 0,
           }}
         >
-          <dt className="etiqueta" style={{ color: "var(--apagado)", fontSize: 9 }}>
-            {rotulo}
-          </dt>
-          <dd
-            className="cifra"
-            style={{
-              margin: "5px 0 0",
-              fontSize: compacta ? 11 : 13,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
+          <dt className="epigrafe">{rotulo}</dt>
+          <dd className="cifra" style={{ margin: 0, fontSize: 14, fontWeight: 500, textAlign: "right" }}>
             {valor}
           </dd>
         </div>
@@ -69,38 +52,14 @@ export function FichaTecnica({ producto, compacta = false }: { producto: Product
   );
 }
 
-/** Notas de cata como etiquetas sueltas. */
-export function Notas({ notas, alineado = "left" }: { notas: string[]; alineado?: "left" | "right" }) {
+/** Notas de cata como texto corrido y no como etiquetas: son un aroma, no un dato. */
+export function Notas({ notas }: { notas: string[] }) {
   if (!notas?.length) return null;
 
   return (
-    <ul
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 6,
-        listStyle: "none",
-        margin: 0,
-        padding: 0,
-        justifyContent: alineado === "right" ? "flex-end" : "flex-start",
-      }}
-    >
-      {notas.map((nota) => (
-        <li
-          key={nota}
-          className="etiqueta"
-          style={{
-            padding: "5px 11px",
-            borderRadius: "var(--radio-pildora)",
-            border: "1px solid rgba(200,211,173,0.28)",
-            color: "var(--color-salvia)",
-            fontSize: 10,
-          }}
-        >
-          {nota}
-        </li>
-      ))}
-    </ul>
+    <p style={{ margin: 0, fontSize: 13, color: "var(--color-grafito)" }}>
+      {notas.join(" · ")}
+    </p>
   );
 }
 
@@ -112,12 +71,13 @@ export function SelloEstado({ producto }: { producto: Producto }) {
 
   return (
     <span
-      className="etiqueta"
+      className="epigrafe"
       style={{
-        padding: "5px 11px",
-        borderRadius: "var(--radio-pildora)",
-        background: agotado ? "var(--color-alerta)" : "var(--color-acento)",
-        color: "var(--color-negro)",
+        display: "inline-block",
+        padding: "5px 10px",
+        borderRadius: "var(--radio-sm)",
+        background: agotado ? "var(--color-alerta)" : "var(--color-tinta)",
+        color: "#FFF",
         fontSize: 9,
         whiteSpace: "nowrap",
       }}

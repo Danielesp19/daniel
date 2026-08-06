@@ -4,11 +4,14 @@ import { useEffect, useRef } from "react";
 import type { Categoria } from "@/lib/catalogo";
 
 /**
- * Barra de categorías pegada arriba. Filtra el catálogo; no navega.
+ * Filtro de categorías: pestañas centradas con subrayado en la activa, como la
+ * fila "New releases / Best sellers / All products" de normcore. Filtra el
+ * catálogo; no navega.
  *
- * Se apoya en `position: sticky` sin ancestro con overflow recortado — ver el
- * comentario de `html, body { overflow-x: clip }` en globals.css, que es lo
- * que evita el temblor en iOS Safari.
+ * Queda pegada justo debajo de la cabecera. Se apoya en `position: sticky` sin
+ * ancestro con overflow recortado — ver el comentario de
+ * `html, body { overflow-x: clip }` en globals.css, que es lo que evita el
+ * temblor en iOS Safari.
  */
 export default function BarraCategorias({
   categorias,
@@ -43,27 +46,23 @@ export default function BarraCategorias({
     <div
       style={{
         position: "sticky",
-        top: 0,
+        top: "var(--barra)",
         zIndex: 40,
-        height: "var(--barra)",
-        background: "rgba(18,12,8,0.92)",
-        backdropFilter: "blur(10px)",
+        background: "rgba(255,255,255,0.94)",
+        backdropFilter: "saturate(180%) blur(12px)",
         borderBottom: "1px solid var(--linea)",
       }}
     >
       <div
         ref={lista}
-        className="tiras"
+        className="tiras contenedor"
         role="tablist"
         aria-label="Categorías del catálogo"
         style={{
           display: "flex",
-          alignItems: "stretch",
-          height: "100%",
+          justifyContent: "center",
+          gap: "clamp(18px, 3vw, 38px)",
           overflowX: "auto",
-          maxWidth: 1400,
-          margin: "0 auto",
-          padding: "0 clamp(12px,5vw,48px)",
         }}
       >
         {opciones.map((opcion) => {
@@ -75,21 +74,22 @@ export default function BarraCategorias({
               role="tab"
               aria-selected={esActiva}
               onClick={() => onCambiar(opcion.id)}
-              className="etiqueta"
               style={{
                 flexShrink: 0,
-                alignSelf: "center",
-                padding: "8px 16px",
+                padding: "16px 2px",
                 border: "none",
-                // En un sistema redondo la selección se marca con un relleno
-                // en píldora, no con una línea: la línea era el recurso del
-                // sistema anterior, que no tenía ni radios ni rellenos.
-                borderRadius: "var(--radio-pildora)",
-                background: esActiva ? "var(--color-acento)" : "transparent",
-                color: esActiva ? "var(--color-negro)" : "var(--apagado)",
+                // El subrayado se dibuja siempre, transparente cuando no está
+                // activa: así la fila no cambia de alto al elegir y el texto no
+                // salta un pixel.
+                borderBottom: `2px solid ${esActiva ? "var(--color-tinta)" : "transparent"}`,
+                background: "transparent",
+                color: esActiva ? "var(--color-tinta)" : "var(--color-grafito)",
+                fontFamily: "inherit",
+                fontSize: 13,
+                fontWeight: esActiva ? 600 : 400,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
-                transition: "background-color .2s ease, color .2s ease",
+                transition: "color .2s ease, border-color .2s ease",
               }}
             >
               {opcion.nombre}

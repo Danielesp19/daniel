@@ -4,6 +4,7 @@ import { MARCA } from "@/lib/marca";
 import { CarritoProvider } from "@/components/carrito/CarritoProvider";
 import BarraCarrito from "@/components/carrito/BarraCarrito";
 import Intro from "@/components/catalogo/Intro";
+import Cabecera from "@/components/catalogo/Cabecera";
 import Hero from "@/components/catalogo/Hero";
 import Barista from "@/components/catalogo/Barista";
 import Catalogo from "@/components/catalogo/Catalogo";
@@ -30,15 +31,10 @@ export default async function Inicio() {
 
   return (
     <CarritoProvider>
-      <main>
-        {/* La foto de fondo de las vitrinas es pesada y vive al final de una
-            página larga. Se pide desde ya, pero con prioridad baja para no
-            competir por ancho de banda con el video del hero, que sí importa
-            para el primer pantallazo. */}
-        <link rel="preload" as="image" href="/image.webp" fetchPriority="low" />
-        <link rel="preload" as="image" href="/metodos.jpg" fetchPriority="low" />
+      <Intro />
+      <Cabecera />
 
-        <Intro />
+      <main>
         <Hero hero={hero} />
         <Barista />
         <Catalogo categorias={categorias} />
