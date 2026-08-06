@@ -1,8 +1,22 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import type { Hero as HeroDatos } from "@/lib/catalogo";
 import { enlaceWhatsApp, MARCA } from "@/lib/marca";
+
+/**
+ * Video de fondo local. Está en null a propósito.
+ *
+ * El que había (videos/hero-coffee.mp4) era metraje de La Meca y se borró.
+ * Daniel va a mandar uno suyo: cuando llegue, se guarda en public/videos y se
+ * pone su ruta acá — el reproductor de abajo sigue montado y vuelve solo.
+ * Mientras tanto el fondo es una foto suya, que es mejor que metraje ajeno.
+ */
+const VIDEO_FONDO: string | null = null;
+
+/** Foto de respaldo del hero, cuando no hay video ni imagen cargada del panel. */
+const FOTO_FONDO = "/img1.jpg";
 
 /**
  * Portada: foto o video a sangre, un titular corto centrado y dos botones.
@@ -20,8 +34,9 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
   const contenedor = useRef<HTMLElement>(null);
   const video = useRef<HTMLVideoElement>(null);
 
-  // Una imagen cargada desde el panel manda sobre el video local.
-  const imagenFondo = hero?.imagen_url ?? null;
+  // Orden de mando: la imagen que Daniel cargue desde el chatbot manda sobre
+  // todo; si no hay, el video local; si tampoco, la foto de respaldo.
+  const imagenFondo = hero?.imagen_url ?? (VIDEO_FONDO ? null : FOTO_FONDO);
 
   // Fondo: una pasada del video, y pausa total del zoom cuando el hero sale de
   // pantalla — sin esto el navegador sigue componiendo una capa a pantalla
@@ -95,8 +110,18 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
         }}
       >
         {imagenFondo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={imagenFondo} alt="" aria-hidden="true" className="hero-media" />
+          <Image
+            src={imagenFondo}
+            alt=""
+            aria-hidden="true"
+            fill
+            priority
+            sizes="100vw"
+            className="hero-media"
+            // La foto es vertical y él está en la mitad de arriba: recortada al
+            // ancho de la pantalla, centrada le corta la cabeza.
+            style={{ objectPosition: "center 12%" }}
+          />
         ) : (
           <video
             ref={video}
@@ -107,13 +132,12 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
             // reproducción — solo con el play() del JS, en iPhone el video ni
             // siquiera empezaba a bajar y el fondo quedaba vacío un buen rato.
             autoPlay
-            poster="/videos/hero-coffee-poster.jpg"
             preload="auto"
             aria-hidden="true"
             tabIndex={-1}
             className="hero-media"
           >
-            <source src="/videos/hero-coffee.mp4" type="video/mp4" />
+            <source src={VIDEO_FONDO ?? ""} type="video/mp4" />
           </video>
         )}
 

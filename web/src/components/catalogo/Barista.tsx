@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useRevelado } from "@/hooks/useRevelar";
 import { MARCA } from "@/lib/marca";
-import { MarcaGrano } from "./TeselaFoto";
 
 /**
  * Presentación de quien vende.
@@ -35,17 +35,17 @@ export default function Barista() {
             alignItems: "center",
           }}
         >
-          {/*
-            Acá va el retrato de Daniel. Va vacío a propósito.
-
-            Las fotos que venían en el repo (metodos.jpg, image.webp) son de La
-            Meca —una lleva su logo estampado en la esquina— y esta sección
-            dice "quién está detrás": poner ahí la barra de otro negocio es
-            justo lo contrario de lo que la sección promete. Mejor una tesela
-            en limpio hasta que llegue una foto suya.
-          */}
+          {/* Retrato de Daniel. Va él mirando a cámara y no una foto de
+              ambiente: la sección se llama "quién está detrás", así que la
+              cara es el contenido. */}
           <div className="tesela revelar" style={{ aspectRatio: "4/5", maxHeight: 620 }}>
-            <MarcaGrano />
+            <Image
+              src="/img5.jpg"
+              alt="Daniel Buitrón en la barra, junto a su máquina de espresso"
+              fill
+              sizes="(max-width: 900px) 100vw, 45vw"
+              style={{ objectFit: "cover", objectPosition: "center 22%" }}
+            />
           </div>
 
           <div>

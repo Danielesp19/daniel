@@ -8,6 +8,7 @@ import Cabecera from "@/components/catalogo/Cabecera";
 import Hero from "@/components/catalogo/Hero";
 import Barista from "@/components/catalogo/Barista";
 import Catalogo from "@/components/catalogo/Catalogo";
+import FranjaFoto from "@/components/catalogo/FranjaFoto";
 import PieSitio from "@/components/catalogo/PieSitio";
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export default async function Inicio() {
         <Hero hero={hero} />
         <Barista />
         <Catalogo categorias={categorias} />
+        <FranjaFoto />
         <PieSitio />
       </main>
 
