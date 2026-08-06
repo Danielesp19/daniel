@@ -5,14 +5,16 @@ import type { Categoria, Producto } from "@/lib/catalogo";
 import { useRevelado } from "@/hooks/useRevelar";
 import BarraCategorias from "./BarraCategorias";
 import TarjetaProducto from "./TarjetaProducto";
+import Carrusel from "./Carrusel";
 import VitrinaVertical from "./VitrinaVertical";
 import VitrinaHorizontal from "./VitrinaHorizontal";
 import FichaProducto from "./FichaProducto";
 
 /**
  * El catálogo completo. Cada categoría se dibuja según su `modo_vitrina`,
- * que se configura desde el panel:
+ * que se configura desde el panel o por WhatsApp:
  *   grid       → grilla de tarjetas (el modo normal)
+ *   carrusel   → una fila que se corre de lado (para secciones largas)
  *   vertical   → filas grandes alternadas, una por producto
  *   horizontal → una ficha a la vez, se pasa deslizando
  *
@@ -48,6 +50,16 @@ export default function Catalogo({ categorias }: { categorias: Categoria[] }) {
           // por una categoría, la que quede sola siempre arranca en papel.
           const enBanda = i % 2 === 1;
 
+          if (categoria.modo_vitrina === "carrusel") {
+            return (
+              <Carrusel
+                key={categoria.id}
+                categoria={categoria}
+                enBanda={enBanda}
+                onAbrir={setAbierto}
+              />
+            );
+          }
           if (categoria.modo_vitrina === "vertical") {
             return (
               <VitrinaVertical

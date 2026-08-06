@@ -52,7 +52,8 @@ class CategoriaResource extends Resource
                 ->label('Cómo se muestra')
                 ->options([
                     'grid' => 'Grilla de tarjetas (normal)',
-                    'vertical' => 'Vitrina vertical — filas alternadas sobre foto de fondo',
+                    'carrusel' => 'Carrusel — una fila que se corre de lado',
+                    'vertical' => 'Vitrina vertical — filas grandes alternadas',
                     'horizontal' => 'Vitrina de a uno — se pasa deslizando (para videos)',
                 ])
                 ->default('grid')

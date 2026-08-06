@@ -202,7 +202,7 @@ export default function Cabecera() {
                 display: "grid",
                 placeItems: "center",
                 border: `1px solid ${solida ? "var(--linea)" : "rgba(255,255,255,0.5)"}`,
-                borderRadius: "var(--radio-sm)",
+                borderRadius: "var(--radio-pildora)",
                 background: "transparent",
                 color,
                 cursor: "pointer",

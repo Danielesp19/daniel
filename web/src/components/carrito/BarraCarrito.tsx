@@ -158,7 +158,7 @@ export default function BarraCarrito() {
               maxHeight: "90dvh",
               overflowY: "auto",
               background: "var(--color-papel)",
-              borderRadius: "var(--radio-lg) var(--radio-lg) 0 0",
+              borderRadius: "var(--radio-xl) var(--radio-xl) 0 0",
               animation: "entrar .28s cubic-bezier(0.2,0.7,0.2,1) both",
             }}
           >
@@ -243,8 +243,8 @@ export default function BarraCarrito() {
                           background: "var(--color-papel)",
                           color: "var(--color-tinta)",
                           border: "1px solid var(--linea)",
-                          borderRadius: "var(--radio-sm)",
-                          padding: "9px 12px",
+                          borderRadius: "var(--radio-pildora)",
+                          padding: "9px 14px",
                           fontFamily: "inherit",
                           fontSize: 13,
                         }}
@@ -264,7 +264,7 @@ export default function BarraCarrito() {
                         display: "flex",
                         alignItems: "center",
                         border: "1px solid var(--linea)",
-                        borderRadius: "var(--radio-sm)",
+                        borderRadius: "var(--radio-pildora)",
                       }}
                     >
                       <BotonCantidad

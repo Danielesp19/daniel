@@ -182,15 +182,16 @@ class Herramientas
             [
                 'name' => 'crear_categoria',
                 'description' => 'Crea una sección nueva del catálogo. '
-                    .'modo_vitrina decide cómo se ve: "grid" es la grilla normal, "vertical" es la vitrina '
-                    .'grande con foto de fondo (para lo más especial) y "horizontal" muestra uno a la vez '
-                    .'para pasarlo deslizando (buena para videos).',
+                    .'modo_vitrina decide cómo se ve: "grid" es la grilla normal, "carrusel" es una fila que se '
+                    .'corre de lado (buena cuando hay muchos productos), "vertical" son filas grandes '
+                    .'alternadas (para lo más especial) y "horizontal" muestra uno a la vez para pasarlo '
+                    .'deslizando (buena para videos).',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
                         'nombre' => ['type' => 'string'],
                         'descripcion' => ['type' => 'string', 'description' => 'Se muestra bajo el título de la sección.'],
-                        'modo_vitrina' => ['type' => 'string', 'enum' => ['grid', 'vertical', 'horizontal']],
+                        'modo_vitrina' => ['type' => 'string', 'enum' => ['grid', 'carrusel', 'vertical', 'horizontal']],
                         'orden' => ['type' => 'integer', 'description' => 'Posición en la página; 0 va primero.'],
                     ],
                     'required' => ['nombre'],
@@ -206,7 +207,7 @@ class Herramientas
                         'categoria_id' => ['type' => 'integer'],
                         'nombre' => ['type' => 'string'],
                         'descripcion' => ['type' => 'string'],
-                        'modo_vitrina' => ['type' => 'string', 'enum' => ['grid', 'vertical', 'horizontal']],
+                        'modo_vitrina' => ['type' => 'string', 'enum' => ['grid', 'carrusel', 'vertical', 'horizontal']],
                         'orden' => ['type' => 'integer'],
                         'activa' => ['type' => 'boolean'],
                     ],

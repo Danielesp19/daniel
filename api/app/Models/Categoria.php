@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 class Categoria extends Model
 {
     /** Cómo se dibuja la categoría en el catálogo web. Ver la migración. */
-    public const VITRINAS = ['grid', 'vertical', 'horizontal'];
+    public const VITRINAS = ['grid', 'carrusel', 'vertical', 'horizontal'];
 
     protected $table = 'categorias';
 

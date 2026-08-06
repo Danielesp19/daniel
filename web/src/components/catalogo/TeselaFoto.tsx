@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import type { Producto } from "@/lib/catalogo";
 
@@ -12,12 +15,6 @@ import type { Producto } from "@/lib/catalogo";
  * Van con `alt` vacío y `aria-hidden`: para un lector de pantalla no son la
  * foto de ese café, porque no lo son. Cuando llega la real, pasa a tener el
  * nombre del producto como texto alternativo.
- *
- * En cuanto un producto recibe su foto por WhatsApp, esa manda y el relleno
- * desaparece solo para ese producto. No hay que tocar nada acá.
- *
- * img3 queda fuera a propósito: tiene una bolsa de La Meca en el centro del
- * encuadre y no puede ilustrar un café de Daniel.
  */
 const RELLENO = [
   // El encuadre de esta recorta la parte de abajo a propósito: ahí hay una
@@ -35,7 +32,13 @@ export function fotoDeRelleno(id: number): (typeof RELLENO)[number] {
 }
 
 /**
- * El marco de foto de un producto: fondo pergamino y la imagen encajada.
+ * El marco de foto de un producto: fondo pergamino y la imagen —o el video—
+ * encajados dentro.
+ *
+ * Cuando el producto tiene video manda el video sobre la foto, que pasa a ser
+ * el póster. Se reproduce en bucle y sin sonido, pero SOLO mientras la tesela
+ * está en pantalla: cuatro videos corriendo a la vez en un carrusel que ya se
+ * salió de cuadro es batería quemada sin que nadie los vea.
  */
 export default function TeselaFoto({
   producto,
@@ -48,25 +51,57 @@ export default function TeselaFoto({
   sizes?: string;
   prioridad?: boolean;
 }) {
+  const video = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const v = video.current;
+    if (!v) return;
+
+    const observador = new IntersectionObserver(
+      ([entrada]) => {
+        if (entrada.isIntersecting) v.play().catch(() => {});
+        else v.pause();
+      },
+      { threshold: 0.25 },
+    );
+    observador.observe(v);
+    return () => observador.disconnect();
+  }, []);
+
   const relleno = producto.imagen_url ? null : fotoDeRelleno(producto.id);
 
   return (
     <div className="tesela" style={{ aspectRatio: proporcion, width: "100%" }}>
-      <Image
-        src={producto.imagen_url ?? relleno!.src}
-        alt={relleno ? "" : producto.nombre}
-        aria-hidden={relleno ? true : undefined}
-        fill
-        sizes={sizes}
-        priority={prioridad}
-        draggable={false}
-        style={{
-          objectFit: "cover",
-          objectPosition: relleno?.posicion,
-          // Agotado apagado: se entiende sin leer el sello.
-          filter: producto.agotado ? "saturate(0.15) opacity(0.5)" : undefined,
-        }}
-      />
+      {producto.video_url ? (
+        <video
+          ref={video}
+          src={producto.video_url}
+          poster={producto.video_poster_url ?? producto.imagen_url ?? undefined}
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          draggable={false}
+          aria-label={producto.nombre}
+          style={{ display: "block" }}
+        />
+      ) : (
+        <Image
+          src={producto.imagen_url ?? relleno!.src}
+          alt={relleno ? "" : producto.nombre}
+          aria-hidden={relleno ? true : undefined}
+          fill
+          sizes={sizes}
+          priority={prioridad}
+          draggable={false}
+          style={{
+            objectFit: "cover",
+            objectPosition: relleno?.posicion,
+            // Agotado apagado: se entiende sin leer el sello.
+            filter: producto.agotado ? "saturate(0.15) opacity(0.5)" : undefined,
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -83,6 +118,27 @@ export function MarcaGrano() {
           <ellipse cx="50" cy="50" rx="27" ry="40" transform="rotate(-32 50 50)" />
           <path d="M36 24 Q52 50 64 76" />
         </g>
+      </svg>
+    </span>
+  );
+}
+
+/** Señal de que la tesela lleva video, para pintarla sobre la foto. */
+export function SelloVideo() {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: "grid",
+        placeItems: "center",
+        width: 26,
+        height: 26,
+        borderRadius: 999,
+        background: "rgba(251,250,246,0.92)",
+      }}
+    >
+      <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+        <path d="M2 1.2 L10.4 6 L2 10.8 Z" />
       </svg>
     </span>
   );

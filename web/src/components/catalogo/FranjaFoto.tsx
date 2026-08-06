@@ -22,6 +22,7 @@ export default function FranjaFoto() {
       style={{
         position: "relative",
         minHeight: "clamp(340px, 46vw, 520px)",
+        borderRadius: "var(--radio-xl)",
         display: "grid",
         placeItems: "center",
         overflow: "hidden",

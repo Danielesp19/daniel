@@ -60,7 +60,7 @@ export default function FichaProducto({
           maxHeight: "94dvh",
           overflowY: "auto",
           background: "var(--color-papel)",
-          borderRadius: "var(--radio-lg)",
+          borderRadius: "var(--radio-xl)",
           animation: "entrar .28s cubic-bezier(0.2,0.7,0.2,1) both",
         }}
       >

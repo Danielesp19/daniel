@@ -43,9 +43,15 @@
   --linea: #DDD6C6;
   --linea-tenue: #EAE4D6;
 
-  --radio-sm: 3px;
-  --radio-md: 6px;
-  --radio-lg: 12px;
+  /* Radios generosos. La versión anterior copiaba las esquinas casi rectas de
+     normcore y se veía dura: con el pergamino y la monoespaciada ya hay
+     bastante rigor, así que la forma es donde el sitio se permite ser amable.
+     Los botones van en píldora, que es lo que más suaviza sin tocar nada más. */
+  --radio-sm: 8px;
+  --radio-md: 16px;
+  --radio-lg: 24px;
+  --radio-xl: 32px;
+  --radio-pildora: 999px;
 
   /* Alto de la cabecera fija. Lo usan el scroll-padding y los pegajosos: si
      cambia, cambia en un solo sitio. */
@@ -103,8 +109,8 @@ body {
 
 :focus-visible {
   outline: 2px solid var(--color-cereza);
-  outline-offset: 2px;
-  border-radius: var(--radio-sm);
+  outline-offset: 3px;
+  border-radius: var(--radio-md);
 }
 
 /* ─── Piezas tipográficas ─────────────────────────────────────────────────── */
@@ -157,9 +163,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 44px;
-  padding-inline: 22px;
-  border-radius: var(--radio-sm);
+  height: 46px;
+  padding-inline: 26px;
+  border-radius: var(--radio-pildora);
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 500;
@@ -291,7 +297,7 @@ body {
   position: relative;
   overflow: hidden;
   background: var(--color-pergamino);
-  border-radius: var(--radio-md);
+  border-radius: var(--radio-lg);
 }
 .tesela img,
 .tesela video {
@@ -306,9 +312,9 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 10px 10px 14px;
+  padding: 10px 10px 16px;
   border: 1px solid var(--linea-tenue);
-  border-radius: var(--radio-lg);
+  border-radius: var(--radio-xl);
   background: var(--color-papel);
   transition:
     border-color var(--medio) ease,

@@ -141,15 +141,29 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
           </video>
         )}
 
-        {/* Un solo velo, suave y parejo. El texto va centrado, así que no hace
-            falta el degradado lateral de la versión anterior. */}
+        {/* Dos velos superpuestos.
+            El primero es un degradado vertical: carga el peso arriba —donde va
+            la cabecera en blanco— y abajo, donde el hero se encuentra con la
+            franja de datos.
+            El segundo es un viñeteado radial que oscurece las esquinas y deja
+            el centro un punto más claro, así la foto no se apaga entera y el
+            titular queda sobre la parte más limpia del encuadre. */}
         <div
           aria-hidden="true"
           style={{
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(180deg, rgba(23,21,15,0.45) 0%, rgba(23,21,15,0.25) 45%, rgba(23,21,15,0.55) 100%)",
+              "linear-gradient(180deg, rgba(23,21,15,0.72) 0%, rgba(23,21,15,0.55) 45%, rgba(23,21,15,0.82) 100%)",
+          }}
+        />
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(120% 90% at 50% 45%, transparent 25%, rgba(23,21,15,0.5) 100%)",
           }}
         />
 

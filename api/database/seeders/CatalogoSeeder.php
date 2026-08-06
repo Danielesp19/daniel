@@ -37,7 +37,7 @@ class CatalogoSeeder extends Seeder
         $grano = Categoria::create([
             'nombre' => 'Café en grano',
             'descripcion' => 'Lotes con fecha de tueste reciente. Se muele al momento y para el método que uses.',
-            'modo_vitrina' => 'grid',
+            'modo_vitrina' => 'carrusel',
             'orden' => 1,
         ]);
 
@@ -55,11 +55,18 @@ class CatalogoSeeder extends Seeder
             'orden' => 3,
         ]);
 
+        $artefactos = Categoria::create([
+            'nombre' => 'Artefactos',
+            'descripcion' => 'Lo que uso y lo que recomiendo para preparar en casa. Equipo probado en barra, no catálogo de importador.',
+            'modo_vitrina' => 'carrusel',
+            'orden' => 4,
+        ]);
+
         $servicios = Categoria::create([
             'nombre' => 'Servicios',
             'descripcion' => 'Asesoría, formación y barra para eventos. Se agenda por WhatsApp.',
             'modo_vitrina' => 'grid',
-            'orden' => 4,
+            'orden' => 5,
         ]);
 
         $this->sembrar($grano, [
@@ -141,6 +148,38 @@ class CatalogoSeeder extends Seeder
             [
                 'nombre' => 'Prensa francesa', 'precio_cop' => 0, 'gramos' => 0, 'controla_stock' => false,
                 'descripcion' => 'Inmersión total con filtro metálico. Deja pasar los aceites: más cuerpo, menos claridad. La más fácil de hacer bien en casa.',
+            ],
+        ]);
+
+        // Artefactos: equipo, no café. No tienen ficha de origen ni tueste,
+        // así que la tarjeta se dibuja sin regla y sin puntaje — es el caso que
+        // obliga a que esos bloques sean opcionales y no decorativos.
+        $this->sembrar($artefactos, [
+            [
+                'nombre' => 'Molino manual C40', 'precio_cop' => 890000, 'gramos' => 0, 'stock' => 4,
+                'descripcion' => 'Fresas cónicas de acero y clics marcados: la misma molienda hoy y en seis meses. Es el que llevo a competencia.',
+                'destacado' => true,
+            ],
+            [
+                'nombre' => 'Prensa de espresso portátil', 'precio_cop' => 420000, 'gramos' => 0, 'stock' => 6,
+                'descripcion' => 'Espresso de verdad sin conectar nada: se presiona a mano y sostiene nueve bares. La que uso cuando viajo.',
+            ],
+            [
+                'nombre' => 'Kit V60 completo', 'precio_cop' => 210000, 'gramos' => 0, 'stock' => 9,
+                'descripcion' => 'Cono de vidrio, jarra, filtros y la receta escrita. Todo lo que hace falta para el primer filtrado en casa.',
+                'destacado' => true,
+            ],
+            [
+                'nombre' => 'Báscula con cronómetro', 'precio_cop' => 175000, 'gramos' => 0, 'stock' => 7,
+                'descripcion' => 'Décimas de gramo y tiempo en la misma pantalla. Sin báscula no hay receta que se pueda repetir.',
+            ],
+            [
+                'nombre' => 'Jarra de leche 600 ml', 'precio_cop' => 95000, 'gramos' => 0, 'stock' => 12,
+                'descripcion' => 'Pico afilado para figuras finas. Es la medida con la que enseño arte latte y con la que compito.',
+            ],
+            [
+                'nombre' => 'Prensa francesa 800 ml', 'precio_cop' => 130000, 'gramos' => 0, 'stock' => 0,
+                'descripcion' => 'Filtro metálico de malla doble. La más fácil de hacer bien en casa y la más difícil de arruinar.',
             ],
         ]);
 

@@ -5,7 +5,7 @@ import { pesos, gramos } from "@/lib/formato";
 import { useCarrito } from "@/components/carrito/CarritoProvider";
 import { Notas, SelloEstado } from "./FichaTecnica";
 import ReglaTueste from "./ReglaTueste";
-import TeselaFoto from "./TeselaFoto";
+import TeselaFoto, { SelloVideo } from "./TeselaFoto";
 
 /**
  * Tarjeta del catálogo: foto, nombre, notas, regla de tueste y precio.
@@ -47,8 +47,18 @@ export default function TarjetaProducto({
       >
         <TeselaFoto producto={producto} />
 
-        <span style={{ position: "absolute", top: 9, left: 9 }}>
+        <span
+          style={{
+            position: "absolute",
+            top: 9,
+            left: 9,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
           <SelloEstado producto={producto} />
+          {producto.video_url && <SelloVideo />}
         </span>
 
         {/* El puntaje va sobre la foto, abajo a la derecha: es la credencial
@@ -61,7 +71,7 @@ export default function TarjetaProducto({
               right: 9,
               bottom: 9,
               padding: "3px 7px",
-              borderRadius: "var(--radio-sm)",
+              borderRadius: "var(--radio-pildora)",
               background: "rgba(251,250,246,0.92)",
               fontSize: 11,
               fontWeight: 500,
@@ -77,10 +87,31 @@ export default function TarjetaProducto({
           {producto.nombre}
         </h3>
 
-        {producto.notas.length > 0 && (
+        {/* Las notas de cata son de los cafés. Un molino o una báscula no
+            tienen, y sin nada bajo el nombre la tarjeta queda con un hueco:
+            ahí va la primera línea de su descripción, recortada a dos
+            renglones para que todas midan parecido. */}
+        {producto.notas.length > 0 ? (
           <div style={{ marginTop: 5 }}>
             <Notas notas={producto.notas.slice(0, 3)} />
           </div>
+        ) : (
+          producto.descripcion && (
+            <p
+              style={{
+                margin: "6px 0 0",
+                fontSize: 13,
+                lineHeight: 1.5,
+                color: "var(--color-grafito)",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {producto.descripcion}
+            </p>
+          )
         )}
 
         {/* `auto` empuja todo lo de abajo al fondo: en una fila de la grilla
@@ -120,7 +151,7 @@ export default function TarjetaProducto({
               style={{
                 padding: "7px 12px",
                 border: "1px solid var(--linea)",
-                borderRadius: "var(--radio-sm)",
+                borderRadius: "var(--radio-pildora)",
                 background: "transparent",
                 color: producto.agotado ? "var(--color-grafito)" : "var(--color-tinta)",
                 fontFamily: "var(--font-mono)",

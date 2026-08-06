@@ -99,7 +99,7 @@ export function SelloEstado({ producto }: { producto: Producto }) {
       style={{
         display: "inline-block",
         padding: "5px 10px",
-        borderRadius: "var(--radio-sm)",
+        borderRadius: "var(--radio-pildora)",
         background: agotado ? "var(--color-cereza)" : "var(--color-tinta)",
         color: "#FFF",
         fontSize: 9,
