@@ -5,6 +5,8 @@ import { pesos, altitud, gramos } from "@/lib/formato";
 import { useRevelado } from "@/hooks/useRevelar";
 import { useCarrito } from "@/components/carrito/CarritoProvider";
 import { Notas, SelloEstado } from "./FichaTecnica";
+import ReglaTueste from "./ReglaTueste";
+import { CabezaSeccion } from "./Catalogo";
 import TeselaFoto from "./TeselaFoto";
 
 /**
@@ -15,9 +17,11 @@ import TeselaFoto from "./TeselaFoto";
  */
 export default function VitrinaVertical({
   categoria,
+  enBanda,
   onAbrir,
 }: {
   categoria: Categoria;
+  enBanda: boolean;
   onAbrir: (p: Producto) => void;
 }) {
   const { ref, props } = useRevelado<HTMLDivElement>();
@@ -25,37 +29,14 @@ export default function VitrinaVertical({
   if (!categoria.productos.length) return null;
 
   return (
-    <section
-      id={`cat-${categoria.slug}`}
-      className="seccion"
-      style={{ borderTop: "1px solid var(--linea-tenue)" }}
-    >
+    <section id={`cat-${categoria.slug}`} className={`seccion${enBanda ? " banda" : ""}`}>
       <div className="contenedor">
-        <div ref={ref} {...props} style={{ textAlign: "center", marginBottom: "clamp(40px, 6vw, 72px)" }}>
-          <span className="epigrafe revelar">
-            {String(categoria.productos.length).padStart(2, "0")} lotes
-          </span>
-          <h2
-            className="titular revelar"
-            style={{ fontSize: "clamp(28px, 3.6vw, 44px)", margin: "12px 0 0", transitionDelay: "60ms" }}
-          >
-            {categoria.nombre}
-          </h2>
-          {categoria.descripcion && (
-            <p
-              className="revelar"
-              style={{
-                margin: "14px auto 0",
-                maxWidth: 560,
-                fontSize: 15,
-                lineHeight: 1.7,
-                color: "var(--color-grafito)",
-                transitionDelay: "120ms",
-              }}
-            >
-              {categoria.descripcion}
-            </p>
-          )}
+        <div ref={ref} {...props}>
+          <CabezaSeccion
+            epigrafe={`${String(categoria.productos.length).padStart(2, "0")} lotes`}
+            titulo={categoria.nombre}
+            descripcion={categoria.descripcion}
+          />
         </div>
 
         <div style={{ display: "grid", gap: "clamp(48px, 7vw, 104px)" }}>
@@ -92,7 +73,6 @@ function Fila({
     <article
       ref={ref}
       {...props}
-      className="tarjeta"
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
@@ -180,6 +160,10 @@ function Fila({
             ))}
           </dl>
         )}
+
+        <div style={{ marginTop: 22, maxWidth: 320 }}>
+          <ReglaTueste producto={producto} />
+        </div>
 
         <div
           style={{

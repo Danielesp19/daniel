@@ -3,6 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import { enlaceWhatsApp, MARCA } from "@/lib/marca";
 
+/**
+ * Lo que va pasando en la cinta de arriba. Son datos, no eslóganes: de dónde
+ * viene el café, cómo se tuesta y cómo se pide. Si algún día deja de ser
+ * cierto —por ejemplo, que se tuesta bajo pedido— hay que sacarlo de acá.
+ */
+const ANUNCIOS = [
+  "Tueste bajo pedido",
+  "Huila · Cauca · Quindío",
+  "Envíos a todo el país",
+  "Pedidos por WhatsApp",
+  "Pitalito, Huila",
+] as const;
+
 const NAVEGACION = [
   ["Catálogo", "#catalogo"],
   ["Sobre Daniel", "#barista"],
@@ -60,18 +73,46 @@ export default function Cabecera() {
 
   return (
     <>
-      {/* ── Barra de anuncio ── */}
+      {/* ── Cinta de anuncio ──
+          Los orígenes van pasando en bucle. Es lo único que se mueve solo en
+          toda la página y dice algo real: de dónde viene el café. Se detiene
+          al pasar el mouse por encima para poder leerla. */}
       <div
+        className="cinta-marco"
         style={{
           background: "var(--color-tinta)",
           color: "#FFF",
-          textAlign: "center",
-          padding: "9px 16px",
+          padding: "9px 0",
+          overflow: "hidden",
         }}
       >
-        <span className="epigrafe" style={{ color: "rgba(255,255,255,0.82)", fontSize: 10 }}>
-          Tueste bajo pedido · Envíos a todo el país · {MARCA.ciudad}
-        </span>
+        <div className="cinta">
+          {/* Dos copias del mismo contenido: la animación desplaza media
+              vuelta, así que cuando la primera copia sale, la segunda ya está
+              exactamente donde estaba la primera y el reinicio no se ve. */}
+          {[0, 1].map((copia) => (
+            <span
+              key={copia}
+              aria-hidden={copia === 1}
+              style={{ display: "flex", flexShrink: 0 }}
+            >
+              {ANUNCIOS.map((texto) => (
+                <span
+                  key={texto}
+                  className="epigrafe"
+                  style={{
+                    color: "rgba(255,255,255,0.78)",
+                    fontSize: 10,
+                    padding: "0 26px",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {texto}
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* ── Navegación ── */}
@@ -121,15 +162,8 @@ export default function Cabecera() {
               <a
                 key={ancla}
                 href={ancla}
-                style={{
-                  color,
-                  textDecoration: "none",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  transition: "color .3s ease, opacity .2s ease",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.6")}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                className="nav-enlace"
+                style={{ color, fontSize: 13, fontWeight: 500 }}
               >
                 {texto}
               </a>
@@ -191,7 +225,7 @@ export default function Cabecera() {
             inset: 0,
             zIndex: 55,
             background: "var(--color-papel)",
-            paddingTop: 90,
+            paddingTop: 96,
             animation: "aparecer .18s ease both",
           }}
           onClick={() => setMenu(false)}

@@ -25,7 +25,7 @@ export default function FranjaFoto() {
         display: "grid",
         placeItems: "center",
         overflow: "hidden",
-        background: "var(--color-hueso-2)",
+        background: "var(--color-pergamino2)",
       }}
     >
       <Image
@@ -40,7 +40,7 @@ export default function FranjaFoto() {
           texto. Sin esto el titular en blanco se pierde. */}
       <div
         aria-hidden="true"
-        style={{ position: "absolute", inset: 0, background: "rgba(23,22,20,0.5)" }}
+        style={{ position: "absolute", inset: 0, background: "rgba(23,21,15,0.5)" }}
       />
 
       <div

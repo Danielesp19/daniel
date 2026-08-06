@@ -106,7 +106,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
           height: "min(84svh, 760px)",
           minHeight: 480,
           overflow: "hidden",
-          background: "var(--color-hueso-2)",
+          background: "var(--color-pergamino2)",
         }}
       >
         {imagenFondo ? (
@@ -149,7 +149,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(180deg, rgba(23,22,20,0.45) 0%, rgba(23,22,20,0.25) 45%, rgba(23,22,20,0.55) 100%)",
+              "linear-gradient(180deg, rgba(23,21,15,0.45) 0%, rgba(23,21,15,0.25) 45%, rgba(23,21,15,0.55) 100%)",
           }}
         />
 

@@ -4,15 +4,15 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import type { Categoria, Producto } from "@/lib/catalogo";
 import { useRevelado } from "@/hooks/useRevelar";
-import { MarcaGrano } from "./TeselaFoto";
+import { fotoDeRelleno } from "./TeselaFoto";
+import { CabezaSeccion } from "./Catalogo";
 
 /**
  * Vitrina de a uno: se ve un solo producto a la vez y se pasa deslizando o con
  * las flechas. Pensada para los métodos de preparación, donde cada ficha lleva
  * video y ponerlos todos en una grilla sería reproducir cinco a la vez.
  *
- * Es la única sección sobre hueso en vez de papel. Sirve de respiro a mitad de
- * página, igual que la banda gris de "Our looks" en normcore.
+ * Alterna papel y pergamino con las demás secciones del catálogo, como todas.
  */
 
 // Recorrido horizontal mínimo (px) para contar como deslizada, y cuánto más
@@ -21,7 +21,13 @@ import { MarcaGrano } from "./TeselaFoto";
 const MIN_PX = 45;
 const PROPORCION = 1.4;
 
-export default function VitrinaHorizontal({ categoria }: { categoria: Categoria }) {
+export default function VitrinaHorizontal({
+  categoria,
+  enBanda,
+}: {
+  categoria: Categoria;
+  enBanda: boolean;
+}) {
   const { ref, props } = useRevelado<HTMLDivElement>();
   const [indice, setIndice] = useState(0);
 
@@ -33,35 +39,10 @@ export default function VitrinaHorizontal({ categoria }: { categoria: Categoria 
   const haySiguiente = indice < total - 1;
 
   return (
-    <section
-      id={`cat-${categoria.slug}`}
-      className="seccion"
-      style={{ background: "var(--color-hueso)" }}
-    >
+    <section id={`cat-${categoria.slug}`} className={`seccion${enBanda ? " banda" : ""}`}>
       <div className="contenedor" style={{ maxWidth: 1000 }}>
-        <div ref={ref} {...props} style={{ textAlign: "center" }}>
-          <span className="epigrafe revelar">En la barra</span>
-          <h2
-            className="titular revelar"
-            style={{ fontSize: "clamp(28px, 3.6vw, 44px)", margin: "12px 0 0", transitionDelay: "60ms" }}
-          >
-            {categoria.nombre}
-          </h2>
-          {categoria.descripcion && (
-            <p
-              className="revelar"
-              style={{
-                margin: "14px auto 0",
-                maxWidth: 480,
-                fontSize: 15,
-                lineHeight: 1.7,
-                color: "var(--color-grafito)",
-                transitionDelay: "120ms",
-              }}
-            >
-              {categoria.descripcion}
-            </p>
-          )}
+        <div ref={ref} {...props}>
+          <CabezaSeccion epigrafe="En la barra" titulo={categoria.nombre} descripcion={categoria.descripcion} />
         </div>
 
         <Diapositiva
@@ -90,7 +71,7 @@ export default function VitrinaHorizontal({ categoria }: { categoria: Categoria 
                   padding: 0,
                   border: "none",
                   borderRadius: 999,
-                  background: i === indice ? "var(--color-tinta)" : "#CFCAC1",
+                  background: i === indice ? "var(--color-cereza)" : "#CFC6B2",
                   cursor: "pointer",
                   transition: "width .25s ease, background-color .25s ease",
                 }}
@@ -170,7 +151,7 @@ function Diapositiva({
             width: "min(100%, 420px)",
             margin: "0 auto",
             aspectRatio: "1/1",
-            background: "var(--color-papel)",
+            background: "var(--color-pergamino)",
           }}
         >
           {producto.video_url ? (
@@ -184,17 +165,19 @@ function Diapositiva({
               draggable={false}
               style={{ display: "block" }}
             />
-          ) : producto.imagen_url ? (
+          ) : (
             <Image
-              src={producto.imagen_url}
-              alt={producto.nombre}
+              src={producto.imagen_url ?? fotoDeRelleno(producto.id).src}
+              alt={producto.imagen_url ? producto.nombre : ""}
+              aria-hidden={producto.imagen_url ? undefined : true}
               fill
               sizes="420px"
               draggable={false}
-              style={{ objectFit: "cover" }}
+              style={{
+                objectFit: "cover",
+                objectPosition: producto.imagen_url ? undefined : fotoDeRelleno(producto.id).posicion,
+              }}
             />
-          ) : (
-            <MarcaGrano />
           )}
         </div>
 

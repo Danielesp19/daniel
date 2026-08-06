@@ -1,43 +1,48 @@
 @import "tailwindcss";
 
-/* ─── Sistema de diseño: papel ──────────────────────────────────────────────
-   Calcado del lenguaje de cocinare.com y normcorewares.com, que son las dos
-   referencias que pidió Daniel. Lo que define ese lenguaje, y lo que hay que
-   respetar aunque incomode:
+/* ─── Sistema de diseño: pergamino ──────────────────────────────────────────
+   Sigue siendo el lenguaje claro de cocinare y normcore —fondo claro, sans,
+   esquinas casi rectas, la foto mandando— pero con lo que le faltaba: capas y
+   datos. Antes era blanco sobre blanco y por eso se veía vacío.
 
-   · Fondo blanco. El color lo pone la foto del producto, nunca el fondo.
-   · Una sola familia sans (allí Inter y Open Sans; acá Inter). Sin serif de
-     display, sin segunda tipografía "con personalidad".
-   · Dos registros de texto y nada más: titulares en negrita con el tracking
-     cerrado, y epígrafes diminutos en caja alta muy espaciados. El resto es
-     texto normal de 14-16px.
-   · Esquinas casi rectas y bordes de un pelo. Nada de píldoras ni de sombras.
-   · El aire entre secciones es el que separa; no hacen falta cajas ni fondos
-     alternos en cada bloque.
-   · Un único bloque oscuro, al final, como cierre. Las dos referencias lo
-     hacen y es lo que le da el punto final a la página.
+   De dónde sale cada decisión:
 
-   Regla que sostiene el conjunto: si algo pide atención por color o por forma
-   en vez de por jerarquía, está mal.
+   · PAPEL y PERGAMINO son dos superficies, no una. El pergamino es la capa
+     que envuelve el grano seco antes de trillarlo; acá es el fondo de las
+     bandas y de cada tesela de foto. Alternarlas es lo que le da fondo a la
+     página sin recurrir a otro color.
+   · CEREZA es el acento, y es uno solo: el color del fruto maduro. No es
+     terracota ni naranja de tostadora; es más oscuro y más rojo, y por eso
+     aguanta ser el único punto de color de toda la página.
+   · La MONOESPACIADA lleva todas las cifras: precios, gramos, altitudes,
+     puntajes SCA, ratios, contadores. El oficio de Daniel se mide en básculas
+     y cronómetros, así que los números son parte del contenido, no adorno.
+     Es de donde sale casi toda la textura nueva.
+   · ARCHIVO para los titulares en vez de seguir con Inter en negrita: tiene
+     más carácter en los pesos altos y sigue siendo un grotesco, así que no se
+     pelea con las referencias.
+
+   Regla que sostiene el conjunto: el color y el movimiento se gastan en un
+   solo lugar cada uno. Todo lo demás se resuelve con superficie, línea y dato.
    ------------------------------------------------------------------------- */
 @theme inline {
-  --color-papel:   #FFFFFF;  /* fondo de la página */
-  --color-hueso:   #F4F3F1;  /* bandas y teselas de foto */
-  --color-hueso-2: #EBE9E5;  /* hueso sobre hueso */
-  --color-tinta:   #171614;  /* texto principal y bloque de cierre */
-  --color-grafito: #6E6A64;  /* texto secundario */
-  --color-acento:  #A86A3C;  /* caramelo tostado: solo acciones y señales */
-  --color-alerta:  #A8342A;  /* agotado */
+  --color-papel:      #FBFAF6;  /* fondo de la página */
+  --color-pergamino:  #EEE9DE;  /* bandas y teselas de foto */
+  --color-pergamino2: #E3DCCC;  /* pergamino sobre pergamino */
+  --color-tinta:      #17150F;  /* texto principal y bloque de cierre */
+  --color-grafito:    #6E695D;  /* texto secundario */
+  --color-cereza:     #9E2B1E;  /* acento único: el fruto maduro */
+  --color-hoja:       #3E5238;  /* verde hoja, solo para datos vivos */
 
-  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-archivo), system-ui, sans-serif;
+  --font-sans:    var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono:    var(--font-mono-jet), ui-monospace, "SF Mono", monospace;
 }
 
 :root {
-  --linea: #E4E1DC;
-  --linea-tenue: #EFEDE9;
+  --linea: #DDD6C6;
+  --linea-tenue: #EAE4D6;
 
-  /* Radios: casi rectos. Las referencias no redondean casi nada y en cuanto
-     se suben, la página deja de parecerse a ellas. */
   --radio-sm: 3px;
   --radio-md: 6px;
   --radio-lg: 12px;
@@ -46,9 +51,17 @@
      cambia, cambia en un solo sitio. */
   --barra: 60px;
 
-  /* Ancho útil y respiración vertical de cada sección. */
   --ancho: 1360px;
-  --aire: clamp(72px, 9vw, 140px);
+  --aire: clamp(72px, 9vw, 132px);
+
+  /* Curvas y tiempos del sistema. Un solo juego para todo: la animación se
+     nota cuando es coherente, no cuando es variada. Los tiempos siguen el
+     rango que se siente natural — por debajo de 120ms es un salto y por
+     encima de 500ms se hace lento. */
+  --salida: cubic-bezier(0.22, 0.7, 0.2, 1);
+  --rapido: 180ms;
+  --medio: 320ms;
+  --lento: 520ms;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -57,20 +70,18 @@
    `clip` no crea un contexto de scroll, pero WebKit (iOS Safari) tiene bugs
    conocidos con `position: sticky` dentro de un ancestro con overflow clip —
    la barra de categorías re-posicionaba con retraso en cada frame y se veía
-   TEMBLAR al scrollear en iPhone. En la raíz el sticky queda anclado directo
-   al viewport y lo lleva el compositor. */
+   TEMBLAR al scrollear en iPhone. */
 html, body { overflow-x: clip; }
 
 html {
   scroll-behavior: smooth;
-  /* Que el ancla de una categoría no quede debajo de la cabecera fija. */
   scroll-padding-top: calc(var(--barra) + 52px);
 }
 
-/* "Scroll anchoring" del navegador desactivado: por defecto, si algo arriba de
-   lo que estás viendo cambia de tamaño mientras scrolleas (el video del hero
-   terminando de cargar, una foto que llega tarde), el navegador mueve el scroll
-   solo para compensar — y eso se siente como si la página peleara con el dedo. */
+/* "Scroll anchoring" desactivado: por defecto, si algo arriba de lo que estás
+   viendo cambia de tamaño mientras scrolleas (una foto que llega tarde), el
+   navegador mueve el scroll solo para compensar — y se siente como si la
+   página peleara con el dedo. */
 * { overflow-anchor: none; }
 
 body {
@@ -83,47 +94,47 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-::selection { background: rgba(168, 106, 60, 0.18); color: var(--color-tinta); }
+::selection { background: rgba(158, 43, 30, 0.15); color: var(--color-tinta); }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: var(--color-hueso); }
-::-webkit-scrollbar-thumb { background: #CFCBC4; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #B8B3AB; }
+::-webkit-scrollbar-track { background: var(--color-pergamino); }
+::-webkit-scrollbar-thumb { background: #C6BEA9; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #ADA48C; }
 
 :focus-visible {
-  outline: 2px solid var(--color-tinta);
+  outline: 2px solid var(--color-cereza);
   outline-offset: 2px;
   border-radius: var(--radio-sm);
 }
 
-/* ─── Piezas tipográficas ───────────────────────────────────────────────────
-   Son solo dos, a propósito. En las referencias todo el sitio se sostiene con
-   un titular en negrita y un epígrafe diminuto; agregar una tercera voz es lo
-   que hacía que la versión anterior se viera recargada. */
+/* ─── Piezas tipográficas ─────────────────────────────────────────────────── */
 
-/* Titular: Inter en negrita con el tracking cerrado. Cuanto más grande, más
+/* Titular: Archivo en negrita con el tracking cerrado. Cuanto más grande, más
    negativo — así se ve compacto en vez de desparramado. */
 .titular {
+  font-family: var(--font-display);
   font-weight: 700;
-  line-height: 1.06;
-  letter-spacing: -0.032em;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
 }
 
-/* Epígrafe: el rótulo diminuto en caja alta que va encima de cada sección.
-   Es el sello de normcore y lo que ordena la página sin gritar. */
+/* Epígrafe: el rótulo diminuto en caja alta que ordena la página. Va en
+   monoespaciada, que es lo que lo separa de un rótulo cualquiera. */
 .epigrafe {
+  font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
+  font-weight: 400;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-grafito);
 }
 
-/* Cifra: precios, altitudes, puntajes. Tabular para que las columnas alineen
-   aunque cambien los dígitos. */
+/* Cifra: precios, gramos, altitudes, puntajes. Tabular para que las columnas
+   alineen aunque cambien los dígitos. */
 .cifra {
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 /* ─── Contenedores ────────────────────────────────────────────────────────── */
@@ -136,9 +147,11 @@ body {
 
 .seccion { padding-block: var(--aire); }
 
-/* ─── Botones ───────────────────────────────────────────────────────────────
-   Rectangulares y de un solo trazo. El sólido es para la acción principal de
-   la página; el de contorno para todo lo demás. */
+/* Banda: la sección va sobre pergamino en vez de papel. Alternar papel y
+   pergamino es lo que separa una sección de la siguiente. */
+.banda { background: var(--color-pergamino); }
+
+/* ─── Botones ─────────────────────────────────────────────────────────────── */
 .boton {
   display: inline-flex;
   align-items: center;
@@ -147,26 +160,33 @@ body {
   height: 44px;
   padding-inline: 22px;
   border-radius: var(--radio-sm);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
-  transition: background-color .18s ease, color .18s ease, border-color .18s ease;
+  transition:
+    background-color var(--rapido) ease,
+    color var(--rapido) ease,
+    border-color var(--rapido) ease,
+    transform var(--rapido) var(--salida);
 }
+.boton:active { transform: translateY(1px); }
+
 .boton-solido {
   background: var(--color-tinta);
   color: var(--color-papel);
   border: 1px solid var(--color-tinta);
 }
-.boton-solido:hover { background: var(--color-acento); border-color: var(--color-acento); }
+.boton-solido:hover { background: var(--color-cereza); border-color: var(--color-cereza); }
 
 .boton-linea {
   background: transparent;
   color: var(--color-tinta);
   border: 1px solid var(--linea);
 }
-.boton-linea:hover { border-color: var(--color-tinta); }
+.boton-linea:hover { border-color: var(--color-tinta); background: rgba(23,21,15,0.03); }
 
 /* Sobre foto o sobre el bloque oscuro, el contorno se invierte. */
 .boton-claro {
@@ -176,7 +196,7 @@ body {
 }
 .boton-claro:hover { background: #FFF; color: var(--color-tinta); border-color: #FFF; }
 
-.boton:disabled { opacity: .45; cursor: not-allowed; }
+.boton:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 
 /* ─── Animaciones ─────────────────────────────────────────────────────────── */
 @keyframes entrar {
@@ -198,6 +218,12 @@ body {
   80%  { transform: translateY(12px); opacity: 0; }
   100% {                              opacity: 0; }
 }
+/* Cinta de orígenes: se desplaza media vuelta y se repite. El contenido va
+   duplicado en el marcado, así que el salto al reiniciar no se ve. */
+@keyframes cinta {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
 
 .hero-media {
   position: absolute;
@@ -218,27 +244,53 @@ body {
 .tiras { scrollbar-width: none; }
 .tiras::-webkit-scrollbar { display: none; }
 
-/* ─── Revelado por scroll ───────────────────────────────────────────────────
-   Un fundido corto hacia arriba y nada más. La versión anterior usaba un
-   esqueleto que brillaba mientras la sección llegaba; en fondo blanco y con
-   este lenguaje se veía como una página cargando mal, no como un efecto.
-   ------------------------------------------------------------------------- */
+/* ─── Cinta de la cabecera ────────────────────────────────────────────────── */
+.cinta {
+  display: flex;
+  width: max-content;
+  animation: cinta 42s linear infinite;
+}
+.cinta-marco:hover .cinta { animation-play-state: paused; }
+
+/* ─── Enlace de la navegación ───────────────────────────────────────────────
+   El subrayado crece desde la izquierda al pasar el mouse. Va con scaleX y no
+   con el ancho: el ancho recalcula el layout en cada frame, la escala la lleva
+   el compositor. */
+.nav-enlace {
+  position: relative;
+  text-decoration: none;
+  padding-bottom: 3px;
+}
+.nav-enlace::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--medio) var(--salida);
+}
+.nav-enlace:hover::after { transform: scaleX(1); }
+
+/* ─── Revelado por scroll ─────────────────────────────────────────────────── */
 .revelar {
   opacity: 0;
   transform: translateY(18px);
-  transition: opacity .7s ease, transform .7s cubic-bezier(0.22, 0.7, 0.2, 1);
+  transition:
+    opacity var(--lento) ease,
+    transform var(--lento) var(--salida);
 }
 [data-visible="si"].revelar,
 [data-visible="si"] .revelar { opacity: 1; transform: none; }
 
-/* ─── Tesela de foto ────────────────────────────────────────────────────────
-   El marco donde vive cada foto de producto: fondo hueso, la imagen centrada
-   y un acercamiento muy leve al pasar el mouse, como en las dos referencias.
-   ------------------------------------------------------------------------- */
+/* ─── Tesela de foto ──────────────────────────────────────────────────────── */
 .tesela {
   position: relative;
   overflow: hidden;
-  background: var(--color-hueso);
+  background: var(--color-pergamino);
   border-radius: var(--radio-md);
 }
 .tesela img,
@@ -246,18 +298,80 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform .7s cubic-bezier(0.22, 0.7, 0.2, 1);
+  transition: transform var(--lento) var(--salida);
 }
-.tarjeta:hover .tesela img,
-.tarjeta:hover .tesela video { transform: scale(1.04); }
 
-.tarjeta { display: flex; flex-direction: column; height: 100%; }
+/* ─── Tarjeta de producto ─────────────────────────────────────────────────── */
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 10px 10px 14px;
+  border: 1px solid var(--linea-tenue);
+  border-radius: var(--radio-lg);
+  background: var(--color-papel);
+  transition:
+    border-color var(--medio) ease,
+    background-color var(--medio) ease,
+    transform var(--medio) var(--salida);
+}
+.tarjeta:hover {
+  border-color: var(--linea);
+  background: #FFF;
+  transform: translateY(-3px);
+}
+.tarjeta:hover .tesela img { transform: scale(1.05); }
+
+/* El botón de agregar entra al pasar el mouse. En pantalla táctil no hay
+   hover, así que ahí se muestra siempre (ver la media query de abajo). */
+.agregar {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity var(--rapido) ease, transform var(--rapido) var(--salida);
+}
+.tarjeta:hover .agregar,
+.tarjeta:focus-within .agregar { opacity: 1; transform: none; }
+
+@media (hover: none) {
+  .agregar { opacity: 1; transform: none; }
+}
+
+/* ─── Regla de tueste ───────────────────────────────────────────────────────
+   La pieza propia del sitio. Es una regla de cinco pasos, de claro a oscuro,
+   con la marca puesta donde cae ese café. No es un adorno: sale del campo
+   `tueste` del producto, que es justo el dato que uno quiere saber y que
+   ninguna tienda muestra bien.
+
+   La marca se desliza hasta su posición cuando la pieza entra en pantalla:
+   es el único movimiento con significado de la página — dice "este café está
+   ACÁ dentro de la escala".
+   ------------------------------------------------------------------------- */
+.regla {
+  position: relative;
+  height: 3px;
+  background: linear-gradient(90deg, #E6DFCE 0%, #B79B72 45%, #6B4A2E 100%);
+  border-radius: 999px;
+}
+.regla-marca {
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  border-radius: 999px;
+  background: var(--color-cereza);
+  box-shadow: 0 0 0 2.5px var(--color-papel);
+  /* Nace a la izquierda del todo y viaja hasta su posición real. */
+  left: 0;
+  transform: translateY(-50%);
+  transition: left var(--lento) var(--salida);
+}
+[data-visible="si"] .regla-marca { left: var(--posicion); }
 
 /* ─── Cortina de entrada ────────────────────────────────────────────────────
-   Una jarra vierte sobre una taza y dibuja una rosetta. Sigue siendo puro CSS:
-   sin estado que hidratar y, si el JavaScript no llega, la cortina se va igual
-   porque la animación termina en `visibility: hidden` con `forwards`.
-   Ahora sobre papel, para que el corte hacia la página no se note.
+   Una jarra vierte sobre una taza y dibuja una rosetta. Puro CSS: sin estado
+   que hidratar y, si el JavaScript no llega, la cortina se va igual porque la
+   animación termina en `visibility: hidden` con `forwards`.
    ------------------------------------------------------------------------- */
 .intro {
   position: fixed;
@@ -273,10 +387,7 @@ body {
 }
 
 .intro-escena { width: min(58vw, 260px); aspect-ratio: 1/1; }
-
-/* La taza aparece primero; el resto ocurre encima. */
 .intro-crema { animation: introTaza .7s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
-
 .intro-jarra { transform-origin: 170px 60px; animation: introVierte 2.6s ease both; }
 
 /* El tallo se "dibuja" acortando el hueco del trazo discontinuo. Con
@@ -293,10 +404,7 @@ body {
   animation: introHoja .45s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
-.intro-chorro {
-  opacity: 0;
-  animation: introChorro 2.6s ease both;
-}
+.intro-chorro { opacity: 0; animation: introChorro 2.6s ease both; }
 
 .intro-firma {
   display: flex;
@@ -347,8 +455,15 @@ body {
      el contenido nace en opacity 0 y solo lo despierta el observer. */
   .revelar { opacity: 1; transform: none; }
 
-  /* La cortina de entrada no se muestra: es puro adorno y con el movimiento
-     anulado se quedaría congelada tapando la página. */
+  /* La regla se dibuja ya puesta en su valor, sin el viaje. */
+  .regla-marca { left: var(--posicion); }
+
+  /* La cinta se queda quieta: en bucle infinito es justo lo que molesta a
+     quien pidió menos movimiento. */
+  .cinta { animation: none; }
+
+  /* La cortina de entrada no se muestra: con el movimiento anulado se
+     quedaría congelada tapando la página. */
   .intro { display: none; }
 }
 

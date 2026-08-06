@@ -1,16 +1,36 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Archivo, Inter, JetBrains_Mono } from "next/font/google";
 import { MARCA } from "@/lib/marca";
 import "./globals.css";
 
-// Una sola familia para todo el sitio, como en las dos referencias (Inter en
-// cocinare, Open Sans en normcore). La jerarquía la hace el peso y el tracking,
-// no una segunda tipografía: en cuanto entra una display con personalidad, la
-// página deja de parecerse a ellas.
+// Tres familias, una por oficio.
+//
+// Archivo para los titulares: es un grotesco, así que no se pelea con el
+// lenguaje de las referencias, pero en los pesos altos tiene bastante más
+// carácter que Inter y aguanta tamaños grandes sin verse genérico.
+const archivo = Archivo({
+  variable: "--font-archivo",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  display: "swap",
+});
+
+// Inter para el texto corrido y la interfaz. Es la de cocinare y es la que
+// mejor se lee en párrafo largo.
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
+// Monoespaciada para TODA cifra y todo rótulo: precios, gramos, altitudes,
+// puntajes SCA, contadores. El oficio se mide en básculas y cronómetros, así
+// que los números son contenido y merecen su propia voz.
+const mono = JetBrains_Mono({
+  variable: "--font-mono-jet",
+  subsets: ["latin"],
+  weight: ["400", "500"],
   display: "swap",
 });
 
@@ -20,12 +40,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FFFFFF",
+  themeColor: "#FBFAF6",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={inter.variable}>
+    <html lang="es" className={`${archivo.variable} ${inter.variable} ${mono.variable}`}>
       <head>
         {/*
           El revelado por scroll nace en opacity 0 y lo despierta un observer.

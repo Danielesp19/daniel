@@ -30,3 +30,9 @@ Thumbs.db
 # Pesan y no se consumen desde el código: los assets que sí se usan viven en
 # web/public/.
 *.zip
+
+# Skills instaladas con `npx skills add`. El lockfile SÍ se versiona —dice qué
+# skill y qué versión se usó—; el contenido descargado no, que se reinstala
+# desde ahí. .claude/skills son enlaces simbólicos a .agents/skills.
+.agents/skills/
+.claude/

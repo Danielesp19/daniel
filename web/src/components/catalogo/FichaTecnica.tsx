@@ -52,13 +52,37 @@ export function FichaTecnica({ producto }: { producto: Producto }) {
   );
 }
 
-/** Notas de cata como texto corrido y no como etiquetas: son un aroma, no un dato. */
+/**
+ * Notas de cata. Van con un punto de color al frente, no en etiquetas
+ * enmarcadas: son un aroma, no un dato, y el punto es lo único de color en la
+ * tarjeta — el mismo rojo del fruto maduro.
+ */
 export function Notas({ notas }: { notas: string[] }) {
   if (!notas?.length) return null;
 
   return (
-    <p style={{ margin: 0, fontSize: 13, color: "var(--color-grafito)" }}>
-      {notas.join(" · ")}
+    <p
+      style={{
+        display: "flex",
+        alignItems: "baseline",
+        gap: 7,
+        margin: 0,
+        fontSize: 13,
+        color: "var(--color-grafito)",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          flex: "0 0 auto",
+          width: 5,
+          height: 5,
+          borderRadius: 999,
+          background: "var(--color-cereza)",
+          transform: "translateY(-2px)",
+        }}
+      />
+      <span>{notas.join(", ")}</span>
     </p>
   );
 }
@@ -76,7 +100,7 @@ export function SelloEstado({ producto }: { producto: Producto }) {
         display: "inline-block",
         padding: "5px 10px",
         borderRadius: "var(--radio-sm)",
-        background: agotado ? "var(--color-alerta)" : "var(--color-tinta)",
+        background: agotado ? "var(--color-cereza)" : "var(--color-tinta)",
         color: "#FFF",
         fontSize: 9,
         whiteSpace: "nowrap",

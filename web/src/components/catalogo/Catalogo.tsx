@@ -16,9 +16,10 @@ import FichaProducto from "./FichaProducto";
  *   vertical   → filas grandes alternadas, una por producto
  *   horizontal → una ficha a la vez, se pasa deslizando
  *
- * Las secciones se separan con aire y una línea de un pelo. La versión anterior
- * le ponía una foto de fondo distinta a cada una; sobre papel eso ya no hace
- * falta y es justo lo que emborronaba la página.
+ * Las secciones alternan papel y pergamino. Esa alternancia es lo que separa
+ * una sección de la siguiente: es más limpio que ponerle una foto de fondo a
+ * cada una, que fue lo que emborronó la primera versión, y más legible que
+ * dejarlas todas del mismo blanco, que fue lo que dejó vacía la segunda.
  */
 export default function Catalogo({ categorias }: { categorias: Categoria[] }) {
   const [activa, setActiva] = useState<number | null>(null);
@@ -42,14 +43,32 @@ export default function Catalogo({ categorias }: { categorias: Categoria[] }) {
           No hay nada en esta categoría por ahora.
         </p>
       ) : (
-        visibles.map((categoria) => {
+        visibles.map((categoria, i) => {
+          // La alternancia se calcula sobre lo que está a la vista: al filtrar
+          // por una categoría, la que quede sola siempre arranca en papel.
+          const enBanda = i % 2 === 1;
+
           if (categoria.modo_vitrina === "vertical") {
-            return <VitrinaVertical key={categoria.id} categoria={categoria} onAbrir={setAbierto} />;
+            return (
+              <VitrinaVertical
+                key={categoria.id}
+                categoria={categoria}
+                enBanda={enBanda}
+                onAbrir={setAbierto}
+              />
+            );
           }
           if (categoria.modo_vitrina === "horizontal") {
-            return <VitrinaHorizontal key={categoria.id} categoria={categoria} />;
+            return <VitrinaHorizontal key={categoria.id} categoria={categoria} enBanda={enBanda} />;
           }
-          return <Grilla key={categoria.id} categoria={categoria} onAbrir={setAbierto} />;
+          return (
+            <Grilla
+              key={categoria.id}
+              categoria={categoria}
+              enBanda={enBanda}
+              onAbrir={setAbierto}
+            />
+          );
         })
       )}
 
@@ -58,11 +77,69 @@ export default function Catalogo({ categorias }: { categorias: Categoria[] }) {
   );
 }
 
+/**
+ * Encabezado de sección, igual para los tres modos de vitrina: un epígrafe con
+ * la cuenta, el nombre y la bajada. Vive acá y se exporta para que las tres
+ * vitrinas no lo copien cada una con sus propios tamaños.
+ */
+export function CabezaSeccion({
+  epigrafe,
+  titulo,
+  descripcion,
+}: {
+  epigrafe: string;
+  titulo: string;
+  descripcion?: string | null;
+}) {
+  return (
+    <div style={{ textAlign: "center", marginBottom: "clamp(36px, 5vw, 60px)" }}>
+      <span className="epigrafe revelar">{epigrafe}</span>
+      <h2
+        className="titular revelar"
+        style={{ fontSize: "clamp(28px, 3.6vw, 46px)", margin: "12px 0 0", transitionDelay: "60ms" }}
+      >
+        {titulo}
+      </h2>
+      {descripcion && (
+        <p
+          className="revelar"
+          style={{
+            margin: "14px auto 0",
+            maxWidth: 560,
+            fontSize: 15,
+            lineHeight: 1.7,
+            color: "var(--color-grafito)",
+            transitionDelay: "120ms",
+          }}
+        >
+          {descripcion}
+        </p>
+      )}
+      {/* Filete corto bajo el encabezado: cierra el bloque y separa el título
+          de la grilla sin recurrir a más espacio en blanco. */}
+      <span
+        aria-hidden="true"
+        className="revelar"
+        style={{
+          display: "block",
+          width: 34,
+          height: 2,
+          margin: "22px auto 0",
+          background: "var(--color-cereza)",
+          transitionDelay: "180ms",
+        }}
+      />
+    </div>
+  );
+}
+
 function Grilla({
   categoria,
+  enBanda,
   onAbrir,
 }: {
   categoria: Categoria;
+  enBanda: boolean;
   onAbrir: (p: Producto) => void;
 }) {
   const { ref, props } = useRevelado<HTMLElement>();
@@ -72,53 +149,35 @@ function Grilla({
       ref={ref}
       {...props}
       id={`cat-${categoria.slug}`}
-      className="seccion"
-      style={{ borderTop: "1px solid var(--linea-tenue)" }}
+      className={`seccion${enBanda ? " banda" : ""}`}
     >
       <div className="contenedor">
-        {/* Encabezado centrado con epígrafe encima: es el patrón de las dos
-            referencias y lo que le da ritmo a la página sin usar color. */}
-        <div style={{ textAlign: "center", marginBottom: "clamp(34px, 5vw, 56px)" }}>
-          <span className="epigrafe revelar">
-            {String(categoria.productos.length).padStart(2, "0")} referencias
-          </span>
-          <h2
-            className="titular revelar"
-            style={{ fontSize: "clamp(28px, 3.6vw, 44px)", margin: "12px 0 0", transitionDelay: "60ms" }}
-          >
-            {categoria.nombre}
-          </h2>
-          {categoria.descripcion && (
-            <p
-              className="revelar"
-              style={{
-                margin: "14px auto 0",
-                maxWidth: 560,
-                fontSize: 15,
-                lineHeight: 1.7,
-                color: "var(--color-grafito)",
-                transitionDelay: "120ms",
-              }}
-            >
-              {categoria.descripcion}
-            </p>
-          )}
-        </div>
+        <CabezaSeccion
+          epigrafe={`${String(categoria.productos.length).padStart(2, "0")} referencias`}
+          titulo={categoria.nombre}
+          descripcion={categoria.descripcion}
+        />
 
         <div
           style={{
             display: "grid",
-            // El `min(46%, 240px)` hace dos cosas: en escritorio manda el
-            // 240px y salen cuatro o cinco columnas; en celular manda el 46%,
+            // El `min(46%, 250px)` hace dos cosas: en escritorio manda el
+            // 250px y salen cuatro o cinco columnas; en celular manda el 46%,
             // así que siempre entran DOS tarjetas por fila en vez de una sola
-            // gigante. Las dos referencias muestran dos productos por fila en
-            // celular y es lo que hace que se vea catálogo y no lista.
-            gridTemplateColumns: "repeat(auto-fill, minmax(min(46%, 240px), 1fr))",
-            gap: "clamp(18px, 2.4vw, 32px) clamp(14px, 1.8vw, 24px)",
+            // gigante — que es como muestran el catálogo las dos referencias.
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(46%, 250px), 1fr))",
+            gap: "clamp(14px, 1.8vw, 22px)",
           }}
         >
           {categoria.productos.map((producto, i) => (
-            <div key={producto.id} className="revelar" style={{ transitionDelay: `${Math.min(i, 7) * 50}ms` }}>
+            <div
+              key={producto.id}
+              className="revelar"
+              // El escalonado se corta en la octava tarjeta: más allá, la
+              // última de una grilla larga tardaría casi medio segundo de más
+              // en aparecer y se nota como lentitud, no como coreografía.
+              style={{ transitionDelay: `${Math.min(i, 7) * 55}ms` }}
+            >
               <TarjetaProducto producto={producto} onAbrir={onAbrir} />
             </div>
           ))}

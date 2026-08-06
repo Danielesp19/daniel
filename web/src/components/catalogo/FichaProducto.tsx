@@ -6,7 +6,7 @@ import type { Producto } from "@/lib/catalogo";
 import { pesos, gramos } from "@/lib/formato";
 import { useCarrito } from "@/components/carrito/CarritoProvider";
 import { FichaTecnica, Notas, SelloEstado } from "./FichaTecnica";
-import { MarcaGrano } from "./TeselaFoto";
+import { fotoDeRelleno } from "./TeselaFoto";
 
 /** Detalle de un producto: foto grande, ficha completa y botón de agregar. */
 export default function FichaProducto({
@@ -44,7 +44,7 @@ export default function FichaProducto({
         position: "fixed",
         inset: 0,
         zIndex: 80,
-        background: "rgba(23,22,20,0.45)",
+        background: "rgba(23,21,15,0.45)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -104,7 +104,7 @@ export default function FichaProducto({
             alignItems: "start",
           }}
         >
-          <div className="tesela" style={{ aspectRatio: "1/1", background: "var(--color-hueso)" }}>
+          <div className="tesela" style={{ aspectRatio: "1/1", background: "var(--color-pergamino)" }}>
             {producto.video_url ? (
               <video
                 src={producto.video_url}
@@ -115,19 +115,19 @@ export default function FichaProducto({
                 playsInline
                 style={{ display: "block" }}
               />
-            ) : producto.imagen_url ? (
+            ) : (
               <Image
-                src={producto.imagen_url}
-                alt={producto.nombre}
+                src={producto.imagen_url ?? fotoDeRelleno(producto.id).src}
+                alt={producto.imagen_url ? producto.nombre : ""}
+                aria-hidden={producto.imagen_url ? undefined : true}
                 fill
                 sizes="(max-width: 760px) 100vw, 460px"
                 style={{
                   objectFit: "cover",
+                  objectPosition: producto.imagen_url ? undefined : fotoDeRelleno(producto.id).posicion,
                   filter: producto.agotado ? "saturate(0.15) opacity(0.55)" : undefined,
                 }}
               />
-            ) : (
-              <MarcaGrano />
             )}
           </div>
 

@@ -143,7 +143,7 @@ export default function BarraCarrito() {
             position: "fixed",
             inset: 0,
             zIndex: 70,
-            background: "rgba(23,22,20,0.45)",
+            background: "rgba(23,21,15,0.45)",
             display: "flex",
             alignItems: "flex-end",
             justifyContent: "center",
