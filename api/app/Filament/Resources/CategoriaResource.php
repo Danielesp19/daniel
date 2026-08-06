@@ -69,15 +69,19 @@ class CategoriaResource extends Resource
     {
         return $table
             ->defaultSort('orden')
+            // Arrastrar la fila cambia el orden de las secciones en el sitio.
+            // El número de `orden` sigue existiendo y el chatbot lo puede
+            // cambiar por mensaje; esto es la misma operación con el mouse.
+            ->reorderable('orden')
             ->columns([
-                TextColumn::make('orden')->label('#')->sortable(),
                 TextColumn::make('nombre')->label('Nombre')->searchable()->weight('bold'),
                 TextColumn::make('modo_vitrina')
                     ->label('Se muestra como')
                     ->badge()
                     ->formatStateUsing(fn (string $state) => match ($state) {
-                        'vertical' => 'Vitrina vertical',
-                        'horizontal' => 'Vitrina de a uno',
+                        'carrusel' => 'Carrusel',
+                        'vertical' => 'Destacado + grilla',
+                        'horizontal' => 'Tarjetas con video',
                         default => 'Grilla',
                     }),
                 TextColumn::make('productos_count')->counts('productos')->label('Productos'),

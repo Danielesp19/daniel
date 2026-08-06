@@ -19,8 +19,24 @@ use Illuminate\Support\Facades\Log;
  */
 class Sitio
 {
+    /**
+     * Ya se avisó en este proceso.
+     *
+     * Sin esto, sembrar el catálogo o guardar diez productos seguidos manda
+     * diez pings idénticos: el sitio regenera una sola página, así que el
+     * primero ya hizo todo el trabajo. Es por proceso —cada petición web y
+     * cada comando arrancan de cero— así que dos cambios separados en el
+     * tiempo sí avisan las dos veces.
+     */
+    private static bool $avisado = false;
+
     public static function revalidar(): void
     {
+        if (self::$avisado) {
+            return;
+        }
+        self::$avisado = true;
+
         $url = rtrim((string) config('tienda.sitio_url'), '/');
         $secreto = (string) config('tienda.revalidar_secreto');
 

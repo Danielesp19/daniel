@@ -172,7 +172,14 @@ class ProductoResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->defaultSort('categoria_id')
+            // Se ordena por categoría y luego por el orden de cada producto,
+            // que es como se ven en el sitio.
+            ->defaultSort('orden')
+            ->defaultGroup('categoria.nombre')
+            // Arrastrar cambia el orden dentro de la categoría. Conviene
+            // filtrar por una categoría antes de arrastrar: sin filtro, la
+            // lista mezcla todas y el arrastre queda difícil de leer.
+            ->reorderable('orden')
             ->columns([
                 ImageColumn::make('imagen')->label('')->disk('public')->square(),
 

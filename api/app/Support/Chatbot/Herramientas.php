@@ -5,7 +5,6 @@ namespace App\Support\Chatbot;
 use App\Models\Categoria;
 use App\Models\Hero;
 use App\Models\Producto;
-use App\Support\Sitio;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -192,7 +191,7 @@ class Herramientas
                         'nombre' => ['type' => 'string'],
                         'descripcion' => ['type' => 'string', 'description' => 'Se muestra bajo el título de la sección.'],
                         'modo_vitrina' => ['type' => 'string', 'enum' => ['grid', 'carrusel', 'vertical', 'horizontal']],
-                        'orden' => ['type' => 'integer', 'description' => 'Posición en la página; 0 va primero.'],
+                        'orden' => ['type' => 'integer', 'description' => 'Posición de la sección en la página: 0 va primero. Para bajar una sección al final, ponle un número más alto que el de todas las demás.'],
                     ],
                     'required' => ['nombre'],
                 ],
@@ -208,7 +207,7 @@ class Herramientas
                         'nombre' => ['type' => 'string'],
                         'descripcion' => ['type' => 'string'],
                         'modo_vitrina' => ['type' => 'string', 'enum' => ['grid', 'carrusel', 'vertical', 'horizontal']],
-                        'orden' => ['type' => 'integer'],
+                        'orden' => ['type' => 'integer', 'description' => 'Posición de la sección en la página: 0 va primero. Sirve para subir o bajar una sección sin tocar las demás.'],
                         'activa' => ['type' => 'boolean'],
                     ],
                     'required' => ['categoria_id'],
@@ -256,10 +255,10 @@ class Herramientas
                 default => ['error' => "No existe una herramienta llamada {$nombre}."],
             };
 
-            // Cualquier cambio real empuja al sitio a regenerarse, para que el
-            // admin no tenga que esperar el minuto del caché para verlo.
+            // El aviso al sitio ya no se manda desde acá: lo disparan los
+            // modelos al guardarse, así que también cubre al panel. Lo que sí
+            // se agrega es el enlace, para que el admin abra y verifique.
             if (($resultado['ok'] ?? false) === true) {
-                Sitio::revalidar();
                 if ($url = config('tienda.sitio_url')) {
                     $resultado['ver_en'] = $url;
                 }

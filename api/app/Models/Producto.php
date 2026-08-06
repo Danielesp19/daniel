@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Sitio;
 use App\Support\VideoPoster;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -53,6 +54,15 @@ class Producto extends Model
 
     protected static function booted(): void
     {
+        // Guardar o borrar una producto empuja al sitio a regenerarse.
+        //
+        // Va en el modelo y no en quien lo llama: así avisan igual el panel de
+        // Filament, el chatbot y cualquier comando de consola. Antes solo
+        // avisaba el chatbot, y mover una sección desde el panel no se veía en
+        // la página hasta que venciera el minuto del caché.
+        static::saved(fn () => Sitio::revalidar());
+        static::deleted(fn () => Sitio::revalidar());
+
         static::creating(function (self $producto) {
             if (empty($producto->slug)) {
                 $producto->slug = Str::slug($producto->nombre);

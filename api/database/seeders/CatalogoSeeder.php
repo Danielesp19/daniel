@@ -50,23 +50,25 @@ class CatalogoSeeder extends Seeder
 
         $metodos = Categoria::create([
             'nombre' => 'Métodos',
-            'descripcion' => 'Cómo preparo cada café según lo que quieras sacarle. Desliza para pasar de método.',
+            'descripcion' => 'Cómo preparo cada café según lo que quieras sacarle. Míralo y replícalo en tu casa.',
             'modo_vitrina' => 'horizontal',
-            'orden' => 3,
+            // Último a propósito: los métodos son contenido, no producto. Van
+            // después de todo lo que se puede comprar o agendar.
+            'orden' => 5,
         ]);
 
         $artefactos = Categoria::create([
             'nombre' => 'Artefactos',
             'descripcion' => 'Lo que uso y lo que recomiendo para preparar en casa. Equipo probado en barra, no catálogo de importador.',
             'modo_vitrina' => 'carrusel',
-            'orden' => 4,
+            'orden' => 3,
         ]);
 
         $servicios = Categoria::create([
             'nombre' => 'Servicios',
             'descripcion' => 'Mira de qué se trata y agenda por WhatsApp. Cada tarjeta abre su video.',
             'modo_vitrina' => 'horizontal',
-            'orden' => 5,
+            'orden' => 4,
         ]);
 
         $this->sembrar($grano, [
