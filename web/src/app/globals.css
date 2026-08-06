@@ -374,10 +374,10 @@ body {
 }
 [data-visible="si"] .regla-marca { left: var(--posicion); }
 
-/* ─── Cortina de entrada: la escena de arte latte ───────────────────────────
-   Una mano inclina la jarra sobre la taza, el chorro va dejando la rosetta y
-   al final sale el vapor y la firma. Viene de animacion latte.zip, acelerada y
-   pasada a nuestra paleta.
+/* ─── Cortina de entrada: el cisne de arte latte ────────────────────────────
+   Un cisne se dibuja trazo por trazo sobre la taza, sale el vapor y aparece la
+   firma. Viene de la segunda escena que mandó Daniel, acelerada y con los
+   acentos del sitio.
 
    Los tiempos NO están acá: los pone Intro.tsx multiplicando la escena
    original por un solo número (RITMO). Acá solo viven la forma y las curvas,
@@ -393,207 +393,200 @@ body {
   z-index: 90;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at 50% 42%, #211D14, #17150F 70%);
+  overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 30%, #2A1A10 0%, #1A0F08 45%, #0D0704 100%);
   animation: latteSale .7s ease forwards;
 }
 
-.latte-escena { position: relative; width: 300px; height: 340px; }
+/* Manchas de color a la deriva por detrás de todo: es lo único que rompe el
+   fondo plano. Van en los dos acentos del sitio. */
+.latte-mancha {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.latte-mancha-cereza {
+  left: -140px;
+  top: -120px;
+  width: 460px;
+  height: 460px;
+  background: radial-gradient(circle, rgba(158, 43, 30, .18), transparent 65%);
+  animation: latteDeriva 9s ease-in-out infinite;
+}
+.latte-mancha-hoja {
+  right: -160px;
+  bottom: -140px;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(62, 82, 56, .16), transparent 65%);
+  animation: latteDeriva 11s ease-in-out 1.5s infinite;
+}
+/* Viñeteado: carga las esquinas para que el ojo caiga en la taza. */
+.latte-vineta {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(80% 70% at 50% 55%, transparent 55%, rgba(0, 0, 0, .55) 100%);
+  pointer-events: none;
+}
+
+.latte-escena {
+  position: relative;
+  width: 380px;
+  height: 470px;
+  display: grid;
+  justify-items: center;
+}
 
 .latte-vapor {
   position: absolute;
   left: 50%;
-  top: 24px;
-  width: 120px;
-  height: 120px;
+  top: -6px;
+  width: 140px;
+  height: 130px;
   transform: translateX(-50%);
-  z-index: 1;
+  z-index: 3;
   pointer-events: none;
 }
 
 /* Los hilos de vapor nacen invisibles. Su animación es infinita y con retraso,
    y una animación que todavía no arrancó no pinta nada: sin esto los tres
    trazos se veían quietos sobre la taza desde el primer cuadro, antes de que
-   la jarra siquiera llegara. */
+   el cisne existiera. */
 .latte-vapor path { opacity: 0; }
 
-.latte-taza {
-  position: absolute;
-  left: 50%;
-  bottom: 22px;
-  transform: translateX(-50%);
-  width: 260px;
-  height: 260px;
-}
+.latte-taza { position: absolute; top: 74px; width: 320px; height: 320px; }
 
-/* Halo: el resplandor de debajo de la taza, en cereza. */
 .latte-halo {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 300px;
-  height: 300px;
+  width: 400px;
+  height: 400px;
+  margin: -200px 0 0 -200px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(158, 43, 30, .3), transparent 62%);
-  filter: blur(6px);
-  animation: lattePalpita 3.4s ease-in-out infinite;
-  z-index: 0;
+  background: radial-gradient(circle, rgba(158, 43, 30, .26), transparent 60%);
+  filter: blur(10px);
+  animation: lattePalpita 4s ease-in-out infinite;
+}
+.latte-anillo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 320px;
+  height: 320px;
+  margin: -160px 0 0 -160px;
+  border-radius: 50%;
+  border: 2px solid rgba(245, 234, 216, .25);
 }
 
-.latte-cuerpo { position: relative; width: 100%; height: 100%; transform-origin: center; }
+.latte-cuerpo { position: relative; width: 100%; height: 100%; }
 
-/* Las cuatro capas de la taza, de afuera hacia adentro: plato, borde de loza,
-   café y el remolino de la crema. */
+/* Las capas de la taza, de afuera hacia adentro: plato, loza, café, el
+   remolino de la crema y el brillo que respira encima. */
 .latte-plato {
   position: absolute;
-  inset: 0;
+  inset: -16px;
   border-radius: 50%;
-  background: radial-gradient(circle at 42% 34%, #2E2016, #140D08 72%);
-  box-shadow: 0 30px 60px rgba(0, 0, 0, .6), inset 0 2px 10px rgba(0, 0, 0, .6);
+  background: radial-gradient(circle at 42% 34%, #3A281A, #1C1109 74%);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, .7), inset 0 2px 8px rgba(255, 255, 255, .05);
 }
 .latte-borde {
   position: absolute;
-  inset: 18px;
+  inset: 10px;
   border-radius: 50%;
-  background: radial-gradient(circle at 38% 30%, #F4ECDC, #D8C9B0 70%, #B9A888);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, .45);
+  background: radial-gradient(circle at 38% 28%, #F7EFE0, #DCCBB0 68%, #B6A381);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .5), inset 0 -3px 10px rgba(120, 90, 60, .35);
 }
 .latte-cafe {
   position: absolute;
-  inset: 30px;
+  inset: 26px;
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 32%, #7A5230, #4A2F1B 55%, #34200F 84%);
-  box-shadow: inset 0 8px 26px rgba(0, 0, 0, .55), inset 0 -6px 16px rgba(255, 190, 120, .16);
+  background: radial-gradient(circle at 40% 32%, #8A5C33, #52341D 55%, #38220F 85%);
+  box-shadow: inset 0 10px 30px rgba(0, 0, 0, .55), inset 0 -8px 18px rgba(255, 190, 120, .14);
 }
 .latte-crema {
   position: absolute;
-  inset: 36px;
+  inset: 32px;
   border-radius: 50%;
   background: conic-gradient(from 20deg,
-    rgba(255, 206, 150, .12), rgba(58, 36, 23, 0) 28%,
-    rgba(255, 206, 150, .09) 58%, rgba(58, 36, 23, 0) 82%,
-    rgba(255, 206, 150, .12));
-  animation: latteGira 20s linear infinite;
+    rgba(255, 206, 150, .14), rgba(58, 36, 23, 0) 26%,
+    rgba(255, 206, 150, .1) 55%, rgba(58, 36, 23, 0) 80%,
+    rgba(255, 206, 150, .14));
+  animation: latteGira 24s linear infinite;
 }
 .latte-brillo {
   position: absolute;
-  inset: 30px;
+  inset: 26px;
   border-radius: 50%;
-  background: radial-gradient(60% 40% at 34% 24%, rgba(255, 236, 200, .22), transparent 60%);
+  background: radial-gradient(58% 40% at 33% 22%, rgba(255, 238, 205, .24), transparent 60%);
   pointer-events: none;
+  animation: latteRespira 5s ease-in-out infinite;
 }
 .latte-aro {
   position: absolute;
-  inset: 18px;
+  inset: 10px;
   border-radius: 50%;
-  border: 2px solid rgba(158, 43, 30, .22);
+  border: 2px solid rgba(245, 234, 216, .14);
   pointer-events: none;
-}
-
-/* Cada trazo de leche nace diminuto y crece: es como se ve caer la leche
-   cuando la figura ya está tomando forma. */
-.latte-leche {
-  fill: rgba(247, 240, 227, .97);
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-/* La mano viaja; la jarra, dentro de ella, se inclina. Son dos animaciones
-   separadas porque son dos movimientos distintos del mismo gesto. */
-.latte-mano { position: absolute; left: 50%; top: -6px; width: 0; height: 0; z-index: 6; }
-.latte-jarra {
-  position: absolute;
-  left: -72px;
-  top: -50px;
-  width: 140px;
-  height: 150px;
-  transform-origin: 72px 116px;
-}
-.latte-chorro {
-  position: absolute;
-  left: -3px;
-  top: 64px;
-  width: 6px;
-  height: 108px;
-  border-radius: 3px;
-  background: linear-gradient(#FBF6EC, #EFE6D5 55%, rgba(239, 230, 213, .35));
-  box-shadow: 0 0 6px rgba(255, 255, 255, .25);
 }
 
 .latte-firma {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -2px;
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: rgba(243, 233, 217, .72);
+  bottom: 0;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
   opacity: 0;
+}
+.latte-filete {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-cereza);
 }
 
 @keyframes latteSale {
   to { opacity: 0; visibility: hidden; pointer-events: none; }
 }
 @keyframes latteTaza {
-  0%   { opacity: 0; transform: scale(.8); }
-  70%  { transform: scale(1.03); }
+  0%   { opacity: 0; transform: scale(.86); }
+  70%  { transform: scale(1.015); }
   100% { opacity: 1; transform: scale(1); }
+}
+@keyframes latteAnillo {
+  0%   { opacity: .5; transform: scale(.4); }
+  100% { opacity: 0;  transform: scale(1.15); }
 }
 @keyframes lattePalpita {
-  0%, 100% { opacity: .35; transform: translate(-50%, -50%) scale(1); }
-  50%      { opacity: .6;  transform: translate(-50%, -50%) scale(1.08); }
+  0%, 100% { opacity: .45; transform: scale(1); }
+  50%      { opacity: .75; transform: scale(1.06); }
 }
 @keyframes latteGira { to { transform: rotate(360deg); } }
-@keyframes latteFlorece {
-  0%   { opacity: 0; transform: scale(.15); }
-  100% { opacity: 1; transform: scale(1); }
+@keyframes latteRespira {
+  0%, 100% { opacity: .12; }
+  50%      { opacity: .26; }
 }
-/* El tallo se "dibuja" acortando el hueco del trazo discontinuo. Con
-   pathLength=1 el largo es 1 sin importar la geometría real. */
+@keyframes latteDeriva {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+/* Cada trazo se "dibuja" acortando el hueco del guion. Con pathLength=1 el
+   largo es 1 sin importar la geometría real. */
 @keyframes latteTrazo {
   from { stroke-dashoffset: 1; }
   to   { stroke-dashoffset: 0; }
 }
+@keyframes latteSube {
+  0%   { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
 @keyframes latteVapor {
-  0%   { opacity: 0;   transform: translateY(6px) scaleX(1); }
-  25%  { opacity: .55; }
-  70%  { opacity: .28; }
-  100% { opacity: 0;   transform: translateY(-46px) scaleX(1.35); }
-}
-/* El zigzag de la mano es lo que dibuja la rosetta: cada vaivén deja un par de
-   hojas. Sin él, el chorro caería en un solo punto y no habría figura. */
-@keyframes latteMano {
-  0%   { opacity: 0; transform: translate(130px, -140px); }
-  14%  { opacity: 1; transform: translate(4px, -6px); }
-  20%  { transform: translate(-22px, -2px); }
-  28%  { transform: translate(20px, 2px); }
-  36%  { transform: translate(-20px, 4px); }
-  44%  { transform: translate(20px, 8px); }
-  52%  { transform: translate(-18px, 10px); }
-  60%  { transform: translate(18px, 12px); }
-  68%  { transform: translate(-14px, 14px); }
-  76%  { transform: translate(6px, 14px); }
-  82%  { transform: translate(2px, -14px); }
-  88%  { opacity: 1; transform: translate(44px, -72px); }
-  100% { opacity: 0; transform: translate(150px, -150px); }
-}
-@keyframes latteInclina {
-  0%   { transform: rotate(-8deg); }
-  14%  { transform: rotate(-8deg); }
-  20%  { transform: rotate(-34deg); }
-  76%  { transform: rotate(-36deg); }
-  82%  { transform: rotate(-18deg); }
-  90%  { transform: rotate(2deg); }
-  100% { transform: rotate(6deg); }
-}
-@keyframes latteChorro {
-  0%, 13% { opacity: 0; }
-  18%     { opacity: .95; }
-  77%     { opacity: .95; }
-  83%     { opacity: 0; }
-  100%    { opacity: 0; }
+  0%   { opacity: 0;   transform: translateY(12px) scaleX(1); }
+  25%  { opacity: .5;  }
+  70%  { opacity: .22; }
+  100% { opacity: 0;   transform: translateY(-80px) scaleX(1.45); }
 }
 
 /* ─── Movimiento reducido ─────────────────────────────────────────────────── */
