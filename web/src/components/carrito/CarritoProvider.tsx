@@ -4,26 +4,18 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { Producto } from "@/lib/catalogo";
 
 /**
- * Moliendas que ofrecemos. No cambian el precio ni el stock —una bolsa es una
- * bolsa— así que viven solo en el carrito, como una instrucción para quien
- * prepara el pedido.
+ * La molienda ya no vive acá.
+ *
+ * El diseño nuevo no tiene panel de carrito —se agrega y se manda— así que no
+ * había dónde elegirla, y una molienda que el cliente no puede cambiar es peor
+ * que ninguna: promete algo que nadie decidió. La pregunta se mudó al mensaje
+ * de WhatsApp, que es donde igual se confirma envío y pago.
  */
-export const MOLIENDAS = [
-  "Grano entero",
-  "Prensa francesa",
-  "V60 / Chemex",
-  "Moka",
-  "Espresso",
-] as const;
-
-export type Molienda = (typeof MOLIENDAS)[number];
-
 export interface Linea {
   id: number;
   nombre: string;
   precio_cop: number;
   gramos: number;
-  molienda: Molienda;
   cantidad: number;
   /**
    * Se guarda en la línea, no se deduce del mapa de stock: si un servicio
@@ -38,10 +30,9 @@ interface Carrito {
   lineas: Linea[];
   unidades: number;
   total: number;
-  agregar: (producto: Producto, molienda?: Molienda) => void;
-  cambiarCantidad: (id: number, molienda: Molienda, cantidad: number) => void;
-  cambiarMolienda: (id: number, actual: Molienda, nueva: Molienda) => void;
-  quitar: (id: number, molienda: Molienda) => void;
+  agregar: (producto: Producto) => void;
+  cambiarCantidad: (id: number, cantidad: number) => void;
+  quitar: (id: number) => void;
   vaciar: () => void;
   /** Recorta las cantidades al stock recién consultado. Devuelve los ajustes. */
   ajustarAStock: (stock: Record<string, number>) => Ajuste[];
@@ -57,13 +48,9 @@ export interface Ajuste {
 // guardada, subirla descarta los carritos viejos en vez de leerlos con campos
 // faltantes. Un carrito a medio llenar se pierde; un carrito mal interpretado
 // manda un pedido equivocado.
-const LLAVE = "carrito:v2";
+const LLAVE = "carrito:v3";
 
 const Contexto = createContext<Carrito | null>(null);
-
-/** Dos líneas son la misma si coinciden producto Y molienda. */
-const mismaLinea = (l: Linea, id: number, molienda: Molienda) =>
-  l.id === id && l.molienda === molienda;
 
 export function CarritoProvider({ children }: { children: React.ReactNode }) {
   const [lineas, setLineas] = useState<Linea[]>([]);
@@ -95,18 +82,16 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
     }
   }, [lineas]);
 
-  const agregar = useCallback((producto: Producto, molienda: Molienda = "Grano entero") => {
+  const agregar = useCallback((producto: Producto) => {
     setLineas((previas) => {
-      const existente = previas.find((l) => mismaLinea(l, producto.id, molienda));
+      const existente = previas.find((l) => l.id === producto.id);
       if (existente) {
         // Nunca por encima del stock que conocemos, salvo en servicios, que no
         // tienen tope. El límite real se vuelve a revisar contra el servidor
         // al momento de enviar el pedido.
         const tope = producto.controla_stock ? producto.stock : Infinity;
         return previas.map((l) =>
-          mismaLinea(l, producto.id, molienda)
-            ? { ...l, cantidad: Math.min(l.cantidad + 1, tope) }
-            : l,
+          l.id === producto.id ? { ...l, cantidad: Math.min(l.cantidad + 1, tope) } : l,
         );
       }
       return [
@@ -116,7 +101,6 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
           nombre: producto.nombre,
           precio_cop: producto.precio_cop,
           gramos: producto.gramos,
-          molienda,
           cantidad: 1,
           controla_stock: producto.controla_stock,
         },
@@ -124,36 +108,16 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const cambiarCantidad = useCallback((id: number, molienda: Molienda, cantidad: number) => {
+  const cambiarCantidad = useCallback((id: number, cantidad: number) => {
     setLineas((previas) =>
       cantidad <= 0
-        ? previas.filter((l) => !mismaLinea(l, id, molienda))
-        : previas.map((l) => (mismaLinea(l, id, molienda) ? { ...l, cantidad } : l)),
+        ? previas.filter((l) => l.id !== id)
+        : previas.map((l) => (l.id === id ? { ...l, cantidad } : l)),
     );
   }, []);
 
-  const cambiarMolienda = useCallback((id: number, actual: Molienda, nueva: Molienda) => {
-    setLineas((previas) => {
-      if (actual === nueva) return previas;
-      const origen = previas.find((l) => mismaLinea(l, id, actual));
-      if (!origen) return previas;
-
-      // Si ya existe una línea del mismo café con la molienda destino, las dos
-      // se funden en una en vez de quedar duplicadas en el resumen.
-      const destino = previas.find((l) => mismaLinea(l, id, nueva));
-      if (destino) {
-        return previas
-          .filter((l) => !mismaLinea(l, id, actual))
-          .map((l) =>
-            mismaLinea(l, id, nueva) ? { ...l, cantidad: l.cantidad + origen.cantidad } : l,
-          );
-      }
-      return previas.map((l) => (mismaLinea(l, id, actual) ? { ...l, molienda: nueva } : l));
-    });
-  }, []);
-
-  const quitar = useCallback((id: number, molienda: Molienda) => {
-    setLineas((previas) => previas.filter((l) => !mismaLinea(l, id, molienda)));
+  const quitar = useCallback((id: number) => {
+    setLineas((previas) => previas.filter((l) => l.id !== id));
   }, []);
 
   const vaciar = useCallback(() => setLineas([]), []);
@@ -169,26 +133,20 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
   const ajustarAStock = useCallback((stock: Record<string, number>): Ajuste[] => {
     const ajustes: Ajuste[] = [];
 
-    setLineas((previas) => {
-      // Varias líneas del mismo café (distintas moliendas) comparten stock:
-      // se reparte en el orden en que están, y lo que no alcanza se recorta.
-      const restante: Record<number, number> = {};
-
-      return previas.flatMap((l) => {
+    setLineas((previas) =>
+      previas.flatMap((l) => {
         // Los servicios no se recortan: no hay inventario que revisar.
         if (!l.controla_stock) return [l];
 
-        if (!(l.id in restante)) restante[l.id] = stock[String(l.id)] ?? 0;
-
-        const permitidas = Math.min(l.cantidad, Math.max(0, restante[l.id]));
-        restante[l.id] -= permitidas;
+        const disponibles = Math.max(0, stock[String(l.id)] ?? 0);
+        const permitidas = Math.min(l.cantidad, disponibles);
 
         if (permitidas !== l.cantidad) {
           ajustes.push({ nombre: l.nombre, pedidas: l.cantidad, disponibles: permitidas });
         }
         return permitidas > 0 ? [{ ...l, cantidad: permitidas }] : [];
-      });
-    });
+      }),
+    );
 
     return ajustes;
   }, []);
@@ -200,12 +158,11 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
       total: lineas.reduce((n, l) => n + l.cantidad * l.precio_cop, 0),
       agregar,
       cambiarCantidad,
-      cambiarMolienda,
       quitar,
       vaciar,
       ajustarAStock,
     }),
-    [lineas, agregar, cambiarCantidad, cambiarMolienda, quitar, vaciar, ajustarAStock],
+    [lineas, agregar, cambiarCantidad, quitar, vaciar, ajustarAStock],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

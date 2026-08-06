@@ -1,183 +1,140 @@
 "use client";
 
+import { useState } from "react";
 import type { Producto } from "@/lib/catalogo";
-import { pesos, gramos } from "@/lib/formato";
+import { pesos, gramos, altitud } from "@/lib/formato";
 import { useCarrito } from "@/components/carrito/CarritoProvider";
-import { Notas, SelloEstado } from "./FichaTecnica";
-import ReglaTueste from "./ReglaTueste";
-import TeselaFoto, { SelloVideo } from "./TeselaFoto";
+import TeselaFoto from "./TeselaFoto";
 
 /**
- * Tarjeta del catálogo: foto, nombre, notas, regla de tueste y precio.
+ * Tarjeta de producto: foto, rótulo, nombre en serif, notas en itálica, un
+ * "ver más" que despliega la ficha ahí mismo, precio y botón a todo el ancho.
  *
- * La regla es lo que la separa de la tarjeta de cualquier tienda: en vez de
- * repetir la ficha técnica entera —que fue el error de la primera versión—
- * muestra UN dato, el tueste, dibujado en una escala que se compara de un
- * vistazo con la tarjeta de al lado. El resto de la ficha vive en el detalle.
+ * El detalle se abre EN LA TARJETA y no en una ventana aparte. Es la decisión
+ * del diseño y es mejor para esta retícula: con tarjetas de 175 px una ventana
+ * modal tapa la pantalla entera para mostrar cuatro datos, y al cerrarla uno
+ * ya perdió el hilo de dónde iba. Desplegando, la comparación entre lotes
+ * —que es de lo que se trata comprar café de origen— no se interrumpe.
  *
- * El botón de agregar aparece al pasar el mouse; en pantalla táctil, donde no
- * hay hover, se muestra siempre (la regla vive en globals.css).
+ * Sirve igual sobre fondo claro y sobre fondo oscuro: los colores los resuelve
+ * el CSS a partir de la sección que la contenga (ver `.seccion-oscura` en
+ * globals.css), así que no recibe ninguna prop de tono.
  */
-export default function TarjetaProducto({
-  producto,
-  onAbrir,
-}: {
-  producto: Producto;
-  onAbrir: (p: Producto) => void;
-}) {
+export default function TarjetaProducto({ producto }: { producto: Producto }) {
   const carrito = useCarrito();
+  const [abierta, setAbierta] = useState(false);
+
   const peso = gramos(producto.gramos);
+
+  // Solo las filas que este producto tenga. Un molino no tiene altura ni
+  // proceso, y una rejilla con casillas vacías se ve rota.
+  const ficha: Array<[string, string]> = [];
+  if (producto.region) ficha.push(["Región", producto.region]);
+  if (producto.altitud_msnm) ficha.push(["Altura", altitud(producto.altitud_msnm)]);
+  if (producto.proceso) ficha.push(["Proceso", producto.proceso]);
+  if (producto.tueste) ficha.push(["Tueste", producto.tueste]);
+  if (producto.variedad) ficha.push(["Variedad", producto.variedad]);
+  if (producto.puntaje_sca) ficha.push(["SCA", producto.puntaje_sca.toFixed(2)]);
+
+  const hayQueAbrir = Boolean(producto.descripcion) || ficha.length > 0;
+  const sello = producto.agotado
+    ? "Agotado"
+    : producto.por_acabarse
+      ? `Últimas ${producto.stock}`
+      : producto.destacado
+        ? "Destacado"
+        : null;
 
   return (
     <article className="tarjeta">
-      <button
-        type="button"
-        onClick={() => onAbrir(producto)}
-        aria-label={`Ver la ficha de ${producto.nombre}`}
-        style={{
-          position: "relative",
-          display: "block",
-          width: "100%",
-          padding: 0,
-          border: "none",
-          background: "transparent",
-          cursor: "pointer",
-          textAlign: "left",
-        }}
-      >
+      <div className="tesela" style={{ aspectRatio: "1" }}>
         <TeselaFoto producto={producto} />
+        {sello && <span className="sello">{sello}</span>}
+      </div>
 
-        <span
-          style={{
-            position: "absolute",
-            top: 9,
-            left: 9,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}
-        >
-          <SelloEstado producto={producto} />
-          {producto.video_url && <SelloVideo />}
-        </span>
-
-        {/* El puntaje va sobre la foto, abajo a la derecha: es la credencial
-            del lote y así no compite con el nombre por el mismo renglón. */}
-        {producto.puntaje_sca && (
-          <span
-            className="cifra"
-            style={{
-              position: "absolute",
-              right: 9,
-              bottom: 9,
-              padding: "3px 7px",
-              borderRadius: "var(--radio-pildora)",
-              background: "rgba(251,250,246,0.92)",
-              fontSize: 11,
-              fontWeight: 500,
-            }}
-          >
-            {producto.puntaje_sca.toFixed(1)} <span style={{ opacity: 0.55 }}>SCA</span>
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: 14 }}>
+        {producto.finca && (
+          <span className="rotulo" style={{ fontSize: 8.5 }}>
+            {producto.finca}
           </span>
         )}
-      </button>
 
-      <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "14px 4px 0" }}>
-        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, letterSpacing: "-0.012em" }}>
+        <h3 className="nombre" style={{ marginTop: producto.finca ? 7 : 0 }}>
           {producto.nombre}
         </h3>
 
-        {/* Las notas de cata son de los cafés. Un molino o una báscula no
-            tienen, y sin nada bajo el nombre la tarjeta queda con un hueco:
-            ahí va la primera línea de su descripción, recortada a dos
-            renglones para que todas midan parecido. */}
-        {producto.notas.length > 0 ? (
-          <div style={{ marginTop: 5 }}>
-            <Notas notas={producto.notas.slice(0, 3)} />
-          </div>
-        ) : (
-          producto.descripcion && (
-            <p
-              style={{
-                margin: "6px 0 0",
-                fontSize: 13,
-                lineHeight: 1.5,
-                color: "var(--color-grafito)",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {producto.descripcion}
-            </p>
-          )
+        {producto.notas.length > 0 && (
+          <p className="notas" style={{ marginTop: 7 }}>
+            {producto.notas.join(", ")}
+          </p>
         )}
 
-        {/* `auto` empuja todo lo de abajo al fondo: en una fila de la grilla
-            las reglas y los precios quedan a la misma altura aunque los
-            nombres ocupen distinto. */}
-        <div style={{ marginTop: "auto", paddingTop: 14 }}>
-          <ReglaTueste producto={producto} />
+        {abierta && (
+          <div className="desplegado">
+            {producto.descripcion && (
+              <p style={{ margin: "12px 0 0", fontSize: 13.5, lineHeight: 1.65, color: "var(--color-fuerte)" }}>
+                {producto.descripcion}
+              </p>
+            )}
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-              marginTop: 14,
-              // En celular la tarjeta mide la mitad del ancho y el precio junto
-              // al botón no caben en una línea: sin `wrap` el botón se salía de
-              // la tesela y se montaba sobre la tarjeta de al lado.
-              flexWrap: "wrap",
-            }}
-          >
-            <div className="cifra" style={{ fontSize: 15, fontWeight: 500, whiteSpace: "nowrap" }}>
-              ${pesos(producto.precio_cop)}
-              {peso && (
-                <span style={{ marginLeft: 7, fontSize: 11, color: "var(--color-grafito)" }}>
-                  {peso}
-                </span>
-              )}
-            </div>
-
-            <button
-              type="button"
-              className="agregar"
-              disabled={producto.agotado}
-              onClick={() => carrito.agregar(producto)}
-              aria-label={`Agregar ${producto.nombre} al pedido`}
-              style={{
-                padding: "7px 12px",
-                border: "1px solid var(--linea)",
-                borderRadius: "var(--radio-pildora)",
-                background: "transparent",
-                color: producto.agotado ? "var(--color-grafito)" : "var(--color-tinta)",
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                cursor: producto.agotado ? "not-allowed" : "pointer",
-                whiteSpace: "nowrap",
-                transition: "background-color .18s ease, color .18s ease, border-color .18s ease",
-              }}
-              onMouseEnter={(e) => {
-                if (producto.agotado) return;
-                e.currentTarget.style.background = "var(--color-tinta)";
-                e.currentTarget.style.color = "#FFF";
-                e.currentTarget.style.borderColor = "var(--color-tinta)";
-              }}
-              onMouseLeave={(e) => {
-                if (producto.agotado) return;
-                e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "var(--color-tinta)";
-                e.currentTarget.style.borderColor = "var(--linea)";
-              }}
-            >
-              {producto.agotado ? "Agotado" : producto.controla_stock ? "Agregar" : "Agendar"}
-            </button>
+            {ficha.length > 0 && (
+              <dl
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "10px 12px",
+                  margin: "14px 0 0",
+                  paddingTop: 12,
+                  borderTop: "1px solid currentColor",
+                  borderTopColor: "var(--color-linea)",
+                }}
+              >
+                {ficha.map(([rotulo, valor]) => (
+                  <div key={rotulo}>
+                    <dt className="rotulo" style={{ fontSize: 8.5, letterSpacing: "0.18em" }}>
+                      {rotulo}
+                    </dt>
+                    <dd style={{ margin: "4px 0 0", fontSize: 13, fontWeight: 500 }}>{valor}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
           </div>
+        )}
+
+        {hayQueAbrir && (
+          <button
+            type="button"
+            className="vermas"
+            aria-expanded={abierta}
+            onClick={() => setAbierta((v) => !v)}
+            style={{ marginTop: 12 }}
+          >
+            {abierta ? "Ver menos" : "Ver más"}
+          </button>
+        )}
+
+        {/* `auto` empuja el precio y el botón al fondo: en una fila de la
+            grilla quedan a la misma altura aunque los nombres ocupen distinto. */}
+        <div style={{ marginTop: "auto", paddingTop: 14 }}>
+          <div className="cifra" style={{ fontSize: 15 }}>
+            ${pesos(producto.precio_cop)}
+            {peso && (
+              <span style={{ marginLeft: 7, fontSize: 10, fontWeight: 400, color: "var(--color-rotulo)" }}>
+                {peso}
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className={`boton boton-ancho ${producto.controla_stock ? "boton-linea" : "boton-solido"}`}
+            style={{ marginTop: 10 }}
+            disabled={producto.agotado}
+            onClick={() => carrito.agregar(producto)}
+          >
+            {producto.agotado ? "Agotado" : producto.controla_stock ? "Agregar" : "Agendar"}
+          </button>
         </div>
       </div>
     </article>

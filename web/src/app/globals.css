@@ -1,87 +1,66 @@
 @import "tailwindcss";
 
-/* ─── Sistema de diseño: pergamino ──────────────────────────────────────────
-   Sigue siendo el lenguaje claro de cocinare y normcore —fondo claro, sans,
-   esquinas casi rectas, la foto mandando— pero con lo que le faltaba: capas y
-   datos. Antes era blanco sobre blanco y por eso se veía vacío.
+/* ─── Sistema de diseño ─────────────────────────────────────────────────────
+   Portado del diseño que eligió Daniel ("Página web de café elegante"). Los
+   valores —colores, tamaños, tracking, radios— salen tal cual de ahí; acá solo
+   están ordenados en variables y clases para no repetirlos en cada componente.
 
-   De dónde sale cada decisión:
+   Lo que define este lenguaje, y hay que respetar aunque incomode:
 
-   · PAPEL y PERGAMINO son dos superficies, no una. El pergamino es la capa
-     que envuelve el grano seco antes de trillarlo; acá es el fondo de las
-     bandas y de cada tesela de foto. Alternarlas es lo que le da fondo a la
-     página sin recurrir a otro color.
-   · CEREZA es el acento, y es uno solo: el color del fruto maduro. No es
-     terracota ni naranja de tostadora; es más oscuro y más rojo, y por eso
-     aguanta ser el único punto de color de toda la página.
-   · La MONOESPACIADA lleva todas las cifras: precios, gramos, altitudes,
-     puntajes SCA, ratios, contadores. El oficio de Daniel se mide en básculas
-     y cronómetros, así que los números son parte del contenido, no adorno.
-     Es de donde sale casi toda la textura nueva.
-   · ARCHIVO para los titulares en vez de seguir con Inter en negrita: tiene
-     más carácter en los pesos altos y sigue siendo un grotesco, así que no se
-     pelea con las referencias.
-
-   Regla que sostiene el conjunto: el color y el movimiento se gastan en un
-   solo lugar cada uno. Todo lo demás se resuelve con superficie, línea y dato.
+   · TRES SUPERFICIES que se alternan sección por sección: blanco, un blanco
+     roto (#F7F6F4) y negro. El negro no es un cierre: aparece varias veces a
+     lo largo de la página y es lo que le da el ritmo.
+   · SERIF PARA TODO TITULAR, y el titular termina en itálica: "El café es tan
+     bueno como *quien lo prepara*". Es el recurso que sostiene el diseño
+     entero; sin la itálica, los titulares se caen.
+   · MONOESPACIADA para todo rótulo y toda cifra, chiquita y muy espaciada.
+   · Las tarjetas son RECTAS —un borde de un pelo, sin radio— y los botones son
+     PÍLDORAS a todo el ancho. Ese contraste entre la caja recta y el botón
+     redondo es a propósito.
+   · Nada de sombras salvo la barra de pedido flotante.
    ------------------------------------------------------------------------- */
 @theme inline {
-  --color-papel:      #FBFAF6;  /* fondo de la página */
-  --color-pergamino:  #EEE9DE;  /* bandas y teselas de foto */
-  --color-pergamino2: #E3DCCC;  /* pergamino sobre pergamino */
-  --color-tinta:      #17150F;  /* texto principal y bloque de cierre */
-  --color-grafito:    #6E695D;  /* texto secundario */
-  --color-cereza:     #9E2B1E;  /* acento único: el fruto maduro */
-  --color-hoja:       #3E5238;  /* verde hoja, solo para datos vivos */
+  --color-tinta:    #0A0A0A;  /* texto y fondo de las secciones oscuras */
+  --color-papel:    #FFFFFF;
+  --color-banda:    #F7F6F4;  /* secciones sobre blanco roto */
+  --color-tesela:   #F4F3F1;  /* fondo de las fotos en claro */
+  --color-tesela-o: #161616;  /* fondo de las fotos en oscuro */
+  --color-linea:    #E6E4E1;
+  --color-rotulo:   #8A8A8A;  /* rótulos en mono */
+  --color-suave:    #6B6B6B;  /* texto secundario */
+  --color-fuerte:   #4A4A4A;  /* texto secundario con más peso */
 
-  --font-display: var(--font-archivo), system-ui, sans-serif;
-  --font-sans:    var(--font-inter), system-ui, -apple-system, sans-serif;
-  --font-mono:    var(--font-mono-jet), ui-monospace, "SF Mono", monospace;
+  --font-serif: var(--font-serif), Georgia, serif;
+  --font-sans:  var(--font-sans-i), system-ui, -apple-system, sans-serif;
+  --font-mono:  var(--font-mono-spline), ui-monospace, monospace;
 }
 
 :root {
-  --linea: #DDD6C6;
-  --linea-tenue: #EAE4D6;
+  /* Líneas sobre fondo oscuro: el gris de las claras no se ve. */
+  --linea-o: rgba(255, 255, 255, 0.2);
+  --rotulo-o: rgba(255, 255, 255, 0.55);
+  --suave-o: rgba(255, 255, 255, 0.62);
 
-  /* Radios generosos. La versión anterior copiaba las esquinas casi rectas de
-     normcore y se veía dura: con el pergamino y la monoespaciada ya hay
-     bastante rigor, así que la forma es donde el sitio se permite ser amable.
-     Los botones van en píldora, que es lo que más suaviza sin tocar nada más. */
-  --radio-sm: 8px;
-  --radio-md: 16px;
-  --radio-lg: 24px;
-  --radio-xl: 32px;
-  --radio-pildora: 999px;
+  --ancho: 1180px;
+  --aire: clamp(44px, 8vw, 96px);
+  --margen: clamp(18px, 4.5vw, 48px);
 
-  /* Alto de la cabecera fija. Lo usan el scroll-padding y los pegajosos: si
-     cambia, cambia en un solo sitio. */
-  --barra: 60px;
+  /* Alto de la cabecera fija. Lo usan el scroll-padding y los pegajosos. */
+  --barra: 58px;
 
-  --ancho: 1360px;
-  --aire: clamp(72px, 9vw, 132px);
-
-  /* Curvas y tiempos del sistema. Un solo juego para todo: la animación se
-     nota cuando es coherente, no cuando es variada. Los tiempos siguen el
-     rango que se siente natural — por debajo de 120ms es un salto y por
-     encima de 500ms se hace lento. */
-  --salida: cubic-bezier(0.22, 0.7, 0.2, 1);
-  --rapido: 180ms;
-  --medio: 320ms;
-  --lento: 520ms;
+  --salida: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 
 /* Recorte del sangrado horizontal EN LA RAÍZ, no en un contenedor interno:
    `clip` no crea un contexto de scroll, pero WebKit (iOS Safari) tiene bugs
-   conocidos con `position: sticky` dentro de un ancestro con overflow clip —
-   la barra de categorías re-posicionaba con retraso en cada frame y se veía
-   TEMBLAR al scrollear en iPhone. */
+   conocidos con `position: sticky` dentro de un ancestro con overflow clip. */
 html, body { overflow-x: clip; }
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: calc(var(--barra) + 52px);
+  scroll-padding-top: var(--barra);
 }
 
 /* "Scroll anchoring" desactivado: por defecto, si algo arriba de lo que estás
@@ -91,144 +70,218 @@ html {
 * { overflow-anchor: none; }
 
 body {
+  margin: 0;
   background: var(--color-papel);
   color: var(--color-tinta);
   font-family: var(--font-sans);
   font-size: 15px;
-  line-height: 1.55;
+  line-height: 1.6;
+  text-wrap: pretty;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
-::selection { background: rgba(158, 43, 30, 0.15); color: var(--color-tinta); }
+::selection { background: rgba(10, 10, 10, 0.1); }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: var(--color-pergamino); }
-::-webkit-scrollbar-thumb { background: #C6BEA9; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #ADA48C; }
+::-webkit-scrollbar-track { background: var(--color-banda); }
+::-webkit-scrollbar-thumb { background: #CFCBC5; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #B4AFA8; }
 
-:focus-visible {
-  outline: 2px solid var(--color-cereza);
-  outline-offset: 3px;
-  border-radius: var(--radio-md);
-}
+:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 
-/* ─── Piezas tipográficas ─────────────────────────────────────────────────── */
+/* ─── Piezas tipográficas ───────────────────────────────────────────────────
+   Son tres y no más. La jerarquía la hace la familia, no el tamaño. */
 
-/* Titular: Archivo en negrita con el tracking cerrado. Cuanto más grande, más
-   negativo — así se ve compacto en vez de desparramado. */
+/* Titular: serif en regular, nunca en negrita — esta serif no la tiene y
+   forzarla con font-weight la deforma. */
 .titular {
-  font-family: var(--font-display);
-  font-weight: 700;
-  line-height: 1.04;
-  letter-spacing: -0.035em;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(30px, 6.5vw, 52px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.titular em { font-style: italic; }
+
+/* Nombre de producto: la misma serif, en el tamaño de la tarjeta. */
+.nombre {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 21px;
+  line-height: 1.12;
+  margin: 0;
 }
 
-/* Epígrafe: el rótulo diminuto en caja alta que ordena la página. Va en
-   monoespaciada, que es lo que lo separa de un rótulo cualquiera. */
+/* Epígrafe: el rótulo diminuto en mono que va encima de cada sección. */
 .epigrafe {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 400;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: var(--color-grafito);
+  color: var(--color-rotulo);
 }
 
-/* Cifra: precios, gramos, altitudes, puntajes. Tabular para que las columnas
-   alineen aunque cambien los dígitos. */
+/* Rótulo: la versión pequeña del epígrafe, para las fichas y las tarjetas. */
+.rotulo {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-rotulo);
+}
+
+/* Cifra: precios, pesos, alturas. */
 .cifra {
   font-family: var(--font-mono);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
-/* ─── Contenedores ────────────────────────────────────────────────────────── */
+/* Notas de cata: van en itálica serif, como una acotación al margen. */
+.notas {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color-suave);
+  margin: 0;
+}
+
+/* ─── Secciones ─────────────────────────────────────────────────────────────
+   Tres tonos que se alternan. El oscuro NO es solo el cierre: vuelve varias
+   veces a lo largo de la página y es lo que le pone el ritmo. */
+.seccion { padding-block: var(--aire); }
+.seccion-banda { background: var(--color-banda); border-block: 1px solid var(--color-linea); }
+.seccion-oscura { background: var(--color-tinta); color: #FFF; }
+
 .contenedor {
   width: 100%;
   max-width: var(--ancho);
   margin-inline: auto;
-  padding-inline: clamp(16px, 4vw, 40px);
+  padding-inline: var(--margen);
 }
 
-.seccion { padding-block: var(--aire); }
+/* Dentro de una sección oscura, los grises claros no se leen: se reemplazan
+   por blancos con alfa. Va acá y no en cada componente para que una tarjeta
+   sirva igual en claro y en oscuro sin recibir una prop de tono. */
+.seccion-oscura .epigrafe,
+.seccion-oscura .rotulo { color: var(--rotulo-o); }
+.seccion-oscura .notas { color: var(--suave-o); }
+.seccion-oscura .bajada { color: var(--suave-o); }
 
-/* Banda: la sección va sobre pergamino en vez de papel. Alternar papel y
-   pergamino es lo que separa una sección de la siguiente. */
-.banda { background: var(--color-pergamino); }
-
-/* ─── Botones ─────────────────────────────────────────────────────────────── */
+/* ─── Botones ───────────────────────────────────────────────────────────────
+   Píldoras a todo el ancho dentro de las tarjetas. El contraste entre la caja
+   recta y el botón redondo es la firma del diseño. */
 .boton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 46px;
-  padding-inline: 26px;
-  border-radius: var(--radio-pildora);
+  min-height: 44px;
+  padding: 11px 20px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity .18s ease, background-color .18s ease, color .18s ease, transform .18s ease;
+}
+.boton-ancho { display: flex; width: 100%; }
+.boton-grande { min-height: 50px; padding: 13px 26px; font-size: 14px; }
+
+/* Sólido: negro sobre claro, blanco sobre oscuro. Se resuelve solo. */
+.boton-solido { background: var(--color-tinta); color: #FFF; }
+.boton-solido:hover { opacity: .78; color: #FFF; }
+.seccion-oscura .boton-solido,
+.boton-solido-claro { background: #FFF; color: var(--color-tinta); }
+.seccion-oscura .boton-solido:hover,
+.boton-solido-claro:hover { opacity: .82; color: var(--color-tinta); }
+
+/* Contorno: se rellena al pasar el mouse. */
+.boton-linea { border-color: var(--color-tinta); color: var(--color-tinta); background: transparent; }
+.boton-linea:hover { background: var(--color-tinta); color: #FFF; }
+.seccion-oscura .boton-linea { border-color: rgba(255, 255, 255, 0.5); color: #FFF; }
+.seccion-oscura .boton-linea:hover { background: rgba(255, 255, 255, 0.14); color: #FFF; }
+
+.boton:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Enlace de "ver más": subrayado firme, en mono. */
+.vermas {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
   font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ─── Tarjeta ───────────────────────────────────────────────────────────────
+   Recta, con un borde de un pelo que se oscurece al pasar el mouse. */
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-papel);
+  border: 1px solid var(--color-linea);
+  transition: border-color .25s ease, transform .25s ease;
+}
+.tarjeta:hover { border-color: var(--color-tinta); transform: translateY(-3px); }
+
+.seccion-oscura .tarjeta { background: transparent; border-color: var(--linea-o); }
+.seccion-oscura .tarjeta:hover { border-color: #FFF; background: rgba(255, 255, 255, 0.05); }
+
+/* La tesela de foto. En oscuro el fondo del hueco también cambia. */
+.tesela { position: relative; overflow: hidden; background: var(--color-tesela); }
+.seccion-oscura .tesela { background: var(--color-tesela-o); }
+.tesela img, .tesela video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Sello sobre la foto: negro sobre claro y blanco sobre oscuro, invertido
+   respecto al fondo para que siempre se lea. */
+.sello {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  padding: 5px 10px;
+  background: var(--color-tinta);
+  color: #FFF;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   white-space: nowrap;
-  transition:
-    background-color var(--rapido) ease,
-    color var(--rapido) ease,
-    border-color var(--rapido) ease,
-    transform var(--rapido) var(--salida);
 }
-.boton:active { transform: translateY(1px); }
+.seccion-oscura .sello { background: #FFF; color: var(--color-tinta); }
 
-.boton-solido {
-  background: var(--color-tinta);
-  color: var(--color-papel);
-  border: 1px solid var(--color-tinta);
-}
-.boton-solido:hover { background: var(--color-cereza); border-color: var(--color-cereza); }
+/* Grillas de producto. El `min(100%, Npx)` deja que la tarjeta baje de ese
+   ancho en pantallas angostas en vez de desbordar la página. */
+.grilla { display: grid; gap: clamp(10px, 2vw, 18px); }
+.grilla-productos { grid-template-columns: repeat(auto-fill, minmax(min(100%, 175px), 1fr)); }
+.grilla-videos    { grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
 
-.boton-linea {
-  background: transparent;
-  color: var(--color-tinta);
-  border: 1px solid var(--linea);
-}
-.boton-linea:hover { border-color: var(--color-tinta); background: rgba(23,21,15,0.03); }
-
-/* Sobre foto o sobre el bloque oscuro, el contorno se invierte. */
-.boton-claro {
-  background: transparent;
-  color: #FFF;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-}
-.boton-claro:hover { background: #FFF; color: var(--color-tinta); border-color: #FFF; }
-
-.boton:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+/* Filas que se pasan deslizando, sin barra de scroll visible. */
+.tiras { scrollbar-width: none; }
+.tiras::-webkit-scrollbar { display: none; }
 
 /* ─── Animaciones ─────────────────────────────────────────────────────────── */
-@keyframes entrar {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes aparecer {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-/* Zoom lentísimo del fondo del hero. Solo transform: lo lleva la GPU. */
-@keyframes acercar {
-  from { transform: scale(1.02); }
-  to   { transform: scale(1.1); }
-}
-@keyframes puntoBaja {
-  0%   { transform: translateY(0);    opacity: 0; }
-  40%  {                              opacity: 1; }
-  80%  { transform: translateY(12px); opacity: 0; }
-  100% {                              opacity: 0; }
-}
-/* Cinta de orígenes: se desplaza media vuelta y se repite. El contenido va
-   duplicado en el marcado, así que el salto al reiniciar no se ve. */
-@keyframes cinta {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+@keyframes entrar { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+@keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
+@keyframes abrir { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@keyframes subirBarra { from { opacity: 0; transform: translate(-50%, 28px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes scrollPunto {
+  0%   { transform: translateY(0);    opacity: 1; }
+  70%  { transform: translateY(24px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 0; }
 }
 
 .hero-media {
@@ -238,141 +291,21 @@ body {
   height: 100%;
   object-fit: cover;
   pointer-events: none;
-  will-change: transform;
-  backface-visibility: hidden;
-  transform: translateZ(0);
-  animation: acercar 34s ease-in-out infinite alternate, aparecer 1.2s ease both;
 }
 
-.punto-scroll { animation: puntoBaja 1.9s ease-in-out infinite; }
+.punto-scroll { animation: scrollPunto 2.2s ease-in-out 1.4s infinite; }
 
-/* Filas que se pasan deslizando, sin barra de scroll visible. */
-.tiras { scrollbar-width: none; }
-.tiras::-webkit-scrollbar { display: none; }
-
-/* ─── Cinta de la cabecera ────────────────────────────────────────────────── */
-.cinta {
-  display: flex;
-  width: max-content;
-  animation: cinta 42s linear infinite;
-}
-.cinta-marco:hover .cinta { animation-play-state: paused; }
-
-/* ─── Enlace de la navegación ───────────────────────────────────────────────
-   El subrayado crece desde la izquierda al pasar el mouse. Va con scaleX y no
-   con el ancho: el ancho recalcula el layout en cada frame, la escala la lleva
-   el compositor. */
-.nav-enlace {
-  position: relative;
-  text-decoration: none;
-  padding-bottom: 3px;
-}
-.nav-enlace::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: currentColor;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--medio) var(--salida);
-}
-.nav-enlace:hover::after { transform: scaleX(1); }
-
-/* ─── Revelado por scroll ─────────────────────────────────────────────────── */
+/* Revelado por scroll: un fundido corto hacia arriba. */
 .revelar {
   opacity: 0;
-  transform: translateY(18px);
-  transition:
-    opacity var(--lento) ease,
-    transform var(--lento) var(--salida);
+  transform: translateY(28px);
+  transition: opacity .8s var(--salida), transform .8s var(--salida);
 }
 [data-visible="si"].revelar,
 [data-visible="si"] .revelar { opacity: 1; transform: none; }
 
-/* ─── Tesela de foto ──────────────────────────────────────────────────────── */
-.tesela {
-  position: relative;
-  overflow: hidden;
-  background: var(--color-pergamino);
-  border-radius: var(--radio-lg);
-}
-.tesela img,
-.tesela video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform var(--lento) var(--salida);
-}
-
-/* ─── Tarjeta de producto ─────────────────────────────────────────────────── */
-.tarjeta {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 10px 10px 16px;
-  border: 1px solid var(--linea-tenue);
-  border-radius: var(--radio-xl);
-  background: var(--color-papel);
-  transition:
-    border-color var(--medio) ease,
-    background-color var(--medio) ease,
-    transform var(--medio) var(--salida);
-}
-.tarjeta:hover {
-  border-color: var(--linea);
-  background: #FFF;
-  transform: translateY(-3px);
-}
-.tarjeta:hover .tesela img { transform: scale(1.05); }
-
-/* El botón de agregar entra al pasar el mouse. En pantalla táctil no hay
-   hover, así que ahí se muestra siempre (ver la media query de abajo). */
-.agregar {
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity var(--rapido) ease, transform var(--rapido) var(--salida);
-}
-.tarjeta:hover .agregar,
-.tarjeta:focus-within .agregar { opacity: 1; transform: none; }
-
-@media (hover: none) {
-  .agregar { opacity: 1; transform: none; }
-}
-
-/* ─── Regla de tueste ───────────────────────────────────────────────────────
-   La pieza propia del sitio. Es una regla de cinco pasos, de claro a oscuro,
-   con la marca puesta donde cae ese café. No es un adorno: sale del campo
-   `tueste` del producto, que es justo el dato que uno quiere saber y que
-   ninguna tienda muestra bien.
-
-   La marca se desliza hasta su posición cuando la pieza entra en pantalla:
-   es el único movimiento con significado de la página — dice "este café está
-   ACÁ dentro de la escala".
-   ------------------------------------------------------------------------- */
-.regla {
-  position: relative;
-  height: 3px;
-  background: linear-gradient(90deg, #E6DFCE 0%, #B79B72 45%, #6B4A2E 100%);
-  border-radius: 999px;
-}
-.regla-marca {
-  position: absolute;
-  top: 50%;
-  width: 9px;
-  height: 9px;
-  margin-left: -4.5px;
-  border-radius: 999px;
-  background: var(--color-cereza);
-  box-shadow: 0 0 0 2.5px var(--color-papel);
-  /* Nace a la izquierda del todo y viaja hasta su posición real. */
-  left: 0;
-  transform: translateY(-50%);
-  transition: left var(--lento) var(--salida);
-}
-[data-visible="si"] .regla-marca { left: var(--posicion); }
+/* Lo que se despliega al tocar "ver más". */
+.desplegado { animation: abrir .3s ease both; }
 
 /* ─── Cortina de entrada: el cisne de arte latte ────────────────────────────
    Un cisne se dibuja trazo por trazo sobre la taza, sale el vapor y aparece la
@@ -544,7 +477,10 @@ body {
   width: 44px;
   height: 4px;
   border-radius: 999px;
-  background: var(--color-cereza);
+  /* Color propio de la cortina, escrito a mano: el sistema del sitio no tiene
+     acento —es blanco, negro y grises—, así que no hay token del cual tirar.
+     Es el tostado de la crema de la taza que se acaba de dibujar arriba. */
+  background: #C67139;
 }
 
 @keyframes latteSale {

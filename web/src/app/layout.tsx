@@ -1,36 +1,37 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Inter, JetBrains_Mono } from "next/font/google";
+import { Instrument_Sans, Instrument_Serif, Spline_Sans_Mono } from "next/font/google";
 import { MARCA } from "@/lib/marca";
 import "./globals.css";
 
-// Tres familias, una por oficio.
+// Tres familias, una por oficio, tomadas del diseño que eligió Daniel.
 //
-// Archivo para los titulares: es un grotesco, así que no se pelea con el
-// lenguaje de las referencias, pero en los pesos altos tiene bastante más
-// carácter que Inter y aguanta tamaños grandes sin verse genérico.
-const archivo = Archivo({
-  variable: "--font-archivo",
+// Instrument Serif para los titulares. Es la voz del sitio: trae itálica de
+// verdad, y el recurso que sostiene todo el diseño es un titular en redonda
+// que termina en itálica —"El café es tan bueno como *quien lo prepara*"—.
+// Sin la itálica, los titulares se caen.
+const serif = Instrument_Serif({
+  variable: "--font-serif",
   subsets: ["latin"],
-  weight: ["600", "700"],
+  weight: ["400"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
-// Inter para el texto corrido y la interfaz. Es la de cocinare y es la que
-// mejor se lee en párrafo largo.
-const inter = Inter({
-  variable: "--font-inter",
+// Instrument Sans para el texto corrido y la interfaz.
+const sans = Instrument_Sans({
+  variable: "--font-sans-i",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+// Monoespaciada para TODO rótulo y TODA cifra: epígrafes, precios, pesos,
+// fichas. El oficio se mide en básculas y cronómetros, y es lo que le da
+// textura a una página que por lo demás es blanca y serena.
+const mono = Spline_Sans_Mono({
+  variable: "--font-mono-spline",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
-  display: "swap",
-});
-
-// Monoespaciada para TODA cifra y todo rótulo: precios, gramos, altitudes,
-// puntajes SCA, contadores. El oficio se mide en básculas y cronómetros, así
-// que los números son contenido y merecen su propia voz.
-const mono = JetBrains_Mono({
-  variable: "--font-mono-jet",
-  subsets: ["latin"],
-  weight: ["400", "500"],
   display: "swap",
 });
 
@@ -40,12 +41,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FBFAF6",
+  themeColor: "#FFFFFF",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${archivo.variable} ${inter.variable} ${mono.variable}`}>
+    <html lang="es" className={`${serif.variable} ${sans.variable} ${mono.variable}`}>
       <head>
         {/*
           El revelado por scroll nace en opacity 0 y lo despierta un observer.

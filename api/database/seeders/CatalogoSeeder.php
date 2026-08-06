@@ -64,8 +64,8 @@ class CatalogoSeeder extends Seeder
 
         $servicios = Categoria::create([
             'nombre' => 'Servicios',
-            'descripcion' => 'Asesoría, formación y barra para eventos. Se agenda por WhatsApp.',
-            'modo_vitrina' => 'grid',
+            'descripcion' => 'Mira de qué se trata y agenda por WhatsApp. Cada tarjeta abre su video.',
+            'modo_vitrina' => 'horizontal',
             'orden' => 5,
         ]);
 

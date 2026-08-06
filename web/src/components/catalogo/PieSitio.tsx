@@ -1,152 +1,126 @@
 import { enlaceWhatsApp, MARCA } from "@/lib/marca";
 
 /**
- * Cierre de la página: un bloque oscuro con la llamada a escribir y, debajo,
- * el pie en papel con los enlaces.
+ * Cierre y pie.
  *
- * El bloque oscuro al final lo hacen las dos referencias, y es lo que le pone
- * punto final a una página que hasta ahí fue toda blanca. Es el único lugar
- * del sitio donde se invierte el color: si se repitiera antes, dejaría de
- * funcionar como cierre.
+ * El cierre es una sola frase grande y un botón: es la última cosa que se lee
+ * antes de escribir, así que no compite con nada. Termina en itálica, como
+ * todos los titulares del sitio.
+ *
+ * El pie va sobre blanco, no sobre negro: en este diseño el negro ya aparece
+ * varias veces a lo largo de la página, y rematar también en negro haría que
+ * el pie se leyera como una sección más en vez de como el final.
  */
 export default function PieSitio() {
   return (
     <>
-      <section
-        id="contacto"
-        style={{ background: "var(--color-tinta)", color: "#FFF", textAlign: "center" }}
-      >
-        <div className="contenedor seccion" style={{ maxWidth: 720 }}>
-          <span className="epigrafe" style={{ color: "rgba(255,255,255,0.6)" }}>
-            Pedidos y agenda
-          </span>
-
-          <h2 className="titular" style={{ fontSize: "clamp(28px, 4vw, 48px)", margin: "14px 0 0" }}>
-            Escríbeme y armamos tu pedido.
-          </h2>
+      <section id="contacto" style={{ borderBottom: "1px solid var(--color-linea)" }}>
+        <div
+          className="revelar"
+          style={{
+            maxWidth: 760,
+            margin: "0 auto",
+            padding: "var(--aire) var(--margen)",
+            textAlign: "center",
+          }}
+        >
+          <span className="epigrafe">Tueste bajo pedido</span>
 
           <p
+            className="titular"
             style={{
+              fontSize: "clamp(26px, 5.5vw, 42px)",
+              lineHeight: 1.1,
+              letterSpacing: "-0.015em",
               margin: "16px auto 0",
-              maxWidth: 480,
-              fontSize: 15,
-              lineHeight: 1.7,
-              color: "rgba(255,255,255,0.72)",
+              maxWidth: "22ch",
             }}
           >
-            Café tostado bajo pedido, cursos, asesorías y barra para eventos. Todo se
-            coordina por WhatsApp: disponibilidad, envío y pago.
+            No tuesto para tener bodega. Tuesto cuando me lo pides, <em>y sale la misma semana.</em>
           </p>
 
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              justifyContent: "center",
-              gap: 12,
-              marginTop: 30,
-            }}
+          <a
+            href={enlaceWhatsApp(`Hola ${MARCA.nombre}, quiero saber qué lotes tienes esta semana.`)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="boton boton-grande boton-solido"
+            style={{ marginTop: 24 }}
           >
-            <a
-              href={enlaceWhatsApp(`Hola ${MARCA.nombre}, quiero hacer un pedido.`)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="boton"
-              style={{ background: "#FFF", color: "var(--color-tinta)", border: "1px solid #FFF", textDecoration: "none" }}
-            >
-              Escribir por WhatsApp
-            </a>
-            <a
-              href={MARCA.instagram}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="boton boton-claro"
-              style={{ textDecoration: "none" }}
-            >
-              Ver Instagram
-            </a>
-          </div>
+            Preguntar por los lotes de la semana
+          </a>
         </div>
       </section>
 
-      <footer style={{ borderTop: "1px solid var(--linea)" }}>
+      <footer>
         <div
-          className="contenedor"
           style={{
+            maxWidth: "var(--ancho)",
+            margin: "0 auto",
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
-            gap: "clamp(28px, 4vw, 48px)",
-            paddingBlock: "clamp(40px, 5vw, 64px)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+            gap: "clamp(22px, 4vw, 40px)",
+            padding: "clamp(32px, 5vw, 56px) var(--margen) clamp(24px, 4vw, 36px)",
           }}
         >
           <div>
-            <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em" }}>
+            <div className="nombre" style={{ fontSize: 23 }}>
               {MARCA.nombre}
             </div>
-            <p style={{ margin: "10px 0 0", maxWidth: 280, fontSize: 13, lineHeight: 1.7, color: "var(--color-grafito)" }}>
+            <p style={{ margin: "11px 0 0", maxWidth: "28ch", fontSize: 13, lineHeight: 1.7, color: "var(--color-suave)" }}>
               {MARCA.descripcion}
             </p>
           </div>
 
-          <div>
-            <div className="epigrafe" style={{ marginBottom: 14 }}>
-              Catálogo
-            </div>
-            <Enlaces
-              items={[
-                ["Café en grano", "#cat-cafe-en-grano"],
-                ["Cafés de origen", "#cat-cafes-de-origen"],
-                ["Métodos", "#cat-metodos"],
-                ["Servicios", "#cat-servicios"],
-              ]}
-            />
-          </div>
+          <Columna
+            titulo="Tienda"
+            enlaces={[
+              ["Cafés de origen", "#cat-cafes-de-origen"],
+              ["Café en grano", "#cat-cafe-en-grano"],
+              ["Equipo y artefactos", "#cat-artefactos"],
+              ["Cursos y asesorías", "#cat-servicios"],
+            ]}
+          />
 
-          <div>
-            <div className="epigrafe" style={{ marginBottom: 14 }}>
-              Sígueme
-            </div>
-            <Enlaces
-              externos
-              items={[
-                ["Instagram", MARCA.instagram],
-                ["Threads", MARCA.threads],
-                ["WhatsApp", enlaceWhatsApp(`Hola ${MARCA.nombre}, quiero hacer un pedido.`)],
-              ]}
-            />
-          </div>
+          <Columna
+            externos
+            titulo="Sígueme"
+            enlaces={[
+              ["Instagram", MARCA.instagram],
+              ["Threads", MARCA.threads],
+              ["WhatsApp", enlaceWhatsApp(`Hola ${MARCA.nombre}, quiero hacer un pedido.`)],
+            ]}
+          />
 
-          <div>
-            <div className="epigrafe" style={{ marginBottom: 14 }}>
-              Dónde
-            </div>
-            <div style={{ fontSize: 13, lineHeight: 1.9, color: "var(--color-grafito)" }}>
+          <div style={{ display: "grid", gap: 10, alignContent: "start" }}>
+            <span className="rotulo">Dónde</span>
+            <span style={{ fontSize: 13, lineHeight: 1.9, color: "var(--color-fuerte)" }}>
               {MARCA.ciudad}
               <br />
               Envíos a todo el país
               <br />
               Tueste bajo pedido
-            </div>
+            </span>
           </div>
         </div>
 
-        <div style={{ borderTop: "1px solid var(--linea-tenue)" }}>
+        <div style={{ borderTop: "1px solid var(--color-linea)" }}>
           <div
-            className="contenedor"
+            className="rotulo"
             style={{
+              maxWidth: "var(--ancho)",
+              margin: "0 auto",
               display: "flex",
               justifyContent: "space-between",
-              gap: 16,
+              gap: 14,
               flexWrap: "wrap",
-              paddingBlock: 18,
-              // Deja aire para la barra fija del carrito, que se monta encima.
-              paddingBottom: "calc(18px + env(safe-area-inset-bottom))",
+              // El relleno de abajo deja aire para la barra de pedido, que se
+              // monta flotando encima del final de la página.
+              padding: "16px var(--margen) calc(100px + env(safe-area-inset-bottom))",
+              letterSpacing: "0.18em",
             }}
           >
-            <span className="epigrafe">
-              © {new Date().getFullYear()} {MARCA.nombre}
-            </span>
-            <span className="epigrafe">Tostado en Colombia</span>
+            <span>© {new Date().getFullYear()} {MARCA.nombre}</span>
+            <span>Tostado en Colombia</span>
           </div>
         </div>
       </footer>
@@ -154,26 +128,28 @@ export default function PieSitio() {
   );
 }
 
-function Enlaces({
-  items,
+function Columna({
+  titulo,
+  enlaces,
   externos = false,
 }: {
-  items: Array<readonly [string, string]>;
+  titulo: string;
+  enlaces: Array<readonly [string, string]>;
   externos?: boolean;
 }) {
   return (
-    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 9 }}>
-      {items.map(([texto, url]) => (
-        <li key={texto}>
-          <a
-            href={url}
-            {...(externos ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-            style={{ color: "var(--color-grafito)", textDecoration: "none", fontSize: 13 }}
-          >
-            {texto}
-          </a>
-        </li>
+    <div style={{ display: "grid", gap: 10, alignContent: "start" }}>
+      <span className="rotulo">{titulo}</span>
+      {enlaces.map(([texto, url]) => (
+        <a
+          key={texto}
+          href={url}
+          {...(externos ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+          style={{ fontSize: 13, textDecoration: "none", color: "var(--color-fuerte)" }}
+        >
+          {texto}
+        </a>
       ))}
-    </ul>
+    </div>
   );
 }

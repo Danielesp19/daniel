@@ -1,97 +1,34 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import Image from "next/image";
 import type { Hero as HeroDatos } from "@/lib/catalogo";
-import { enlaceWhatsApp, MARCA } from "@/lib/marca";
+import { MARCA } from "@/lib/marca";
 
-/**
- * Video de fondo local. Está en null a propósito.
- *
- * El que había (videos/hero-coffee.mp4) era metraje de La Meca y se borró.
- * Daniel va a mandar uno suyo: cuando llegue, se guarda en public/videos y se
- * pone su ruta acá — el reproductor de abajo sigue montado y vuelve solo.
- * Mientras tanto el fondo es una foto suya, que es mejor que metraje ajeno.
- */
-const VIDEO_FONDO: string | null = null;
-
-/** Foto de respaldo del hero, cuando no hay video ni imagen cargada del panel. */
+/** Foto de portada. Es la que pidió Daniel conservar del diseño anterior. */
 const FOTO_FONDO = "/img1.jpg";
 
 /**
- * Portada: foto o video a sangre, un titular corto centrado y dos botones.
- * Nada más.
+ * Portada: la foto a sangre, el texto abajo y dos botones.
  *
- * En las dos referencias el hero no ocupa la pantalla entera —se ve el borde
- * de la sección siguiente— y el texto encima es mínimo. Es lo que hace que la
- * foto se lea como una foto y no como el fondo de un cartel.
+ * El contenido va apoyado en el borde inferior y no centrado: el velo carga el
+ * peso justo ahí, así que el texto queda sobre la parte más oscura y la mitad
+ * de arriba de la foto —donde está él— se ve limpia.
  *
- * El video se reproduce UNA sola vez por visita y queda congelado en el último
- * cuadro como fondo estático: en un catálogo el video es ambientación, y
- * dejarlo en bucle es gastar batería para siempre.
+ * Debajo va la cinta de logros sobre negro, que es lo que respalda todo lo
+ * demás: uno le compra el café a este barista y no a otro por eso.
  */
 export default function Hero({ hero }: { hero: HeroDatos | null }) {
-  const contenedor = useRef<HTMLElement>(null);
-  const video = useRef<HTMLVideoElement>(null);
-
-  // Orden de mando: la imagen que Daniel cargue desde el chatbot manda sobre
-  // todo; si no hay, el video local; si tampoco, la foto de respaldo.
-  const imagenFondo = hero?.imagen_url ?? (VIDEO_FONDO ? null : FOTO_FONDO);
-
-  // Fondo: una pasada del video, y pausa total del zoom cuando el hero sale de
-  // pantalla — sin esto el navegador sigue componiendo una capa a pantalla
-  // completa mientras se recorre todo el catálogo.
-  useEffect(() => {
-    const caja = contenedor.current;
-    if (!caja) return;
-    const media = caja.querySelector<HTMLElement>(".hero-media");
-    const v = imagenFondo ? null : video.current;
-    let terminado = false;
-
-    const alTerminar = () => {
-      terminado = true;
-      if (media) media.style.animationPlayState = "paused";
-    };
-
-    if (v) {
-      v.muted = true;
-      v.playbackRate = 0.8;
-      v.addEventListener("ended", alTerminar);
-    }
-
-    const observador = new IntersectionObserver(
-      ([entrada]) => {
-        if (entrada.isIntersecting) {
-          if (!terminado && media) media.style.animationPlayState = "running";
-          if (!terminado) v?.play().catch(() => {});
-        } else {
-          if (media) media.style.animationPlayState = "paused";
-          v?.pause();
-        }
-      },
-      { threshold: 0.05 },
-    );
-    observador.observe(caja);
-
-    // iOS con ahorro de batería bloquea incluso el autoplay silenciado: play()
-    // devuelve NotAllowedError y el video se queda en el póster para siempre.
-    // Un gesto del usuario sí lo desbloquea, así que al primer toque en la
-    // página se reintenta una vez.
-    const reintentar = () => {
-      if (!terminado && v?.paused) v.play().catch(() => {});
-    };
-    document.addEventListener("touchend", reintentar, { once: true, passive: true });
-
-    return () => {
-      observador.disconnect();
-      document.removeEventListener("touchend", reintentar);
-      v?.removeEventListener("ended", alTerminar);
-    };
-  }, [imagenFondo]);
-
-  const titulo = hero?.titulo ?? "Café bien hecho";
+  const imagen = hero?.imagen_url ?? FOTO_FONDO;
   const etiqueta = hero?.etiqueta ?? `${MARCA.oficio} · ${MARCA.ciudad}`;
   const subtitulo = hero?.subtitulo ?? MARCA.descripcion;
+
+  // El titular se parte en dos: lo que va en redonda y lo que va en itálica.
+  // Es el recurso que sostiene el diseño entero. Si el título viene del panel
+  // sin coma, se muestra completo en redonda en vez de partirlo a la fuerza.
+  const titulo = hero?.titulo ?? "El arte del café, en cada taza.";
+  const corte = titulo.indexOf(",");
+  const recto = corte > 0 ? titulo.slice(0, corte + 1) : titulo;
+  const cursiva = corte > 0 ? titulo.slice(corte + 1).trim() : null;
 
   return (
     <>
@@ -100,70 +37,35 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
           sección alta eso se ve como que el hero cambia de tamaño solo. */}
       <section
         id="hero"
-        ref={contenedor}
         style={{
           position: "relative",
-          height: "min(84svh, 760px)",
-          minHeight: 480,
+          height: "min(90svh, 780px)",
+          minHeight: 540,
           overflow: "hidden",
-          background: "var(--color-pergamino2)",
+          background: "var(--color-tinta)",
         }}
       >
-        {imagenFondo ? (
-          <Image
-            src={imagenFondo}
-            alt=""
-            aria-hidden="true"
-            fill
-            priority
-            sizes="100vw"
-            className="hero-media"
-            // La foto es vertical y él está en la mitad de arriba: recortada al
-            // ancho de la pantalla, centrada le corta la cabeza.
-            style={{ objectPosition: "center 12%" }}
-          />
-        ) : (
-          <video
-            ref={video}
-            muted
-            playsInline
-            // autoPlay ADEMÁS del play() por JS: iOS Safari ignora
-            // preload="auto" y no descarga nada hasta que algo dispara la
-            // reproducción — solo con el play() del JS, en iPhone el video ni
-            // siquiera empezaba a bajar y el fondo quedaba vacío un buen rato.
-            autoPlay
-            preload="auto"
-            aria-hidden="true"
-            tabIndex={-1}
-            className="hero-media"
-          >
-            <source src={VIDEO_FONDO ?? ""} type="video/mp4" />
-          </video>
-        )}
-
-        {/* Dos velos superpuestos.
-            El primero es un degradado vertical: carga el peso arriba —donde va
-            la cabecera en blanco— y abajo, donde el hero se encuentra con la
-            franja de datos.
-            El segundo es un viñeteado radial que oscurece las esquinas y deja
-            el centro un punto más claro, así la foto no se apaga entera y el
-            titular queda sobre la parte más limpia del encuadre. */}
-        <div
+        <Image
+          src={imagen}
+          alt=""
           aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(180deg, rgba(23,21,15,0.72) 0%, rgba(23,21,15,0.55) 45%, rgba(23,21,15,0.82) 100%)",
-          }}
+          fill
+          priority
+          sizes="100vw"
+          className="hero-media"
+          // La foto es vertical y él está en la mitad de arriba: recortada al
+          // ancho de la pantalla, centrada le corta la cabeza.
+          style={{ objectPosition: "center 12%" }}
         />
+
         <div
           aria-hidden="true"
           style={{
             position: "absolute",
             inset: 0,
+            pointerEvents: "none",
             background:
-              "radial-gradient(120% 90% at 50% 45%, transparent 25%, rgba(23,21,15,0.5) 100%)",
+              "linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.28) 42%, rgba(10,10,10,0.86) 100%)",
           }}
         />
 
@@ -171,20 +73,21 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
           style={{
             position: "absolute",
             inset: 0,
+            pointerEvents: "none",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent: "flex-end",
             textAlign: "center",
-            padding: "var(--barra) clamp(20px, 6vw, 40px) 0",
+            padding: "0 clamp(20px, 6vw, 40px) clamp(64px, 10vw, 96px)",
             color: "#FFF",
           }}
         >
           <span
             className="epigrafe"
             style={{
-              color: "rgba(255,255,255,0.85)",
-              animation: "entrar .8s cubic-bezier(0.2,0.7,0.2,1) .1s both",
+              color: "rgba(255,255,255,0.8)",
+              animation: "entrar .8s cubic-bezier(.2,.7,.2,1) .1s both",
             }}
           >
             {etiqueta}
@@ -193,23 +96,24 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
           <h1
             className="titular"
             style={{
-              fontSize: "clamp(38px, 6.4vw, 76px)",
-              maxWidth: 15 * 76,
-              margin: "18px 0 0",
-              animation: "entrar .9s cubic-bezier(0.2,0.7,0.2,1) .2s both",
+              fontSize: "clamp(46px, 11vw, 88px)",
+              lineHeight: 0.98,
+              maxWidth: "12ch",
+              marginTop: 18,
+              animation: "entrar .9s cubic-bezier(.2,.7,.2,1) .22s both",
             }}
           >
-            {titulo}
+            {recto} {cursiva && <em>{cursiva}</em>}
           </h1>
 
           <p
             style={{
-              maxWidth: 520,
-              margin: "18px 0 0",
-              fontSize: "clamp(14px, 1.5vw, 16px)",
+              maxWidth: "42ch",
+              margin: "16px 0 0",
+              fontSize: 15,
               lineHeight: 1.6,
-              color: "rgba(255,255,255,0.88)",
-              animation: "entrar .9s cubic-bezier(0.2,0.7,0.2,1) .3s both",
+              color: "rgba(255,255,255,0.82)",
+              animation: "entrar .9s cubic-bezier(.2,.7,.2,1) .34s both",
             }}
           >
             {subtitulo}
@@ -217,90 +121,89 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
 
           <div
             style={{
+              pointerEvents: "auto",
               display: "flex",
               flexWrap: "wrap",
               justifyContent: "center",
-              gap: 12,
-              marginTop: "clamp(26px, 4vw, 38px)",
-              animation: "entrar .9s cubic-bezier(0.2,0.7,0.2,1) .4s both",
+              gap: 10,
+              width: "100%",
+              maxWidth: 420,
+              marginTop: 28,
+              animation: "entrar .9s cubic-bezier(.2,.7,.2,1) .46s both",
             }}
           >
             <a
               href={hero?.cta_url ?? "#catalogo"}
-              className="boton boton-claro"
-              style={{ background: "#FFF", color: "var(--color-tinta)", borderColor: "#FFF", textDecoration: "none" }}
+              className="boton boton-grande boton-solido-claro"
+              style={{ flex: "1 1 160px" }}
             >
-              {hero?.cta_texto ?? "Ver el catálogo"}
+              {hero?.cta_texto ?? "Ver la tienda"}
             </a>
             <a
-              href={enlaceWhatsApp(`Hola ${MARCA.nombre}, quiero preguntarte por tus cursos.`)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="boton boton-claro"
-              style={{ textDecoration: "none" }}
+              href="#cat-servicios"
+              className="boton boton-grande"
+              style={{ flex: "1 1 160px", border: "1px solid rgba(255,255,255,0.5)", color: "#FFF" }}
             >
               Cursos y asesorías
             </a>
           </div>
         </div>
 
-        {/* Indicador de scroll, discreto y centrado. */}
         <div
           aria-hidden="true"
           style={{
             position: "absolute",
             left: "50%",
-            bottom: 22,
+            bottom: 18,
             transform: "translateX(-50%)",
             width: 1,
-            height: 30,
-            background: "rgba(255,255,255,0.45)",
+            height: 34,
+            background: "rgba(255,255,255,0.35)",
+            pointerEvents: "none",
             animation: "aparecer 1s ease 1.1s both",
           }}
         >
           <span
             className="punto-scroll"
-            style={{ position: "absolute", top: 0, left: -1, width: 3, height: 8, background: "#FFF" }}
+            style={{ position: "absolute", top: 0, left: -1, width: 3, height: 9, background: "#FFF" }}
           />
         </div>
       </section>
 
-      {/* ── Franja de respaldo ──
-          Los datos duros justo debajo del hero, como la fila de garantías de
-          las referencias. Acá hablan de él: es lo que respalda que uno le
-          compre el café a este barista y no a otro. */}
-      <div style={{ borderBottom: "1px solid var(--linea)" }}>
+      {/* ── Cinta de logros ── */}
+      <div
+        style={{
+          background: "var(--color-tinta)",
+          color: "#FFF",
+          borderBottom: "1px solid var(--color-linea)",
+        }}
+      >
         <ul
-          className="contenedor"
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            listStyle: "none",
-            margin: 0,
+            maxWidth: "var(--ancho)",
+            margin: "0 auto",
             padding: 0,
+            listStyle: "none",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
           }}
         >
-          {[
-            ["Nacional Arte Latte", "2.º puesto · 2025"],
-            ["Nacional Arte Latte", "2.º puesto · 2024"],
-            ["Reto 4V", "1.º puesto · 2024"],
-            ["Tueste", "Bajo pedido"],
-          ].map(([rotulo, valor], i) => (
+          {MARCA.logros.map((logro, i) => (
             <li
-              key={`${rotulo}-${valor}`}
+              key={`${logro.anio}-${logro.competencia}`}
               style={{
-                padding: "22px clamp(16px, 3vw, 28px)",
+                padding: "20px clamp(16px, 3vw, 28px)",
                 // Con auto-fit las columnas se reacomodan en celular y la
                 // primera de una fila nueva puede quedar con borde; es un pelo
-                // de línea sobre blanco y no vale una media query.
-                borderLeft: i === 0 ? "none" : "1px solid var(--linea-tenue)",
+                // de línea y no vale una media query.
+                borderLeft: i === 0 ? "none" : "1px solid rgba(255,255,255,0.14)",
               }}
             >
-              <div className="epigrafe" style={{ marginBottom: 6 }}>
-                {rotulo}
+              <div className="rotulo" style={{ color: "rgba(255,255,255,0.5)" }}>
+                {logro.competencia.replace("Campeonato ", "")}
               </div>
-              <div className="cifra" style={{ fontSize: 14, fontWeight: 600 }}>
-                {valor}
+              <div className="nombre" style={{ fontSize: 19, marginTop: 7 }}>
+                {logro.puesto} · {logro.anio}
               </div>
             </li>
           ))}

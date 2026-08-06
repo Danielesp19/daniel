@@ -1,200 +1,170 @@
 "use client";
 
-import { useState } from "react";
 import type { Categoria, Producto } from "@/lib/catalogo";
 import { useRevelado } from "@/hooks/useRevelar";
-import BarraCategorias from "./BarraCategorias";
-import TarjetaProducto from "./TarjetaProducto";
 import Carrusel from "./Carrusel";
-import VitrinaVertical from "./VitrinaVertical";
-import VitrinaHorizontal from "./VitrinaHorizontal";
-import FichaProducto from "./FichaProducto";
+import Destacado from "./Destacado";
+import TarjetaProducto from "./TarjetaProducto";
+import TarjetaVideo from "./TarjetaVideo";
 
 /**
- * El catálogo completo. Cada categoría se dibuja según su `modo_vitrina`,
- * que se configura desde el panel o por WhatsApp:
+ * El catálogo completo. Cada categoría se dibuja según su `modo_vitrina`, que
+ * se elige desde el panel o por WhatsApp:
+ *
  *   grid       → grilla de tarjetas (el modo normal)
  *   carrusel   → una fila que se corre de lado (para secciones largas)
- *   vertical   → filas grandes alternadas, una por producto
- *   horizontal → una ficha a la vez, se pasa deslizando
+ *   vertical   → el primer producto en grande y el resto en grilla
+ *   horizontal → tarjetas apaisadas con video, para lo que se agenda
  *
- * Las secciones alternan papel y pergamino. Esa alternancia es lo que separa
- * una sección de la siguiente: es más limpio que ponerle una foto de fondo a
- * cada una, que fue lo que emborronó la primera versión, y más legible que
- * dejarlas todas del mismo blanco, que fue lo que dejó vacía la segunda.
+ * El TONO lo pone la posición, no la categoría: las secciones van alternando
+ * blanco, blanco roto y negro. El negro no es el cierre de la página —vuelve
+ * varias veces— y es lo que le da el ritmo a un recorrido largo. Se calcula
+ * sobre el índice para que agregar una categoría nueva desde WhatsApp no
+ * obligue a tocar código.
  */
-export default function Catalogo({ categorias }: { categorias: Categoria[] }) {
-  const [activa, setActiva] = useState<number | null>(null);
-  const [abierto, setAbierto] = useState<Producto | null>(null);
+const TONOS = ["", " seccion-banda", " seccion-oscura"] as const;
 
-  const visibles = activa === null ? categorias : categorias.filter((c) => c.id === activa);
+export default function Catalogo({ categorias }: { categorias: Categoria[] }) {
+  if (categorias.length === 0) {
+    return (
+      <p
+        style={{
+          padding: "100px 24px",
+          textAlign: "center",
+          color: "var(--color-suave)",
+          fontSize: 14,
+        }}
+      >
+        El catálogo está vacío por ahora.
+      </p>
+    );
+  }
 
   return (
     <div id="catalogo">
-      <BarraCategorias categorias={categorias} activa={activa} onCambiar={setActiva} />
-
-      {visibles.length === 0 ? (
-        <p
-          style={{
-            padding: "100px 24px",
-            textAlign: "center",
-            color: "var(--color-grafito)",
-            fontSize: 14,
-          }}
-        >
-          No hay nada en esta categoría por ahora.
-        </p>
-      ) : (
-        visibles.map((categoria, i) => {
-          // La alternancia se calcula sobre lo que está a la vista: al filtrar
-          // por una categoría, la que quede sola siempre arranca en papel.
-          const enBanda = i % 2 === 1;
-
-          if (categoria.modo_vitrina === "carrusel") {
-            return (
-              <Carrusel
-                key={categoria.id}
-                categoria={categoria}
-                enBanda={enBanda}
-                onAbrir={setAbierto}
-              />
-            );
-          }
-          if (categoria.modo_vitrina === "vertical") {
-            return (
-              <VitrinaVertical
-                key={categoria.id}
-                categoria={categoria}
-                enBanda={enBanda}
-                onAbrir={setAbierto}
-              />
-            );
-          }
-          if (categoria.modo_vitrina === "horizontal") {
-            return <VitrinaHorizontal key={categoria.id} categoria={categoria} enBanda={enBanda} />;
-          }
-          return (
-            <Grilla
-              key={categoria.id}
-              categoria={categoria}
-              enBanda={enBanda}
-              onAbrir={setAbierto}
-            />
-          );
-        })
-      )}
-
-      {abierto && <FichaProducto producto={abierto} onCerrar={() => setAbierto(null)} />}
+      {categorias.map((categoria, i) => (
+        <Seccion key={categoria.id} categoria={categoria} tono={TONOS[i % TONOS.length]} />
+      ))}
     </div>
   );
 }
 
-/**
- * Encabezado de sección, igual para los tres modos de vitrina: un epígrafe con
- * la cuenta, el nombre y la bajada. Vive acá y se exporta para que las tres
- * vitrinas no lo copien cada una con sus propios tamaños.
- */
-export function CabezaSeccion({
-  epigrafe,
-  titulo,
-  descripcion,
-}: {
-  epigrafe: string;
-  titulo: string;
-  descripcion?: string | null;
-}) {
-  return (
-    <div style={{ textAlign: "center", marginBottom: "clamp(36px, 5vw, 60px)" }}>
-      <span className="epigrafe revelar">{epigrafe}</span>
-      <h2
-        className="titular revelar"
-        style={{ fontSize: "clamp(28px, 3.6vw, 46px)", margin: "12px 0 0", transitionDelay: "60ms" }}
-      >
-        {titulo}
-      </h2>
-      {descripcion && (
-        <p
-          className="revelar"
-          style={{
-            margin: "14px auto 0",
-            maxWidth: 560,
-            fontSize: 15,
-            lineHeight: 1.7,
-            color: "var(--color-grafito)",
-            transitionDelay: "120ms",
-          }}
-        >
-          {descripcion}
-        </p>
-      )}
-      {/* Filete corto bajo el encabezado: cierra el bloque y separa el título
-          de la grilla sin recurrir a más espacio en blanco. */}
-      <span
-        aria-hidden="true"
-        className="revelar"
-        style={{
-          display: "block",
-          width: 34,
-          height: 2,
-          margin: "22px auto 0",
-          background: "var(--color-cereza)",
-          transitionDelay: "180ms",
-        }}
-      />
-    </div>
-  );
-}
-
-function Grilla({
-  categoria,
-  enBanda,
-  onAbrir,
-}: {
-  categoria: Categoria;
-  enBanda: boolean;
-  onAbrir: (p: Producto) => void;
-}) {
+function Seccion({ categoria, tono }: { categoria: Categoria; tono: string }) {
   const { ref, props } = useRevelado<HTMLElement>();
+
+  if (!categoria.productos.length) return null;
+
+  const modo = categoria.modo_vitrina;
 
   return (
     <section
       ref={ref}
       {...props}
       id={`cat-${categoria.slug}`}
-      className={`seccion${enBanda ? " banda" : ""}`}
+      className={`seccion${tono}`}
     >
       <div className="contenedor">
-        <CabezaSeccion
-          epigrafe={`${String(categoria.productos.length).padStart(2, "0")} referencias`}
-          titulo={categoria.nombre}
-          descripcion={categoria.descripcion}
-        />
+        <Cabeza categoria={categoria} />
 
-        <div
-          style={{
-            display: "grid",
-            // El `min(46%, 250px)` hace dos cosas: en escritorio manda el
-            // 250px y salen cuatro o cinco columnas; en celular manda el 46%,
-            // así que siempre entran DOS tarjetas por fila en vez de una sola
-            // gigante — que es como muestran el catálogo las dos referencias.
-            gridTemplateColumns: "repeat(auto-fill, minmax(min(46%, 250px), 1fr))",
-            gap: "clamp(14px, 1.8vw, 22px)",
-          }}
-        >
-          {categoria.productos.map((producto, i) => (
-            <div
-              key={producto.id}
-              className="revelar"
-              // El escalonado se corta en la octava tarjeta: más allá, la
-              // última de una grilla larga tardaría casi medio segundo de más
-              // en aparecer y se nota como lentitud, no como coreografía.
-              style={{ transitionDelay: `${Math.min(i, 7) * 55}ms` }}
-            >
-              <TarjetaProducto producto={producto} onAbrir={onAbrir} />
-            </div>
-          ))}
-        </div>
+        {modo === "carrusel" ? (
+          <Carrusel productos={categoria.productos} />
+        ) : modo === "horizontal" ? (
+          <div className="grilla grilla-videos">
+            {categoria.productos.map((p, i) => (
+              <Envoltura key={p.id} indice={i}>
+                <TarjetaVideo producto={p} numero={i + 1} />
+              </Envoltura>
+            ))}
+          </div>
+        ) : modo === "vertical" ? (
+          <Vitrina productos={categoria.productos} />
+        ) : (
+          <div className="grilla grilla-productos">
+            {categoria.productos.map((p, i) => (
+              <Envoltura key={p.id} indice={i}>
+                <TarjetaProducto producto={p} />
+              </Envoltura>
+            ))}
+          </div>
+        )}
       </div>
     </section>
+  );
+}
+
+/** Encabezado de sección: epígrafe, titular y bajada. */
+function Cabeza({ categoria }: { categoria: Categoria }) {
+  return (
+    <div style={{ marginBottom: "clamp(22px, 4vw, 40px)" }}>
+      <span className="epigrafe revelar">{leyenda(categoria)}</span>
+      <h2 className="titular revelar" style={{ marginTop: 12, transitionDelay: "80ms" }}>
+        {categoria.nombre}
+      </h2>
+      {categoria.descripcion && (
+        <p
+          className="bajada revelar"
+          style={{
+            margin: "12px 0 0",
+            maxWidth: "44ch",
+            fontSize: 14,
+            lineHeight: 1.7,
+            color: "var(--color-suave)",
+            transitionDelay: "160ms",
+          }}
+        >
+          {categoria.descripcion}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * El epígrafe de cada sección dice algo del contenido, no "05 productos".
+ * Cuando la categoría no tiene una leyenda propia se cae en la cuenta, que
+ * al menos es un dato y no un relleno.
+ */
+function leyenda(categoria: Categoria): string {
+  const propias: Record<string, string> = {
+    "cafes-de-origen": "Un productor · un lote · una cosecha",
+    "cafe-en-grano": "Para todos los días",
+    artefactos: "La tienda",
+    servicios: "Aprende del subcampeón",
+    metodos: "En la barra",
+  };
+  return propias[categoria.slug] ?? `${String(categoria.productos.length).padStart(2, "0")} referencias`;
+}
+
+/** Vitrina: el primero en grande, el resto en grilla debajo. */
+function Vitrina({ productos }: { productos: Producto[] }) {
+  const [primero, ...resto] = productos;
+
+  return (
+    <>
+      <Destacado producto={primero} />
+
+      {resto.length > 0 && (
+        <div className="grilla grilla-productos" style={{ marginTop: "clamp(10px, 2vw, 18px)" }}>
+          {resto.map((p, i) => (
+            <Envoltura key={p.id} indice={i}>
+              <TarjetaProducto producto={p} />
+            </Envoltura>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
+ * Envuelve una tarjeta para escalonar su entrada. El retraso se corta en la
+ * octava: más allá, la última de una grilla larga tardaría medio segundo de
+ * más en aparecer y se nota como lentitud, no como coreografía.
+ */
+function Envoltura({ indice, children }: { indice: number; children: React.ReactNode }) {
+  return (
+    <div className="revelar" style={{ transitionDelay: `${Math.min(indice, 7) * 55}ms`, height: "100%" }}>
+      {children}
+    </div>
   );
 }
