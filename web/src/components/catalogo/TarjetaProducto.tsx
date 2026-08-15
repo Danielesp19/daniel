@@ -2,41 +2,29 @@
 
 import { useState } from "react";
 import type { Producto } from "@/lib/catalogo";
-import { pesos, gramos, altitud } from "@/lib/formato";
-import { useCarrito } from "@/components/carrito/CarritoProvider";
+import { pesos, gramos } from "@/lib/formato";
 import TeselaFoto from "./TeselaFoto";
+import FichaProducto from "./FichaProducto";
 
 /**
- * Tarjeta de producto: foto, rótulo, nombre en serif, notas en itálica, un
- * "ver más" que despliega la ficha ahí mismo, precio y botón a todo el ancho.
+ * Tarjeta de producto: foto, rótulo, nombre en serif, notas en itálica, precio
+ * y un botón de "ver más" que abre la ficha completa.
  *
- * El detalle se abre EN LA TARJETA y no en una ventana aparte. Es la decisión
- * del diseño y es mejor para esta retícula: con tarjetas de 175 px una ventana
- * modal tapa la pantalla entera para mostrar cuatro datos, y al cerrarla uno
- * ya perdió el hilo de dónde iba. Desplegando, la comparación entre lotes
- * —que es de lo que se trata comprar café de origen— no se interrumpe.
+ * La tarjeta NO agrega al pedido. Su trabajo es que uno reconozca el lote y
+ * decida si quiere mirarlo; agregar se decide en la ficha, donde están la
+ * ficha de origen y en qué sede hay. Antes el detalle se desplegaba aquí
+ * mismo, pero con esos dos bloques ya no cabe en 175 px sin volver la tarjeta
+ * una columna larguísima que empuja al resto de la grilla hacia abajo.
  *
  * Sirve igual sobre fondo claro y sobre fondo oscuro: los colores los resuelve
  * el CSS a partir de la sección que la contenga (ver `.seccion-oscura` en
  * globals.css), así que no recibe ninguna prop de tono.
  */
 export default function TarjetaProducto({ producto }: { producto: Producto }) {
-  const carrito = useCarrito();
   const [abierta, setAbierta] = useState(false);
 
   const peso = gramos(producto.gramos);
 
-  // Solo las filas que este producto tenga. Un molino no tiene altura ni
-  // proceso, y una rejilla con casillas vacías se ve rota.
-  const ficha: Array<[string, string]> = [];
-  if (producto.region) ficha.push(["Región", producto.region]);
-  if (producto.altitud_msnm) ficha.push(["Altura", altitud(producto.altitud_msnm)]);
-  if (producto.proceso) ficha.push(["Proceso", producto.proceso]);
-  if (producto.tueste) ficha.push(["Tueste", producto.tueste]);
-  if (producto.variedad) ficha.push(["Variedad", producto.variedad]);
-  if (producto.puntaje_sca) ficha.push(["SCA", producto.puntaje_sca.toFixed(2)]);
-
-  const hayQueAbrir = Boolean(producto.descripcion) || ficha.length > 0;
   const sello = producto.agotado
     ? "Agotado"
     : producto.por_acabarse
@@ -69,51 +57,6 @@ export default function TarjetaProducto({ producto }: { producto: Producto }) {
           </p>
         )}
 
-        {abierta && (
-          <div className="desplegado">
-            {producto.descripcion && (
-              <p style={{ margin: "12px 0 0", fontSize: 13.5, lineHeight: 1.65, color: "var(--color-fuerte)" }}>
-                {producto.descripcion}
-              </p>
-            )}
-
-            {ficha.length > 0 && (
-              <dl
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "10px 12px",
-                  margin: "14px 0 0",
-                  paddingTop: 12,
-                  borderTop: "1px solid currentColor",
-                  borderTopColor: "var(--color-linea)",
-                }}
-              >
-                {ficha.map(([rotulo, valor]) => (
-                  <div key={rotulo}>
-                    <dt className="rotulo" style={{ fontSize: 8.5, letterSpacing: "0.18em" }}>
-                      {rotulo}
-                    </dt>
-                    <dd style={{ margin: "4px 0 0", fontSize: 13, fontWeight: 500 }}>{valor}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-          </div>
-        )}
-
-        {hayQueAbrir && (
-          <button
-            type="button"
-            className="vermas"
-            aria-expanded={abierta}
-            onClick={() => setAbierta((v) => !v)}
-            style={{ marginTop: 12 }}
-          >
-            {abierta ? "Ver menos" : "Ver más"}
-          </button>
-        )}
-
         {/* `auto` empuja el precio y el botón al fondo: en una fila de la
             grilla quedan a la misma altura aunque los nombres ocupen distinto. */}
         <div style={{ marginTop: "auto", paddingTop: 14 }}>
@@ -126,17 +69,23 @@ export default function TarjetaProducto({ producto }: { producto: Producto }) {
             )}
           </div>
 
+          {/* La tarjeta invita a mirar; agregar al pedido se decide adentro,
+              con la ficha de origen y la disponibilidad a la vista. Por eso
+              este botón NO se deshabilita cuando el producto está agotado: ahí
+              adentro es donde se ve en qué sede se acabó y en cuál no. */}
           <button
             type="button"
-            className={`boton boton-ancho ${producto.controla_stock ? "boton-linea" : "boton-solido"}`}
+            className="boton boton-ancho boton-linea"
             style={{ marginTop: 10 }}
-            disabled={producto.agotado}
-            onClick={() => carrito.agregar(producto)}
+            aria-haspopup="dialog"
+            onClick={() => setAbierta(true)}
           >
-            {producto.agotado ? "Agotado" : producto.controla_stock ? "Agregar" : "Agendar"}
+            Ver más
           </button>
         </div>
       </div>
+
+      <FichaProducto producto={abierta ? producto : null} onCerrar={() => setAbierta(false)} />
     </article>
   );
 }

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('catalogo')->group(function () {
     Route::get('/', [CatalogoController::class, 'index']);
     Route::get('/stock', [CatalogoController::class, 'stock']);
+    Route::get('/sedes', [CatalogoController::class, 'sedes']);
     Route::get('/hero', [CatalogoController::class, 'hero']);
     Route::get('/productos/{producto}', [CatalogoController::class, 'show']);
 });
@@ -24,7 +25,6 @@ Route::middleware(['throttle:admin-api', 'admin.token'])->prefix('admin')->group
     Route::get('productos/{producto}', [ProductoAdminController::class, 'show']);
     Route::patch('productos/{producto}', [ProductoAdminController::class, 'update']);
     Route::patch('productos/{producto}/stock', [ProductoAdminController::class, 'stock']);
-    Route::get('categorias', [ProductoAdminController::class, 'categorias']);
 });
 
 // ── Webhook del chatbot ─────────────────────────────────────────────────────

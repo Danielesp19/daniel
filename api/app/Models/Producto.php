@@ -4,11 +4,16 @@ namespace App\Models;
 
 use App\Support\Sitio;
 use App\Support\VideoPoster;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Producto extends Model
 {
+    use Concerns\SlugUnico;
+
     protected $table = 'productos';
 
     protected $fillable = [
@@ -65,7 +70,7 @@ class Producto extends Model
 
         static::creating(function (self $producto) {
             if (empty($producto->slug)) {
-                $producto->slug = Str::slug($producto->nombre);
+                $producto->slug = static::slugLibre(Str::slug($producto->nombre), 'producto');
             }
         });
 
@@ -93,16 +98,71 @@ class Producto extends Model
     }
 
     /**
-     * Un servicio (asesoría, barra para un evento) nunca se agota: se agenda.
-     * Por eso todo lo que dependa del inventario pasa antes por esta bandera.
+     * El inventario real, repartido por punto de venta.
+     *
+     * Ojo con la dirección de la verdad: ESTA relación manda, y la columna
+     * `productos.stock` es su suma —ver recalcularTotal()—. Escribir `stock`
+     * directamente descuadra las dos cosas; para mover bolsas está
+     * ajustarStockSede().
      */
-    public function agotado(): bool
+    public function sedes()
     {
-        return $this->controla_stock && $this->stock <= 0;
+        return $this->belongsToMany(Sede::class, 'producto_sede')
+            ->withPivot('stock')
+            ->withTimestamps();
     }
 
     /**
-     * Movimiento de inventario. Devuelve [antes, despues].
+     * Cuántas bolsas hay en cada sede visible: lista de [sede, stock].
+     *
+     * Incluye las sedes SIN fila en el pivote, en cero. Es a propósito: para el
+     * cliente parado frente a la ficha, "en el Centro no hay" es una respuesta
+     * tan útil como "en el Norte quedan tres", y omitir la sede lo dejaría sin
+     * saber si no hay o si nunca se surtió ahí. Así además no hace falta crear
+     * filas en cero para cada producto nuevo por cada sede.
+     *
+     * Recibe las sedes ya cargadas para poder pintar un catálogo entero sin
+     * repetir la misma consulta por producto.
+     *
+     * @return \Illuminate\Support\Collection<int, array{sede: Sede, stock: int}>
+     */
+    public function disponibilidad(?EloquentCollection $sedes = null): Collection
+    {
+        $sedes ??= Sede::visibles();
+
+        $propias = ($this->relationLoaded('sedes') ? $this->sedes : $this->sedes()->get())
+            ->keyBy('id');
+
+        return $sedes->map(fn (Sede $sede) => [
+            'sede' => $sede,
+            'stock' => (int) ($propias->get($sede->id)?->pivot->stock ?? 0),
+        ])->values();
+    }
+
+    /**
+     * Vuelve a sumar las sedes y deja el total en `productos.stock`.
+     *
+     * Ese total es lo que leen el sello de AGOTADO, la revalidación del carrito
+     * y el resumen del chatbot; mantenerlo al día en cada movimiento es lo que
+     * permite que todo eso siga funcionando sin enterarse de que ahora hay
+     * sedes. Suma TODAS las sedes, incluidas las inactivas: las bolsas de una
+     * sede cerrada temporalmente siguen existiendo.
+     */
+    public function recalcularTotal(): int
+    {
+        $total = (int) $this->sedes()->sum('producto_sede.stock');
+
+        // Solo escribe si cambió, para no despertar la regeneración del sitio
+        // en cada movimiento que no mueve la aguja del total.
+        if ((int) $this->stock !== $total) {
+            $this->update(['stock' => $total]);
+        }
+
+        return $total;
+    }
+
+    /**
+     * Movimiento de inventario en una sede. Devuelve [antes, despues, total].
      *
      * Se pide la ACCIÓN explícita en vez de aceptar solo un número nuevo:
      * "llegaron 12 bolsas" y "quedan 12 bolsas" son cosas distintas, y quien
@@ -110,25 +170,45 @@ class Producto extends Model
      * entendió. Vive en el modelo porque tanto la API como el chatbot la usan
      * y el redondeo a cero no puede quedar implementado dos veces.
      *
+     * Va dentro de una transacción con la fila bloqueada: dos ajustes a la vez
+     * sobre la misma sede —el panel y el chatbot al tiempo— leerían el mismo
+     * "antes" y el segundo pisaría al primero.
+     *
      * @param  'fijar'|'sumar'|'restar'  $accion
-     * @return array{0: int, 1: int}
+     * @return array{0: int, 1: int, 2: int}
      */
-    public function ajustarStock(string $accion, int $cantidad): array
+    public function ajustarStockSede(Sede $sede, string $accion, int $cantidad): array
     {
-        $antes = (int) $this->stock;
+        return DB::transaction(function () use ($sede, $accion, $cantidad) {
+            $antes = (int) (DB::table('producto_sede')
+                ->where('producto_id', $this->id)
+                ->where('sede_id', $sede->id)
+                ->lockForUpdate()
+                ->value('stock') ?? 0);
 
-        $nuevo = match ($accion) {
-            'fijar' => $cantidad,
-            'sumar' => $antes + $cantidad,
-            // Nunca negativo: si alguien resta de más, el piso es cero. El
-            // stock es un conteo físico de bolsas en un estante.
-            'restar' => max(0, $antes - $cantidad),
-            default => throw new \InvalidArgumentException("Acción de stock desconocida: {$accion}"),
-        };
+            $nuevo = match ($accion) {
+                'fijar' => $cantidad,
+                'sumar' => $antes + $cantidad,
+                // Nunca negativo: si alguien resta de más, el piso es cero. El
+                // stock es un conteo físico de bolsas en un estante.
+                'restar' => max(0, $antes - $cantidad),
+                default => throw new \InvalidArgumentException("Acción de stock desconocida: {$accion}"),
+            };
 
-        $this->update(['stock' => $nuevo]);
+            $this->sedes()->syncWithoutDetaching([$sede->id => ['stock' => $nuevo]]);
+            $this->unsetRelation('sedes');
 
-        return [$antes, $nuevo];
+            return [$antes, $nuevo, $this->recalcularTotal()];
+        });
+    }
+
+    /**
+     * Un servicio (asesoría, barra para un evento) nunca se agota: se agenda.
+     * Por eso todo lo que dependa del inventario pasa antes por esta bandera.
+     */
+    public function agotado(): bool
+    {
+        return $this->controla_stock && $this->stock <= 0;
     }
 
     /** Hay stock pero está por acabarse: dispara el aviso "últimas bolsas". */

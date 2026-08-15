@@ -217,6 +217,16 @@ class Asistente
             en false. Eso sí lo desaparece del sitio.
           Si no queda claro cuál de las dos quiere, pregúntale.
         - Los precios son enteros de pesos: 48000. Nunca decimales.
+        - EL INVENTARIO SE LLEVA POR SEDE. Cada producto tiene bolsas en cada punto de venta,
+          y el número que ve el cliente en la página es la suma de todas. Por eso:
+          · Antes de mover stock necesitas saber en CUÁL sede. Si el admin no lo dijo,
+            pregúntaselo — mover bolsas en la sede equivocada daña dos inventarios de una vez.
+            Usa listar_sedes si no recuerdas cuáles hay.
+          · Un producto en cero en una sede NO está agotado si le quedan en otra. Agotado es
+            cuando el total llega a cero. Al reportar un ajuste di las dos cifras: cómo quedó
+            esa sede y cómo quedó el total.
+          · Cuando pregunte "¿cuánto queda de X?", si está repartido di dónde está: "quedan
+            cinco: tres en el Centro y dos en Bogotá" sirve mucho más que "quedan cinco".
 
         # Cómo trabajas
         - Busca siempre el producto antes de modificarlo. Nunca inventes un id.

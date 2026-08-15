@@ -126,11 +126,15 @@ function Cabeza({ categoria }: { categoria: Categoria }) {
  */
 function leyenda(categoria: Categoria): string {
   const propias: Record<string, string> = {
-    "cafes-de-origen": "Un productor · un lote · una cosecha",
-    "cafe-en-grano": "Para todos los días",
+    cafes: "Un productor · un lote · una cosecha",
     artefactos: "La tienda",
     servicios: "Aprende del subcampeón",
+    // Los métodos están apagados por ahora: son la base de las recetas que
+    // vienen después. La leyenda se deja lista para cuando se enciendan.
     metodos: "En la barra",
+    // Nombres viejos, por si una base sin migrar todavía los tiene.
+    "cafes-de-origen": "Un productor · un lote · una cosecha",
+    "cafe-en-grano": "Para todos los días",
   };
   return propias[categoria.slug] ?? `${String(categoria.productos.length).padStart(2, "0")} referencias`;
 }

@@ -307,6 +307,185 @@ body {
 /* Lo que se despliega al tocar "ver más". */
 .desplegado { animation: abrir .3s ease both; }
 
+/* ─── Ficha del producto (hoja flotante) ────────────────────────────────────
+   Lo que abre el "ver más". La ficha creció con la disponibilidad por sede y
+   ya no cabe dentro de una tarjeta de 175 px; en hoja se lee al ancho que
+   necesita y la grilla de atrás no se mueve.
+
+   En escritorio va centrada; en móvil sube desde abajo y se pega al borde
+   inferior, que es donde está el pulgar. */
+.ficha-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 4vw, 28px);
+  background: rgba(10, 10, 10, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: aparecer .25s ease both;
+}
+
+.ficha {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 520px;
+  max-height: 88dvh;
+  background: var(--color-papel);
+  border: 1px solid var(--color-linea);
+  overflow: hidden;
+  animation: fichaEntra .32s var(--salida, cubic-bezier(.22,.61,.36,1)) both;
+}
+
+@keyframes fichaEntra {
+  from { opacity: 0; transform: translateY(18px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+.ficha-foto { flex-shrink: 0; aspect-ratio: 4 / 3; }
+
+.ficha-cerrar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(10, 10, 10, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #FFF;
+  font-size: 21px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .2s ease;
+}
+.ficha-cerrar:hover { background: var(--color-tinta); }
+
+/* El cuerpo es lo único que se desplaza: la foto y el pie se quedan fijos. */
+.ficha-cuerpo { flex: 1; overflow-y: auto; padding: clamp(18px, 4vw, 26px); }
+
+.ficha-nombre { font-size: clamp(23px, 4.5vw, 30px); line-height: 1.08; margin-top: 8px; }
+
+.ficha-descripcion {
+  margin: 14px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-fuerte);
+}
+
+.ficha-datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr));
+  gap: 12px 16px;
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-linea);
+}
+.ficha-datos dd { margin: 4px 0 0; font-size: 13.5px; font-weight: 500; }
+
+.ficha-pie {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px clamp(18px, 4vw, 26px);
+  border-top: 1px solid var(--color-linea);
+  background: var(--color-papel);
+}
+
+@media (max-width: 560px) {
+  /* Hoja pegada al fondo: el pulgar llega al botón sin estirarse. */
+  .ficha-fondo { align-items: flex-end; padding: 0; }
+  .ficha { max-width: none; max-height: 92dvh; border-inline: 0; border-bottom: 0; }
+  @keyframes fichaEntra {
+    from { opacity: 0; transform: translateY(100%); }
+    to   { opacity: 1; transform: none; }
+  }
+}
+
+/* ─── Disponibilidad por sede ───────────────────────────────────────────────
+   La lista de puntos de venta con lo que queda en cada uno, dentro de la ficha
+   desplegada del producto.
+
+   Se lee en columna y no en tabla: la tarjeta más angosta de la grilla mide
+   175 px y dos columnas de datos ahí no caben sin partir las direcciones. El
+   número queda a la derecha, alineado con tabulares, porque es lo que la gente
+   viene a comparar de una sede a otra.
+
+   Los tonos siguen la misma regla que el resto: los grises claros no se leen
+   sobre negro y se reemplazan por blancos con alfa. `.sedes-oscuro` es para el
+   panel del destacado, que pinta su propio fondo oscuro aunque la sección que
+   lo contiene sea clara. */
+.sedes { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--color-linea); }
+.seccion-oscura .sedes { border-top-color: var(--linea-o); }
+.sedes-oscuro { border-top-color: rgba(255, 255, 255, 0.18); }
+
+.sedes-titulo { display: block; font-size: 8.5px; letter-spacing: 0.18em; margin: 0 0 2px; }
+.sedes-oscuro .sedes-titulo { color: var(--rotulo-o); }
+
+.sedes-lista { list-style: none; margin: 0; padding: 0; }
+
+.sede {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding-block: 9px;
+  border-bottom: 1px solid var(--color-linea);
+}
+.sede:last-child { border-bottom: 0; padding-bottom: 0; }
+.seccion-oscura .sede { border-bottom-color: var(--linea-o); }
+.sedes-oscuro .sede { border-bottom-color: rgba(255, 255, 255, 0.14); }
+
+/* La sede sin unidades se apaga pero NO se esconde: saber dónde no hay evita
+   el viaje en vano, que es justo lo que este bloque viene a resolver. */
+.sede-agotada { opacity: 0.5; }
+
+.sede-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.sede-nombre { font-size: 12.5px; font-weight: 500; line-height: 1.3; }
+
+.sede-dato {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--color-suave);
+  /* Las direcciones largas parten en varias líneas en vez de desbordar la
+     tarjeta angosta. */
+  overflow-wrap: anywhere;
+}
+.seccion-oscura .sede-dato { color: var(--suave-o); }
+.sedes-oscuro .sede-dato { color: rgba(255, 255, 255, 0.62); }
+
+.sede-contacto { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 1px; }
+
+.sede-enlace {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  transition: color .2s ease;
+}
+.sede-enlace:hover { color: var(--color-tinta); }
+.seccion-oscura .sede-enlace:hover,
+.sedes-oscuro .sede-enlace:hover { color: #FFF; }
+
+.sede-stock {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding-top: 1px;
+}
+
 /* ─── Cortina de entrada: el cisne de arte latte ────────────────────────────
    Un cisne se dibuja trazo por trazo sobre la taza, sale el vapor y aparece la
    firma. Viene de la segunda escena que mandó Daniel, acelerada y con los

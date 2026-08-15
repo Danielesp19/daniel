@@ -8,6 +8,8 @@ use Illuminate\Support\Str;
 
 class Categoria extends Model
 {
+    use Concerns\SlugUnico;
+
     /** Cómo se dibuja la categoría en el catálogo web. Ver la migración. */
     public const VITRINAS = ['grid', 'carrusel', 'vertical', 'horizontal'];
 
@@ -33,7 +35,7 @@ class Categoria extends Model
 
         static::creating(function (self $categoria) {
             if (empty($categoria->slug)) {
-                $categoria->slug = Str::slug($categoria->nombre);
+                $categoria->slug = static::slugLibre(Str::slug($categoria->nombre), 'seccion');
             }
         });
     }

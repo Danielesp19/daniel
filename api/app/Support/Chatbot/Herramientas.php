@@ -5,6 +5,7 @@ namespace App\Support\Chatbot;
 use App\Models\Categoria;
 use App\Models\Hero;
 use App\Models\Producto;
+use App\Models\Sede;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -70,9 +71,9 @@ class Herramientas
             // ── Inventario ───────────────────────────────────────────────────
             [
                 'name' => 'ajustar_stock',
-                'description' => 'Cambia las bolsas disponibles de un producto. '
+                'description' => 'Cambia las bolsas disponibles de un producto EN UNA SEDE. '
                     .'Elige la acción con cuidado: "sumar" cuando llega mercancía ("llegaron 12"), '
-                    .'"restar" cuando salió ("vendí 3"), y "fijar" cuando el admin dice cuánto QUEDA en total ("quedan 8"). '
+                    .'"restar" cuando salió ("vendí 3"), y "fijar" cuando el admin dice cuánto QUEDA en esa sede ("quedan 8"). '
                     .'Para marcar algo como agotado o sin stock, usa fijar con cantidad 0: el catálogo le pone solo el sello de AGOTADO. '
                     .'Si la frase es ambigua, pregúntale al admin antes de llamar esta herramienta.',
                 'inputSchema' => [
@@ -91,9 +92,23 @@ class Herramientas
                             'type' => 'integer',
                             'description' => 'Número de bolsas. Siempre positivo: la dirección la da la acción.',
                         ],
+                        'sede' => [
+                            'type' => 'string',
+                            'description' => 'NOMBRE de la sede donde se mueve el inventario, tal como lo dijo el admin '
+                                .'("el centro", "Bogotá"). No es un id. Si el admin no dijo en cuál, PREGÚNTALE antes: '
+                                .'mover bolsas en la sede equivocada daña dos inventarios. Solo se puede omitir cuando la tienda '
+                                .'tiene una única sede.',
+                        ],
                     ],
                     'required' => ['producto_id', 'accion', 'cantidad'],
                 ],
+            ],
+            [
+                'name' => 'listar_sedes',
+                'description' => 'Las sedes de la tienda con su ciudad, dirección y cuántas bolsas tiene cada una en total. '
+                    .'Úsala cuando necesites saber qué sedes existen para preguntarle al admin en cuál mover el inventario, '
+                    .'o cuando pregunte "¿dónde está?" o "¿cómo va tal sede?".',
+                'inputSchema' => ['type' => 'object', 'properties' => (object) []],
             ],
 
             // ── Productos ────────────────────────────────────────────────────
@@ -245,6 +260,7 @@ class Herramientas
                 'buscar_productos' => self::buscarProductos($input),
                 'resumen_inventario' => self::resumenInventario(),
                 'listar_categorias' => self::listarCategorias(),
+                'listar_sedes' => self::listarSedes(),
                 'ajustar_stock' => self::ajustarStock($input),
                 'crear_producto' => self::crearProducto($input),
                 'editar_producto' => self::editarProducto($input),
@@ -367,15 +383,94 @@ class Herramientas
             return ['error' => 'La cantidad debe estar entre 0 y 100000.'];
         }
 
-        [$antes, $despues] = $producto->ajustarStock($accion, $cantidad);
+        $sede = self::resolverSede($input['sede'] ?? null);
+
+        // Cuando no se puede saber en qué estante mover las bolsas, esto
+        // devuelve el error con la lista de sedes y el modelo pregunta. Es a
+        // propósito que no adivine: descontar en la sede equivocada deja dos
+        // inventarios malos en vez de uno.
+        if (! $sede instanceof Sede) {
+            return $sede;
+        }
+
+        [$antes, $despues, $total] = $producto->ajustarStockSede($sede, $accion, $cantidad);
 
         return [
             'ok' => true,
             'producto' => $producto->nombre,
+            'sede' => $sede->nombre,
             'stock_antes' => $antes,
             'stock_despues' => $despues,
-            'quedo_agotado' => $despues <= 0,
+            // El total manda para el catálogo: un producto con cero en esta
+            // sede pero tres en otra NO está agotado para el cliente, y el
+            // modelo tiene que poder decirlo así.
+            'stock_total' => $total,
+            'quedo_agotado_en_sede' => $despues <= 0,
+            'quedo_agotado' => $total <= 0,
             'quedo_por_acabarse' => $producto->fresh()->porAcabarse(),
+        ];
+    }
+
+    /**
+     * Traduce a una sede el nombre que el admin escribió por chat.
+     *
+     * Devuelve la Sede, o el arreglo de error que el modelo debe leer para
+     * volver a preguntar. Nunca elige por su cuenta entre varias.
+     *
+     * @return Sede|array<string, mixed>
+     */
+    private static function resolverSede(mixed $nombre): Sede|array
+    {
+        $nombre = is_string($nombre) ? trim($nombre) : '';
+        $disponibles = Sede::visibles();
+
+        if ($disponibles->isEmpty()) {
+            return ['error' => 'No hay ninguna sede activa. Hay que crear una en el panel antes de mover inventario.'];
+        }
+
+        // Una sola sede: no hay nada que preguntar, y exigir el nombre volvería
+        // insoportable el chat de una tienda de un solo local.
+        if ($disponibles->count() === 1 && $nombre === '') {
+            return $disponibles->first();
+        }
+
+        if ($nombre === '') {
+            return [
+                'error' => 'Falta saber en qué sede. Pregúntale al admin en cuál y vuelve a llamar la herramienta.',
+                'sedes' => $disponibles->pluck('nombre')->all(),
+            ];
+        }
+
+        $encontradas = Sede::buscarPorNombre($nombre);
+
+        if ($encontradas->isEmpty()) {
+            return [
+                'error' => "No hay ninguna sede que se parezca a \"{$nombre}\".",
+                'sedes' => $disponibles->pluck('nombre')->all(),
+            ];
+        }
+
+        if ($encontradas->count() > 1) {
+            return [
+                'error' => "\"{$nombre}\" calza con más de una sede. Pregúntale al admin a cuál se refiere.",
+                'sedes' => $encontradas->pluck('nombre')->all(),
+            ];
+        }
+
+        return $encontradas->first();
+    }
+
+    /** Las sedes con lo que hay en cada una: el "¿dónde está?" del inventario. */
+    private static function listarSedes(): array
+    {
+        return [
+            'sedes' => Sede::visibles()->map(fn (Sede $s) => [
+                'nombre' => $s->nombre,
+                'ciudad' => $s->ciudad,
+                'direccion' => $s->direccion,
+                'principal' => (bool) $s->principal,
+                'bolsas_en_stock' => (int) $s->productos()->sum('producto_sede.stock'),
+            ])->all(),
         ];
     }
 
@@ -403,15 +498,35 @@ class Herramientas
 
         $datos = array_intersect_key($input, array_flip(self::CAMPOS_PRODUCTO));
         $datos['nombre'] = $nombre;
-        // El stock se acepta al crear aunque no esté en CAMPOS_PRODUCTO: ahí
-        // sí es un valor inicial, no un movimiento de inventario.
-        $datos['stock'] = max(0, (int) ($input['stock'] ?? 0));
+        // Nace en cero SIEMPRE. El stock inicial, si viene, entra después como
+        // un movimiento de sede: la columna es la suma de las sedes y escribirla
+        // aquí dejaría un total sin bolsas detrás que lo respalden.
+        $datos['stock'] = 0;
 
         if ($error = self::validar($datos)) {
             return ['error' => $error];
         }
 
+        $inicial = max(0, (int) ($input['stock'] ?? 0));
+        $controlaStock = $datos['controla_stock'] ?? true;
+        $sede = null;
+
+        // Se resuelve ANTES de crear: si hay que preguntar en qué sede, mejor
+        // preguntar sobre un producto que todavía no existe que dejar uno
+        // creado a medias y que el modelo lo cree otra vez al reintentar.
+        if ($inicial > 0 && $controlaStock) {
+            $sede = self::resolverSede($input['sede'] ?? null);
+
+            if (! $sede instanceof Sede) {
+                return $sede;
+            }
+        }
+
         $producto = $categoria->productos()->create($datos);
+
+        if ($sede) {
+            $producto->ajustarStockSede($sede, 'fijar', $inicial);
+        }
 
         return [
             'ok' => true,
@@ -619,6 +734,11 @@ class Herramientas
             // vez de mandarle un stock en cero que interpretaría como agotado.
             'tipo' => $p->controla_stock ? 'producto' : 'servicio',
             'stock' => $p->controla_stock ? (int) $p->stock : null,
+            // El desglose, para que pueda responder "quedan dos, pero las dos
+            // están en Bogotá" en vez de solo el total.
+            'stock_por_sede' => $p->controla_stock
+                ? $p->disponibilidad()->mapWithKeys(fn (array $f) => [$f['sede']->nombre => $f['stock']])->all()
+                : null,
             'stock_minimo' => $p->controla_stock ? (int) $p->stock_minimo : null,
             'agotado' => $p->agotado(),
             'por_acabarse' => $p->porAcabarse(),

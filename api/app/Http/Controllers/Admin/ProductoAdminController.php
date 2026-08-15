@@ -5,7 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Categoria;
 use App\Models\Producto;
+use App\Models\Sede;
+use App\Support\ImageOptimizer;
+use App\Support\VideoOptimizer;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 /**
@@ -27,7 +33,7 @@ class ProductoAdminController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Producto::with('categoria:id,nombre')->orderBy('categoria_id')->orderBy('orden');
+        $query = Producto::with(['categoria:id,nombre', 'sedes'])->orderBy('categoria_id')->orderBy('orden');
 
         if ($buscar = trim((string) $request->query('buscar'))) {
             $termino = '%'.str_replace('%', '\%', $buscar).'%';
@@ -51,12 +57,15 @@ class ProductoAdminController extends Controller
                 ->whereColumn('stock', '<=', 'stock_minimo');
         }
 
-        return response()->json($query->get()->map(fn ($p) => $this->formato($p)));
+        // Las sedes se leen una vez para toda la lista, no una por producto.
+        $sedes = Sede::visibles();
+
+        return response()->json($query->get()->map(fn ($p) => $this->formato($p, $sedes)));
     }
 
     public function show(Producto $producto)
     {
-        return response()->json($this->formato($producto->load('categoria:id,nombre')));
+        return response()->json($this->formato($producto->load('categoria:id,nombre', 'sedes')));
     }
 
     /** Resumen de inventario: lo primero que un admin pregunta por chat. */
@@ -76,17 +85,102 @@ class ProductoAdminController extends Controller
         ]);
     }
 
+    /** Alta de producto. Acepta multipart: puede venir con foto y video. */
+    public function store(Request $request)
+    {
+        $datos = $request->validate($this->reglas(nuevo: true));
+
+        // Al final de su sección: uno nuevo no debería colarse de primeras.
+        $datos['orden'] ??= (int) Producto::where('categoria_id', $datos['categoria_id'])->max('orden') + 1;
+
+        $producto = Producto::create($this->soloCampos($datos));
+        $this->guardarMedios($request, $producto);
+
+        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'imagenes'])), 201);
+    }
+
     public function update(Request $request, Producto $producto)
     {
+        $datos = $request->validate($this->reglas());
+
+        $producto->update($this->soloCampos($datos));
+        $this->guardarMedios($request, $producto);
+
+        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'imagenes'])));
+    }
+
+    /**
+     * Baja de producto. Se lleva también sus archivos: sin esto el disco se
+     * llena de fotos y videos de productos que ya nadie puede ver.
+     */
+    public function destroy(Producto $producto)
+    {
+        foreach ([$producto->imagen, $producto->video, $producto->video_poster] as $ruta) {
+            if ($ruta) {
+                Storage::disk('public')->delete($ruta);
+            }
+        }
+
+        foreach ($producto->imagenes as $imagen) {
+            Storage::disk('public')->delete($imagen->ruta);
+        }
+
+        $producto->delete();
+
+        return response()->json(null, 204);
+    }
+
+    /** Reordena los productos de una sección: llegan los ids en el orden deseado. */
+    public function reordenar(Request $request)
+    {
         $datos = $request->validate([
-            'nombre' => 'sometimes|string|max:255',
+            'ids' => 'required|array',
+            'ids.*' => ['integer', Rule::exists('productos', 'id')],
+        ]);
+
+        foreach ($datos['ids'] as $posicion => $id) {
+            Producto::where('id', $id)->update(['orden' => $posicion]);
+        }
+
+        // update() de constructor no dispara eventos, así que el aviso al sitio
+        // va a mano: si no, el orden nuevo espera al minuto de caché.
+        \App\Support\Sitio::revalidar();
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** Borra una de las fotos extra de la galería. */
+    public function borrarImagen(Producto $producto, int $imagen)
+    {
+        $foto = $producto->imagenes()->findOrFail($imagen);
+
+        Storage::disk('public')->delete($foto->ruta);
+        $foto->delete();
+
+        return response()->json(null, 204);
+    }
+
+    /**
+     * Las reglas de validación de un producto.
+     *
+     * `stock` NO está a propósito: es la suma de las sedes y escribirlo directo
+     * descuadraría el desglose. Para mover unidades está
+     * PATCH /productos/{id}/stock, que sí pide la sede.
+     *
+     * @return array<string, mixed>
+     */
+    private function reglas(bool $nuevo = false): array
+    {
+        $obligatorio = $nuevo ? 'required' : 'sometimes';
+
+        return [
+            'nombre' => $obligatorio.'|string|max:255',
+            'categoria_id' => [$nuevo ? 'required' : 'sometimes', Rule::exists('categorias', 'id')],
+            'precio_cop' => $obligatorio.'|integer|min:0',
             'descripcion' => 'sometimes|nullable|string',
-            'precio_cop' => 'sometimes|integer|min:0',
-            'stock' => 'sometimes|integer|min:0',
             'stock_minimo' => 'sometimes|integer|min:0',
             'gramos' => 'sometimes|integer|min:0',
             'controla_stock' => 'sometimes|boolean',
-            'categoria_id' => ['sometimes', Rule::exists('categorias', 'id')],
             'finca' => 'sometimes|nullable|string|max:255',
             'productor' => 'sometimes|nullable|string|max:255',
             'region' => 'sometimes|nullable|string|max:255',
@@ -100,19 +194,93 @@ class ProductoAdminController extends Controller
             'activo' => 'sometimes|boolean',
             'destacado' => 'sometimes|boolean',
             'orden' => 'sometimes|integer|min:0',
-        ]);
 
-        $producto->update($datos);
-
-        return response()->json($this->formato($producto->fresh('categoria:id,nombre')));
+            // Medios. Se validan aquí pero no se asignan con fill(): los
+            // procesa guardarMedios(), que optimiza y guarda la ruta.
+            'imagen' => 'sometimes|nullable|image|max:12288',
+            'video' => 'sometimes|nullable|file|mimetypes:video/mp4,video/quicktime,video/webm|max:102400',
+            'imagenes_extra' => 'sometimes|array|max:6',
+            'imagenes_extra.*' => 'image|max:12288',
+            'quitar_imagen' => 'sometimes|boolean',
+            'quitar_video' => 'sometimes|boolean',
+        ];
     }
 
-    /** Movimiento de inventario. La lógica vive en Producto::ajustarStock(). */
+    /** Los campos que sí van al modelo, sin los de archivos. */
+    private function soloCampos(array $datos): array
+    {
+        return array_diff_key($datos, array_flip([
+            'imagen', 'video', 'imagenes_extra', 'quitar_imagen', 'quitar_video',
+        ]));
+    }
+
+    /**
+     * Guarda foto, video y galería.
+     *
+     * Reutiliza los optimizadores que ya existían: la imagen sale en WebP
+     * redimensionada y el video recomprimido sin audio. El póster del video lo
+     * genera solo el modelo al detectar que cambió (ver Producto::booted).
+     */
+    private function guardarMedios(Request $request, Producto $producto): void
+    {
+        $cambios = [];
+
+        if ($request->boolean('quitar_imagen') && $producto->imagen) {
+            Storage::disk('public')->delete($producto->imagen);
+            $cambios['imagen'] = null;
+        }
+
+        if ($request->hasFile('imagen')) {
+            if ($producto->imagen) {
+                Storage::disk('public')->delete($producto->imagen);
+            }
+            $cambios['imagen'] = ImageOptimizer::store($request->file('imagen'), 'productos');
+        }
+
+        if ($request->boolean('quitar_video') && $producto->video) {
+            Storage::disk('public')->delete($producto->video);
+            $cambios['video'] = null;
+        }
+
+        if ($request->hasFile('video')) {
+            if ($producto->video) {
+                Storage::disk('public')->delete($producto->video);
+            }
+            $cambios['video'] = VideoOptimizer::store($request->file('video'), 'productos');
+        }
+
+        if ($cambios) {
+            $producto->update($cambios);
+        }
+
+        foreach ((array) $request->file('imagenes_extra', []) as $archivo) {
+            $producto->imagenes()->create([
+                'ruta' => ImageOptimizer::store($archivo, 'productos'),
+                'orden' => (int) $producto->imagenes()->max('orden') + 1,
+            ]);
+        }
+    }
+
+    /**
+     * Movimiento de inventario en una sede. La lógica vive en
+     * Producto::ajustarStockSede().
+     *
+     * La sede se pide POR NOMBRE y no por id: quien llama es el chatbot, y
+     * quien le habla al chatbot escribe "en el centro", no "sede_id 2". Cuando
+     * el nombre no alcanza para decidir, esto responde 422 con la lista de
+     * nombres para que el asistente vuelva a preguntar — mover bolsas en el
+     * estante equivocado es peor que preguntar una vez más.
+     */
     public function stock(Request $request, Producto $producto)
     {
         $datos = $request->validate([
             'accion' => ['required', Rule::in(['fijar', 'sumar', 'restar'])],
             'cantidad' => 'required|integer|min:0|max:100000',
+            // Dos formas de decir la misma sede: por nombre la usa el chatbot,
+            // que recibe "en el centro"; por id la usa el panel, que tiene un
+            // selector y no necesita adivinar.
+            'sede' => 'sometimes|nullable|string|max:255',
+            'sede_id' => ['sometimes', 'nullable', 'integer', Rule::exists('sedes', 'id')],
         ]);
 
         if (! $producto->controla_stock) {
@@ -121,26 +289,84 @@ class ProductoAdminController extends Controller
             ], 422);
         }
 
-        [$antes, $nuevo] = $producto->ajustarStock($datos['accion'], $datos['cantidad']);
+        $sede = isset($datos['sede_id'])
+            ? Sede::findOrFail($datos['sede_id'])
+            : $this->resolverSede($datos['sede'] ?? null);
+
+        // resolverSede() devuelve la respuesta de error ya armada cuando no
+        // puede decidir sola.
+        if (! $sede instanceof Sede) {
+            return $sede;
+        }
+
+        [$antes, $nuevo, $total] = $producto->ajustarStockSede($sede, $datos['accion'], $datos['cantidad']);
 
         return response()->json([
             'id' => $producto->id,
             'nombre' => $producto->nombre,
+            'sede' => $sede->nombre,
             'antes' => $antes,
             'despues' => $nuevo,
-            'agotado' => $nuevo <= 0,
+            // El total de todas las sedes: es lo que ve el cliente en el sello
+            // del catálogo, así que el chatbot tiene que poder contarlo también.
+            'total' => $total,
+            'agotado_en_sede' => $nuevo <= 0,
+            'agotado' => $total <= 0,
         ]);
     }
 
-    /** Categorías disponibles — el chatbot las necesita para mover productos. */
-    public function categorias()
+    /**
+     * Traduce el nombre de sede que llegó por chat a una sede de verdad.
+     *
+     * Devuelve la Sede, o una respuesta 422 lista para devolver cuando hay que
+     * volver a preguntar.
+     */
+    private function resolverSede(?string $nombre): Sede|JsonResponse
     {
-        return response()->json(
-            Categoria::orderBy('orden')->get(['id', 'nombre', 'slug', 'modo_vitrina', 'activa'])
-        );
+        $disponibles = Sede::visibles();
+
+        if ($disponibles->isEmpty()) {
+            return response()->json([
+                'error' => 'No hay ninguna sede activa: hay que crear una en el panel antes de mover inventario.',
+            ], 422);
+        }
+
+        // Con una sola sede no hay nada que preguntar, y obligar a nombrarla
+        // volvería insoportable el chat de una tienda de un solo local.
+        if ($disponibles->count() === 1 && ! $nombre) {
+            return $disponibles->first();
+        }
+
+        if (! $nombre) {
+            return response()->json([
+                'error' => 'Falta decir en qué sede. Pregúntale al usuario en cuál y vuelve a intentar.',
+                'necesita_sede' => true,
+                'sedes' => $disponibles->pluck('nombre')->all(),
+            ], 422);
+        }
+
+        $encontradas = Sede::buscarPorNombre($nombre);
+
+        if ($encontradas->isEmpty()) {
+            return response()->json([
+                'error' => "No existe ninguna sede que se parezca a «{$nombre}».",
+                'necesita_sede' => true,
+                'sedes' => $disponibles->pluck('nombre')->all(),
+            ], 422);
+        }
+
+        if ($encontradas->count() > 1) {
+            return response()->json([
+                'error' => "«{$nombre}» calza con más de una sede. Pregúntale al usuario a cuál se refiere.",
+                'necesita_sede' => true,
+                'sedes' => $encontradas->pluck('nombre')->all(),
+            ], 422);
+        }
+
+        return $encontradas->first();
     }
 
-    private function formato(Producto $p): array
+    private function formato(Producto $p, ?EloquentCollection $sedes = null): array
     {
         return [
             'id' => $p->id,
@@ -151,10 +377,19 @@ class ProductoAdminController extends Controller
             'precio_cop' => (int) $p->precio_cop,
             'gramos' => (int) $p->gramos,
             'controla_stock' => (bool) $p->controla_stock,
+            // Total de todas las sedes. Es de solo lectura: sale de sumarlas.
             'stock' => (int) $p->stock,
             'stock_minimo' => (int) $p->stock_minimo,
             'agotado' => $p->agotado(),
             'por_acabarse' => $p->porAcabarse(),
+            // El desglose, para que el chatbot pueda responder "quedan dos,
+            // pero las dos están en el Norte" en vez de solo el total.
+            'stock_por_sede' => $p->controla_stock
+                ? $p->disponibilidad($sedes)->map(fn (array $f) => [
+                    'sede' => $f['sede']->nombre,
+                    'stock' => $f['stock'],
+                ])->all()
+                : [],
             'finca' => $p->finca,
             'productor' => $p->productor,
             'region' => $p->region,
@@ -166,6 +401,16 @@ class ProductoAdminController extends Controller
             'puntaje_sca' => $p->puntaje_sca !== null ? (float) $p->puntaje_sca : null,
             'activo' => (bool) $p->activo,
             'destacado' => (bool) $p->destacado,
+            'orden' => (int) $p->orden,
+
+            // El panel necesita ver lo que ya está subido para poder
+            // reemplazarlo o quitarlo.
+            'imagen_url' => $p->imagen ? asset('storage/'.$p->imagen) : null,
+            'video_url' => $p->video ? asset('storage/'.$p->video) : null,
+            'imagenes_extra' => ($p->relationLoaded('imagenes') ? $p->imagenes : $p->imagenes()->get())
+                ->map(fn ($img) => ['id' => $img->id, 'url' => asset('storage/'.$img->ruta)])
+                ->values()
+                ->all(),
         ];
     }
 }

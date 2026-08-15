@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import type { Producto } from "@/lib/catalogo";
 import { pesos, gramos } from "@/lib/formato";
 import { useCarrito } from "@/components/carrito/CarritoProvider";
 import TeselaFoto from "./TeselaFoto";
+import FichaProducto from "./FichaProducto";
 
 /**
  * Panel del producto destacado: foto grande a un lado y la ficha al otro,
@@ -15,6 +17,7 @@ import TeselaFoto from "./TeselaFoto";
  */
 export default function Destacado({ producto }: { producto: Producto }) {
   const carrito = useCarrito();
+  const [abierta, setAbierta] = useState(false);
   const peso = gramos(producto.gramos);
 
   return (
@@ -70,6 +73,21 @@ export default function Destacado({ producto }: { producto: Producto }) {
           </p>
         )}
 
+        {/* Abre la misma hoja que las tarjetas: un solo lugar donde vive el
+            detalle, y así la ficha de origen y la disponibilidad se leen igual
+            se llegue desde donde se llegue. */}
+        {(producto.tiene_ficha || producto.sedes.length > 0) && (
+          <button
+            type="button"
+            className="vermas"
+            aria-haspopup="dialog"
+            onClick={() => setAbierta(true)}
+            style={{ marginTop: 20 }}
+          >
+            Ver más
+          </button>
+        )}
+
         <div
           style={{
             display: "flex",
@@ -102,6 +120,8 @@ export default function Destacado({ producto }: { producto: Producto }) {
           </button>
         </div>
       </div>
+
+      <FichaProducto producto={abierta ? producto : null} onCerrar={() => setAbierta(false)} />
     </article>
   );
 }

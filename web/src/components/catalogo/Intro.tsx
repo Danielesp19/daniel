@@ -30,11 +30,15 @@ import { MARCA } from "@/lib/marca";
  */
 
 /**
- * Cuánto se comprime la escena original. 0,5 la deja exactamente en la mitad:
- * el cisne queda dibujado a los 3 s y la cortina termina de irse a los 4,1 s,
- * contra los 6,7 s del original. Subirlo la alarga; bajarlo la apura.
+ * Cuánto se comprime la escena original. 0,25 la deja en la cuarta parte: la
+ * cortina empieza a irse a 1,73 s y termina de salir a 2,43 s, contra los
+ * 6,7 s del original. Subirlo la alarga; bajarlo la apura.
+ *
+ * Estuvo en 0,5 (4,9 s) y se sentía como una espera: quien vuelve al sitio la
+ * ve entera cada vez, y a la segunda visita cinco segundos son eternos. En
+ * 2,4 s todavía se alcanza a leer el trazo del cisne y la firma.
  */
-const RITMO = 0.5;
+const RITMO = 0.25;
 
 /** Convierte un tiempo de la escena original al ritmo de acá. */
 const t = (segundos: number) => `${(segundos * RITMO).toFixed(2)}s`;

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Categoria;
 use App\Models\Hero;
 use App\Models\Producto;
+use App\Models\Sede;
 use App\Support\Chatbot\Asistente;
 use App\Support\Chatbot\Herramientas;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -24,6 +25,24 @@ class HerramientasChatbotTest extends TestCase
 
     private const ADMIN = '573222248487';
 
+    private Sede $sede;
+
+    /**
+     * Una sede única. Con una sola, el chatbot no tiene que preguntar en cuál
+     * mover el inventario; que pregunte cuando hay varias se prueba aparte.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->sede = Sede::create([
+            'nombre' => 'Sede Centro',
+            'direccion' => 'Calle 8 # 5-42',
+            'ciudad' => 'Neiva',
+            'principal' => true,
+        ]);
+    }
+
     private function categoria(array $extra = []): Categoria
     {
         return Categoria::create($extra + ['nombre' => 'Café en grano', 'orden' => 1]);
@@ -31,11 +50,20 @@ class HerramientasChatbotTest extends TestCase
 
     private function producto(Categoria $categoria, array $extra = []): Producto
     {
-        return $categoria->productos()->create($extra + [
+        // El stock vive por sede: la columna del producto es su suma.
+        $stock = (int) ($extra['stock'] ?? 10);
+        unset($extra['stock']);
+
+        $producto = $categoria->productos()->create($extra + [
             'nombre' => 'El Mirador',
             'precio_cop' => 48000,
-            'stock' => 10,
         ]);
+
+        if ($producto->controla_stock) {
+            $producto->ajustarStockSede($this->sede, 'fijar', $stock);
+        }
+
+        return $producto->fresh();
     }
 
     // ── Crear ───────────────────────────────────────────────────────────────

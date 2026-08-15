@@ -4,12 +4,32 @@ namespace Tests\Feature;
 
 use App\Models\Categoria;
 use App\Models\Producto;
+use App\Models\Sede;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class CatalogoApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    private Sede $sede;
+
+    /**
+     * Una sede única. El inventario se lleva por sede, así que sin al menos una
+     * no hay dónde poner las bolsas; con una sola, quien mueve stock no tiene
+     * que nombrarla — que es justo el caso de la tienda de un solo local.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->sede = Sede::create([
+            'nombre' => 'Sede Centro',
+            'direccion' => 'Calle 8 # 5-42',
+            'ciudad' => 'Neiva',
+            'principal' => true,
+        ]);
+    }
 
     private function categoria(array $atributos = []): Categoria
     {
@@ -18,12 +38,22 @@ class CatalogoApiTest extends TestCase
 
     private function producto(Categoria $categoria, array $atributos = []): Producto
     {
-        return $categoria->productos()->create($atributos + [
+        // `stock` no se escribe en la columna: es la suma de las sedes. Se
+        // coloca en la sede y la columna queda cuadrada sola.
+        $stock = (int) ($atributos['stock'] ?? 10);
+        unset($atributos['stock']);
+
+        $producto = $categoria->productos()->create($atributos + [
             'nombre' => 'El Mirador',
             'precio_cop' => 48000,
-            'stock' => 10,
             'stock_minimo' => 3,
         ]);
+
+        if ($producto->controla_stock) {
+            $producto->ajustarStockSede($this->sede, 'fijar', $stock);
+        }
+
+        return $producto->fresh();
     }
 
     public function test_el_catalogo_devuelve_categorias_con_sus_productos(): void

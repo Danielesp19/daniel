@@ -1,6 +1,25 @@
 /** Cómo se dibuja una categoría en el catálogo. Ver la migración categorias. */
 export type ModoVitrina = "grid" | "carrusel" | "vertical" | "horizontal";
 
+/**
+ * Un punto de venta. Cuando viaja dentro de un producto trae además cuántas
+ * unidades de ESE producto hay en ELLA.
+ */
+export interface Sede {
+  id: number;
+  nombre: string;
+  slug: string;
+  direccion: string;
+  ciudad: string;
+  barrio: string | null;
+  telefono: string | null;
+  /** Ya viene sin espacios ni signos, listo para el enlace de wa.me. */
+  whatsapp: string | null;
+  horario: string | null;
+  stock: number;
+  agotado: boolean;
+}
+
 export interface Producto {
   id: number;
   nombre: string;
@@ -12,9 +31,12 @@ export interface Producto {
 
   /** false = servicio (asesoría, barra para eventos): no se cuenta ni se agota. */
   controla_stock: boolean;
+  /** Total de todas las sedes: es la suma de `sedes[].stock`. */
   stock: number;
   agotado: boolean;
   por_acabarse: boolean;
+  /** Dónde hay y dónde no. Vacío en los servicios, que no se cuentan. */
+  sedes: Sede[];
 
   // Ficha técnica de origen — el bloque de datos duros del diseño.
   tiene_ficha: boolean;
@@ -93,6 +115,10 @@ function normalizarProducto(p: Producto): Producto {
     video_url: urlArchivo(p.video_url),
     video_poster_url: urlArchivo(p.video_poster_url),
     imagenes_extra: (p.imagenes_extra ?? []).map((u) => urlArchivo(u)!),
+    // Blindaje contra una respuesta vieja del CDN: mientras vence el caché de
+    // un minuto puede llegar catálogo sin este campo, y la ficha lo recorre
+    // sin preguntar.
+    sedes: p.sedes ?? [],
   };
 }
 

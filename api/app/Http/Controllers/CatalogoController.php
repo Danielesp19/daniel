@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Categoria;
 use App\Models\Hero;
 use App\Models\Producto;
+use App\Models\Sede;
+use Illuminate\Database\Eloquent\Collection;
 
 class CatalogoController extends Controller
 {
@@ -12,9 +14,14 @@ class CatalogoController extends Controller
     public function index()
     {
         $categorias = Categoria::where('activa', true)
-            ->with(['productosVisibles.imagenes'])
+            ->with(['productosVisibles.imagenes', 'productosVisibles.sedes'])
             ->orderBy('orden')
             ->get();
+
+        // Las sedes se leen UNA vez y viajan a cada producto. Sin esto, pintar
+        // el catálogo entero dispararía la misma consulta de sedes por
+        // producto — con cuarenta productos son cuarenta consultas idénticas.
+        $sedes = Sede::visibles();
 
         $catalogo = $categorias
             // Una categoría sin productos es ruido: no aparece ni en el
@@ -27,7 +34,7 @@ class CatalogoController extends Controller
                 'slug' => $c->slug,
                 'descripcion' => $c->descripcion,
                 'modo_vitrina' => $c->modo_vitrina,
-                'productos' => $c->productosVisibles->map(fn ($p) => $this->formato($p))->values(),
+                'productos' => $c->productosVisibles->map(fn ($p) => $this->formato($p, sedes: $sedes))->values(),
             ])
             ->values()
             ->all();
@@ -45,9 +52,23 @@ class CatalogoController extends Controller
     public function show(Producto $producto)
     {
         abort_unless($producto->activo, 404);
-        $producto->load(['categoria', 'imagenes']);
+        $producto->load(['categoria', 'imagenes', 'sedes']);
 
         return response()->json($this->formato($producto, detalle: true));
+    }
+
+    /**
+     * Las sedes de la tienda con sus datos de contacto.
+     *
+     * Existe aparte del catálogo porque sirve para una página de "dónde
+     * estamos" sin tener que bajar todos los productos para sacar la lista.
+     */
+    public function sedes()
+    {
+        $sedes = Sede::visibles()->map(fn (Sede $s) => $this->formatoSede($s));
+
+        return response()->json($sedes)
+            ->header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
     }
 
     /**
@@ -90,7 +111,7 @@ class CatalogoController extends Controller
             ->header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
     }
 
-    private function formato(Producto $p, bool $detalle = false): array
+    private function formato(Producto $p, bool $detalle = false, ?Collection $sedes = null): array
     {
         $datos = [
             'id' => $p->id,
@@ -129,10 +150,48 @@ class CatalogoController extends Controller
                 ->all(),
 
             'destacado' => (bool) $p->destacado,
+
+            // Dónde hay y dónde no. Los servicios no llevan desglose: no se
+            // guardan en ningún estante, y una lista de sedes en cero debajo de
+            // una asesoría se leería como que está agotada en todas partes.
+            'sedes' => $p->controla_stock
+                ? $p->disponibilidad($sedes)
+                    ->map(fn (array $fila) => $this->formatoSede($fila['sede'], $fila['stock']))
+                    ->all()
+                : [],
         ];
 
         if ($detalle) {
             $datos['categoria'] = $p->categoria?->nombre;
+        }
+
+        return $datos;
+    }
+
+    /**
+     * Una sede como la ve el público. Cuando viaja dentro de un producto lleva
+     * además cuántas bolsas de ESE producto hay en ELLA.
+     */
+    private function formatoSede(Sede $s, ?int $stock = null): array
+    {
+        $datos = [
+            'id' => $s->id,
+            'nombre' => $s->nombre,
+            'slug' => $s->slug,
+            'direccion' => $s->direccion,
+            'ciudad' => $s->ciudad,
+            'barrio' => $s->barrio,
+            'telefono' => $s->telefono,
+            // Sin espacios ni signos: es lo que necesita el enlace wa.me que
+            // arma el frontend, y dejarlo listo aquí evita repetir la limpieza
+            // en cada sitio que lo pinte.
+            'whatsapp' => $s->whatsapp ? preg_replace('/\D+/', '', $s->whatsapp) : null,
+            'horario' => $s->horario,
+        ];
+
+        if ($stock !== null) {
+            $datos['stock'] = $stock;
+            $datos['agotado'] = $stock <= 0;
         }
 
         return $datos;
