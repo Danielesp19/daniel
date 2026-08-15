@@ -727,6 +727,11 @@ body {
   /* La cortina de entrada no se muestra: con el movimiento anulado se
      quedaría congelada tapando la página. */
   .latte { display: none; }
+
+  /* El video de la portada se esconde y queda su primer cuadro, que es el
+     fondo del contenedor. Un video en bucle detrás del titular es
+     exactamente el movimiento que pidieron no ver. */
+  .hero-video { display: none; }
 }
 
 /* La red de seguridad para "sin JavaScript" vive en un <noscript> del layout,

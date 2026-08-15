@@ -1,24 +1,35 @@
 "use client";
 
-import Image from "next/image";
 import type { Hero as HeroDatos } from "@/lib/catalogo";
 import { MARCA } from "@/lib/marca";
 
-/** Foto de portada. Es la que pidió Daniel conservar del diseño anterior. */
-const FOTO_FONDO = "/img1.jpg";
+/**
+ * El video de portada y su primer cuadro.
+ *
+ * Van en `public/videos/` y no en el panel: es el fondo del sitio, no
+ * contenido que cambie seguido, y desde ahí `next.config.ts` ya les pone
+ * cabeceras de caché largas. El póster es lo que se ve mientras el video baja
+ * —y lo único que se ve si el visitante pidió menos movimiento—.
+ *
+ * Dos formatos, WebM primero: pesa 600 KB contra 991 KB del MP4 y lo entienden
+ * Chrome, Firefox y Edge. El MP4 queda de respaldo para Safari, que hasta hace
+ * poco no leía VP9. El navegador se queda con el primero que sepa reproducir.
+ */
+const VIDEO_WEBM = "/videos/hero.webm";
+const VIDEO_MP4 = "/videos/hero.mp4";
+const POSTER_FONDO = "/videos/hero.jpg";
 
 /**
- * Portada: la foto a sangre, el texto abajo y dos botones.
+ * Portada: el video a sangre, el texto abajo y dos botones.
  *
  * El contenido va apoyado en el borde inferior y no centrado: el velo carga el
  * peso justo ahí, así que el texto queda sobre la parte más oscura y la mitad
- * de arriba de la foto —donde está él— se ve limpia.
+ * de arriba —donde está la escena— se ve limpia.
  *
  * Debajo va la cinta de logros sobre negro, que es lo que respalda todo lo
  * demás: uno le compra el café a este barista y no a otro por eso.
  */
 export default function Hero({ hero }: { hero: HeroDatos | null }) {
-  const imagen = hero?.imagen_url ?? FOTO_FONDO;
   const etiqueta = hero?.etiqueta ?? `${MARCA.oficio} · ${MARCA.ciudad}`;
   const subtitulo = hero?.subtitulo ?? MARCA.descripcion;
 
@@ -42,21 +53,29 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
           height: "min(90svh, 780px)",
           minHeight: 540,
           overflow: "hidden",
-          background: "var(--color-tinta)",
+          // El póster va de fondo del contenedor y no solo como `poster` del
+          // video: así se ve algo desde el primer cuadro pintado, y es lo que
+          // queda cuando el visitante pidió menos movimiento y el video se
+          // esconde por CSS.
+          background: `var(--color-tinta) url(${POSTER_FONDO}) center/cover no-repeat`,
         }}
       >
-        <Image
-          src={imagen}
-          alt=""
+        <video
+          className="hero-media hero-video"
+          poster={POSTER_FONDO}
+          // Sin `muted` el navegador bloquea la reproducción automática, y el
+          // archivo no trae pista de audio de todos modos.
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
           aria-hidden="true"
-          fill
-          priority
-          sizes="100vw"
-          className="hero-media"
-          // La foto es vertical y él está en la mitad de arriba: recortada al
-          // ancho de la pantalla, centrada le corta la cabeza.
-          style={{ objectPosition: "center 12%" }}
-        />
+          tabIndex={-1}
+        >
+          <source src={VIDEO_WEBM} type="video/webm" />
+          <source src={VIDEO_MP4} type="video/mp4" />
+        </video>
 
         <div
           aria-hidden="true"

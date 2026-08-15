@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Hero;
-use App\Support\ImageOptimizer;
 use App\Support\Sitio;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * La portada, para el panel.
@@ -26,9 +24,14 @@ class HeroAdminController extends Controller
     }
 
     /**
-     * Se recibe por POST y no por PUT porque puede traer la imagen: un
-     * multipart con `_method` no viaja bien por todos los proxys, y el panel
-     * manda FormData cuando hay archivo.
+     * Solo los textos.
+     *
+     * El fondo de la portada NO se sube por aquí: es un video fijo que vive en
+     * el frontend (public/videos/hero.mp4). Se quitó la subida de imagen en vez
+     * de solo esconder el campo del panel, para que no quede una puerta abierta
+     * que escribe una columna que ya nadie lee.
+     *
+     * Se recibe por POST y no por PUT porque el panel manda FormData.
      */
     public function update(Request $request)
     {
@@ -39,29 +42,10 @@ class HeroAdminController extends Controller
             'cta_texto' => 'sometimes|nullable|string|max:255',
             'cta_url' => 'sometimes|nullable|string|max:500',
             'activo' => 'sometimes|boolean',
-            'imagen' => 'sometimes|nullable|image|max:12288',
-            'quitar_imagen' => 'sometimes|boolean',
         ]);
 
         $hero = $this->actual() ?? new Hero(['orden' => 0, 'activo' => true]);
-
-        // La imagen se maneja aparte: los booleanos y el archivo no son campos
-        // del modelo y `fill()` con ellos adentro reventaría.
-        unset($datos['imagen'], $datos['quitar_imagen']);
         $hero->fill($datos);
-
-        if ($request->boolean('quitar_imagen') && $hero->imagen) {
-            Storage::disk('public')->delete($hero->imagen);
-            $hero->imagen = null;
-        }
-
-        if ($request->hasFile('imagen')) {
-            if ($hero->imagen) {
-                Storage::disk('public')->delete($hero->imagen);
-            }
-            $hero->imagen = ImageOptimizer::store($request->file('imagen'), 'hero');
-        }
-
         $hero->save();
 
         // Hero no dispara el aviso al sitio desde el modelo (no lo tiene
@@ -83,7 +67,6 @@ class HeroAdminController extends Controller
             'titulo' => $h->titulo,
             'subtitulo' => $h->subtitulo,
             'etiqueta' => $h->etiqueta,
-            'imagen_url' => $h->imagen ? asset('storage/'.$h->imagen) : null,
             'cta_texto' => $h->cta_texto,
             'cta_url' => $h->cta_url,
             'activo' => (bool) $h->activo,

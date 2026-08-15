@@ -77,12 +77,15 @@ export interface AdminSede {
   bolsas_en_stock: number;
 }
 
+/**
+ * La portada, solo textos: el fondo es un video fijo del frontend
+ * (public/videos/hero.mp4) y no se administra desde el panel.
+ */
 export interface AdminHero {
   id: number;
   titulo: string;
   subtitulo: string | null;
   etiqueta: string | null;
-  imagen_url: string | null;
   cta_texto: string | null;
   cta_url: string | null;
   activo: boolean;
@@ -255,13 +258,7 @@ export const borrarSede = (id: number, confirmar = false) =>
 
 // ── Portada ─────────────────────────────────────────────────────────────────
 
-export const obtenerHero = () =>
-  pedir<AdminHero | null>("/hero", { headers: cabeceras() }).then((h) =>
-    h ? { ...h, imagen_url: urlArchivo(h.imagen_url) } : null,
-  );
+export const obtenerHero = () => pedir<AdminHero | null>("/hero", { headers: cabeceras() });
 
 export const guardarHero = (datos: FormData) =>
-  pedir<AdminHero>("/hero", { method: "POST", headers: cabeceras(), body: datos }).then((h) => ({
-    ...h,
-    imagen_url: urlArchivo(h.imagen_url),
-  }));
+  pedir<AdminHero>("/hero", { method: "POST", headers: cabeceras(), body: datos });

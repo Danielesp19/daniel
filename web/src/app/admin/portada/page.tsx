@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { obtenerHero, guardarHero, SesionVencida, type AdminHero } from "@/lib/admin-api";
-import { COLOR, campo, rotulo, Campo, Boton, Cabecera, Aviso, Interruptor } from "@/components/admin/ui";
+import { obtenerHero, guardarHero, SesionVencida } from "@/lib/admin-api";
+import { COLOR, campo, Campo, Boton, Cabecera, Aviso, Interruptor } from "@/components/admin/ui";
 
 /**
  * La portada: lo primero que se ve al entrar a la página.
@@ -13,10 +13,7 @@ import { COLOR, campo, rotulo, Campo, Boton, Cabecera, Aviso, Interruptor } from
  */
 export default function PortadaAdmin() {
   const router = useRouter();
-  const [hero, setHero] = useState<AdminHero | null>(null);
   const [d, setD] = useState({ titulo: "", subtitulo: "", etiqueta: "", cta_texto: "", cta_url: "", activo: true });
-  const [imagen, setImagen] = useState<File | null>(null);
-  const [quitarImagen, setQuitarImagen] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
@@ -25,7 +22,6 @@ export default function PortadaAdmin() {
   const cargar = useCallback(async () => {
     try {
       const h = await obtenerHero();
-      setHero(h);
       if (h) {
         setD({
           titulo: h.titulo ?? "",
@@ -69,13 +65,8 @@ export default function PortadaAdmin() {
       cuerpo.append("cta_texto", d.cta_texto);
       cuerpo.append("cta_url", d.cta_url);
       cuerpo.append("activo", d.activo ? "1" : "0");
-      if (imagen) cuerpo.append("imagen", imagen);
-      if (quitarImagen) cuerpo.append("quitar_imagen", "1");
 
-      const guardado = await guardarHero(cuerpo);
-      setHero(guardado);
-      setImagen(null);
-      setQuitarImagen(false);
+      await guardarHero(cuerpo);
       setListo(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo guardar");
@@ -88,7 +79,7 @@ export default function PortadaAdmin() {
 
   return (
     <>
-      <Cabecera titulo="Portada" bajada="El titular y la imagen que reciben a quien entra a la página.">
+      <Cabecera titulo="Portada" bajada="El titular y los textos que reciben a quien entra a la página. El fondo es un video fijo.">
         <Boton tono="solido" onClick={guardar} disabled={guardando}>
           {guardando ? "Guardando…" : "Guardar"}
         </Boton>
@@ -124,23 +115,13 @@ export default function PortadaAdmin() {
             </Campo>
           </div>
 
-          <div>
-            <span style={rotulo}>Imagen de fondo</span>
-            {hero?.imagen_url && !quitarImagen && (
-              <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 12 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={hero.imagen_url}
-                  alt=""
-                  style={{ width: 132, height: 76, objectFit: "cover", borderRadius: 8, border: `1px solid ${COLOR.linea}` }}
-                />
-                <Boton tono="peligro" chico onClick={() => setQuitarImagen(true)}>
-                  Quitar
-                </Boton>
-              </div>
-            )}
-            <input type="file" accept="image/*" onChange={(e) => setImagen(e.target.files?.[0] ?? null)} style={{ fontSize: 12.5 }} />
-          </div>
+          {/* El fondo de la portada es un video fijo que vive en el código
+              (public/videos/hero.mp4), no una imagen que se suba desde acá.
+              Por eso no hay campo de imagen: mostrarlo daría a entender que
+              cambiar el fondo se resuelve subiendo un archivo, y no es así. */}
+          <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.55, color: COLOR.suave }}>
+            El fondo de la portada es un video y se cambia desde el código, no desde aquí.
+          </p>
 
           <Interruptor
             etiqueta="Portada visible"
