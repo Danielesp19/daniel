@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\CategoriaAdminController;
+use App\Http\Controllers\Admin\HeroAdminController;
 use App\Http\Controllers\Admin\ProductoAdminController;
+use App\Http\Controllers\Admin\SedeAdminController;
 use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\ChatbotWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -14,17 +17,45 @@ Route::prefix('catalogo')->group(function () {
     Route::get('/productos/{producto}', [CatalogoController::class, 'show']);
 });
 
-// ── Administración (la usa el chatbot) ──────────────────────────────────────
-// Token Bearer + límite por IP. La carga de fotos y videos NO vive aquí: eso
-// es del panel de Filament en /admin.
+// ── Administración ──────────────────────────────────────────────────────────
+// La usan el panel del frontend (/admin) y el chatbot de WhatsApp, los dos con
+// el mismo token Bearer y con límite por IP. Es la única forma de tocar el
+// catálogo desde afuera: si algo de aquí se rompe, la tienda se queda sin
+// quien la administre.
 Route::middleware(['throttle:admin-api', 'admin.token'])->prefix('admin')->group(function () {
-    // 'resumen' antes que '{producto}': si no, el enrutador intenta resolver
-    // "resumen" como un id de producto y devuelve 404.
+    // ── Productos ───────────────────────────────────────────────────────────
+    // Las rutas de palabra fija van ANTES que '{producto}': si no, el
+    // enrutador intenta resolver "resumen" como un id y devuelve 404.
     Route::get('productos/resumen', [ProductoAdminController::class, 'resumen']);
+    Route::post('productos/reordenar', [ProductoAdminController::class, 'reordenar']);
     Route::get('productos', [ProductoAdminController::class, 'index']);
+    Route::post('productos', [ProductoAdminController::class, 'store']);
     Route::get('productos/{producto}', [ProductoAdminController::class, 'show']);
+    // El panel manda FormData con `_method=PATCH` cuando hay archivos: Laravel
+    // lo traduce solo a esta misma ruta.
     Route::patch('productos/{producto}', [ProductoAdminController::class, 'update']);
+    Route::delete('productos/{producto}', [ProductoAdminController::class, 'destroy']);
     Route::patch('productos/{producto}/stock', [ProductoAdminController::class, 'stock']);
+    Route::delete('productos/{producto}/imagenes/{imagen}', [ProductoAdminController::class, 'borrarImagen']);
+
+    // ── Categorías ──────────────────────────────────────────────────────────
+    Route::post('categorias/reordenar', [CategoriaAdminController::class, 'reordenar']);
+    Route::get('categorias', [CategoriaAdminController::class, 'index']);
+    Route::post('categorias', [CategoriaAdminController::class, 'store']);
+    Route::put('categorias/{categoria}', [CategoriaAdminController::class, 'update']);
+    Route::delete('categorias/{categoria}', [CategoriaAdminController::class, 'destroy']);
+
+    // ── Sedes ───────────────────────────────────────────────────────────────
+    // El chatbot usa el listado para saber qué sedes puede nombrar cuando tiene
+    // que preguntar en cuál mover el inventario.
+    Route::get('sedes', [SedeAdminController::class, 'index']);
+    Route::post('sedes', [SedeAdminController::class, 'store']);
+    Route::put('sedes/{sede}', [SedeAdminController::class, 'update']);
+    Route::delete('sedes/{sede}', [SedeAdminController::class, 'destroy']);
+
+    // ── Portada ─────────────────────────────────────────────────────────────
+    Route::get('hero', [HeroAdminController::class, 'show']);
+    Route::post('hero', [HeroAdminController::class, 'update']);
 });
 
 // ── Webhook del chatbot ─────────────────────────────────────────────────────

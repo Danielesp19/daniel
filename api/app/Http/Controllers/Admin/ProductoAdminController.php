@@ -17,10 +17,10 @@ use Illuminate\Validation\Rule;
 /**
  * API de administración del catálogo.
  *
- * La carga de fotos y videos vive en el panel de Filament (/admin), que ya
- * resuelve subidas y recortes mucho mejor de lo que valdría la pena rehacer
- * a mano. Esta API existe para lo que el panel NO cubre bien: que el chatbot
- * consulte y corrija el inventario desde un mensaje, sin abrir el navegador.
+ * La consumen dos clientes distintos y por eso algunas cosas se pueden pedir
+ * de dos formas: el panel del frontend, que tiene formularios y manda ids, y
+ * el chatbot de WhatsApp, que recibe frases sueltas y manda nombres. El caso
+ * más claro es el ajuste de stock, que acepta `sede_id` o `sede`.
  */
 class ProductoAdminController extends Controller
 {

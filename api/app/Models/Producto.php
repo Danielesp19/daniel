@@ -61,10 +61,10 @@ class Producto extends Model
     {
         // Guardar o borrar una producto empuja al sitio a regenerarse.
         //
-        // Va en el modelo y no en quien lo llama: así avisan igual el panel de
-        // Filament, el chatbot y cualquier comando de consola. Antes solo
-        // avisaba el chatbot, y mover una sección desde el panel no se veía en
-        // la página hasta que venciera el minuto del caché.
+        // Va en el modelo y no en quien lo llama: así avisan igual el panel, el
+        // chatbot y cualquier comando de consola. Antes solo avisaba el
+        // chatbot, y mover una sección desde el panel no se veía en la página
+        // hasta que venciera el minuto del caché.
         static::saved(fn () => Sitio::revalidar());
         static::deleted(fn () => Sitio::revalidar());
 

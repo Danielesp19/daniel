@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 /**
@@ -15,13 +14,9 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Admin por defecto del panel Filament. La contraseña la pone
-        // UserFactory ("password") — cámbiala antes de exponer el panel.
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@barista.co',
-        ]);
-
+        // Ya no se siembra un usuario administrador: al panel se entra con la
+        // contraseña compartida que vive en el frontend (ADMIN_PASSWORD), no
+        // con una fila de la tabla `users`.
         $this->call(CatalogoSeeder::class);
     }
 }
