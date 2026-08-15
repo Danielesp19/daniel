@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Los de ejemplo SÍ van al repo: son la documentación de qué hay que
+# configurar. No llevan ningún valor secreto adentro.
+!.env.example
+!.env.production.example
 
 # vercel
 .vercel
