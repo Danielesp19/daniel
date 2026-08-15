@@ -11,7 +11,7 @@ class Categoria extends Model
     use Concerns\SlugUnico;
 
     /** Cómo se dibuja la categoría en el catálogo web. Ver la migración. */
-    public const VITRINAS = ['grid', 'carrusel', 'vertical', 'horizontal'];
+    public const VITRINAS = ['grid', 'carrusel', 'vertical', 'bandas', 'horizontal'];
 
     protected $table = 'categorias';
 

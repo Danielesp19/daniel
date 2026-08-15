@@ -1,5 +1,5 @@
 /** Cómo se dibuja una categoría en el catálogo. Ver la migración categorias. */
-export type ModoVitrina = "grid" | "carrusel" | "vertical" | "horizontal";
+export type ModoVitrina = "grid" | "carrusel" | "vertical" | "bandas" | "horizontal";
 
 /**
  * Un punto de venta. Cuando viaja dentro de un producto trae además cuántas

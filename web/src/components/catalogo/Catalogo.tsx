@@ -2,6 +2,7 @@
 
 import type { Categoria, Producto } from "@/lib/catalogo";
 import { useRevelado } from "@/hooks/useRevelar";
+import BandaServicio from "./BandaServicio";
 import Carrusel from "./Carrusel";
 import Destacado from "./Destacado";
 import TarjetaProducto from "./TarjetaProducto";
@@ -14,7 +15,8 @@ import TarjetaVideo from "./TarjetaVideo";
  *   grid       → grilla de tarjetas (el modo normal)
  *   carrusel   → una fila que se corre de lado (para secciones largas)
  *   vertical   → el primer producto en grande y el resto en grilla
- *   horizontal → tarjetas apaisadas con video, para lo que se agenda
+ *   bandas     → una fila por producto, a lo ancho y con el video de fondo
+ *   horizontal → tarjetas apaisadas con video
  *
  * El TONO lo pone la posición, no la categoría: las secciones van alternando
  * blanco, blanco roto y negro. El negro no es el cierre de la página —vuelve
@@ -68,6 +70,12 @@ function Seccion({ categoria, tono }: { categoria: Categoria; tono: string }) {
 
         {modo === "carrusel" ? (
           <Carrusel productos={categoria.productos} />
+        ) : modo === "bandas" ? (
+          <div className="bandas">
+            {categoria.productos.map((p, i) => (
+              <BandaServicio key={p.id} producto={p} numero={i + 1} />
+            ))}
+          </div>
         ) : modo === "horizontal" ? (
           <div className="grilla grilla-videos">
             {categoria.productos.map((p, i) => (

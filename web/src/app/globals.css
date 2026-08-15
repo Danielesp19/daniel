@@ -307,6 +307,92 @@ body {
 /* Lo que se despliega al tocar "ver más". */
 .desplegado { animation: abrir .3s ease both; }
 
+/* ─── Bandas de servicio ────────────────────────────────────────────────────
+   Un servicio por fila, a lo ancho, con su video o su foto de fondo y el texto
+   encima. Es el formato de los servicios: no se eligen comparando precios en
+   una grilla, se entra a uno porque la escena convence.
+
+   Las bandas alternan el lado del texto con :nth-child, así agregar o quitar
+   un servicio desde el panel no obliga a tocar nada acá. */
+.bandas { display: grid; gap: clamp(10px, 1.6vw, 16px); }
+
+.banda {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: clamp(360px, 42vw, 470px);
+  overflow: hidden;
+  background: var(--color-tesela-o);
+}
+
+.banda-fondo { position: absolute; inset: 0; }
+
+/* Dos velos en uno: el de abajo sostiene el texto y el del lado evita que el
+   titular se pierda sobre una zona clara del video.
+
+   El lateral tiene que llegar lejos: la caja de texto mide 52ch y arranca
+   cerca de la mitad de la banda, así que un degradado que se apague al 60%
+   deja el borde del titular sin nada debajo. Un video cambia de luz cuadro a
+   cuadro y no se puede ajustar a una foto en particular. */
+.banda-velo {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(10,10,10,0.12) 0%, rgba(10,10,10,0.34) 45%, rgba(10,10,10,0.9) 100%),
+    linear-gradient(90deg, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.5) 42%, rgba(10,10,10,0.08) 78%, rgba(10,10,10,0) 100%);
+}
+
+.banda-texto {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 52ch;
+  padding: clamp(22px, 3.4vw, 40px);
+  color: #FFF;
+  /* El último recurso para el cuadro que salga más claro de la cuenta. Muy
+     difusa y muy suave: se nota si falta, no se nota si está. */
+  text-shadow: 0 1px 16px rgba(10, 10, 10, 0.5);
+}
+
+.banda-numero { display: block; font-size: 10px; letter-spacing: 0.22em; color: rgba(255,255,255,0.6); }
+.banda-nombre { font-size: clamp(26px, 3.6vw, 40px); line-height: 1.06; margin-top: 10px; }
+
+.banda-bajada {
+  margin: 12px 0 0;
+  max-width: 46ch;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.banda-pie { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 22px; }
+.banda-precio { font-size: 19px; }
+.banda-desde { margin-right: 7px; font-weight: 400; font-size: 12px; color: rgba(255,255,255,0.6); }
+
+/* La alterna: el texto se va a la derecha y el velo lateral se voltea con él.
+   Se mantiene alineado a la izquierda dentro de su caja —texto corrido en
+   bandera derecha cuesta más de leer y no aporta nada acá—. */
+.banda:nth-child(even) { justify-content: flex-end; }
+.banda:nth-child(even) .banda-velo {
+  background:
+    linear-gradient(180deg, rgba(10,10,10,0.12) 0%, rgba(10,10,10,0.34) 45%, rgba(10,10,10,0.9) 100%),
+    linear-gradient(270deg, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.5) 42%, rgba(10,10,10,0.08) 78%, rgba(10,10,10,0) 100%);
+}
+
+@media (max-width: 700px) {
+  /* En una pantalla angosta no hay dos lados que alternar: el texto ocupa todo
+     el ancho y el velo vuelve a ser solo el de abajo, que es el que de verdad
+     sostiene la lectura. */
+  .banda { min-height: 440px; }
+  .banda:nth-child(even) { justify-content: flex-start; }
+  .banda-velo,
+  .banda:nth-child(even) .banda-velo {
+    background: linear-gradient(180deg, rgba(10,10,10,0.18) 0%, rgba(10,10,10,0.5) 38%, rgba(10,10,10,0.93) 100%);
+  }
+  .banda-pie > .boton { flex: 1 1 100%; }
+}
+
 /* ─── Ficha del producto (hoja flotante) ────────────────────────────────────
    Lo que abre el "ver más". La ficha creció con la disponibilidad por sede y
    ya no cabe dentro de una tarjeta de 175 px; en hoja se lee al ancho que

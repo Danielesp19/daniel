@@ -23,6 +23,7 @@ const VITRINAS: { valor: ModoVitrina; texto: string }[] = [
   { valor: "grid", texto: "Grilla de tarjetas" },
   { valor: "carrusel", texto: "Carrusel — una fila que se corre" },
   { valor: "vertical", texto: "Vitrina — uno en grande y el resto en grilla" },
+  { valor: "bandas", texto: "Bandas — una fila por producto, con el video de fondo" },
   { valor: "horizontal", texto: "Tarjetas con video" },
 ];
 
