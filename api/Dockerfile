@@ -1,7 +1,13 @@
-# ── Backend Laravel para Render ──
-# Render no tiene runtime PHP nativo, así que se despliega como contenedor Docker.
-# Imagen mínima PHP 8.4 (lo exige composer.lock: Laravel 13 → symfony 8 pide php >=8.4)
-# + extensiones para PostgreSQL y Filament (gd, zip, bcmath, exif, intl).
+# ── Backend Laravel, como contenedor ──
+# Sirve para cualquier hosting que corra Docker (App Runner, Lightsail, Render).
+# Imagen PHP 8.4 (lo exige composer.lock: Laravel 13 → symfony 8 pide php >=8.4)
+# + las extensiones que necesitan Postgres y el procesado de imágenes
+# (gd, zip, bcmath, exif, intl).
+#
+# OJO CON EL DISCO: las fotos y los videos que se suben desde el panel se
+# guardan en storage/app/public, dentro del contenedor. En un hosting sin disco
+# persistente (App Runner, ECS, Render) eso se borra en cada despliegue. Ver
+# DESPLIEGUE.md.
 FROM php:8.4-cli
 
 # Dependencias del sistema para compilar las extensiones PHP.
