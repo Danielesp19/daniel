@@ -159,18 +159,24 @@ sudo ln -s /etc/nginx/sites-available/altura /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-### HTTPS
+### HTTPS: no hace falta para arrancar
 
-Vercel exige que la API sea HTTPS o el navegador bloquea las peticiones por
-contenido mixto:
+El navegador **nunca** habla con la API. Todo sale por rutas relativas
+—`/api-tienda/*` y `/tienda-storage/*`— que Vercel reenvía **desde su
+servidor**, así que no hay contenido mixto que bloquear. Con la IP fija y HTTP
+plano el sitio funciona completo, panel incluido.
+
+Lo que sí implica: el tramo entre Vercel y la instancia va **sin cifrar**, y por
+ahí viaja el `ADMIN_TOKEN` en cada petición del panel. Para un despliegue
+provisional es un riesgo asumible; antes de manejar pedidos reales hay que
+cerrarlo.
+
+Cuando haya dominio:
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d api.tudominio.co
+sudo certbot --nginx -d api.tudominio.co --redirect
 ```
-
-Sin dominio propio no hay certificado. Es la razón principal para apuntar
-aunque sea un subdominio a la IP fija antes de empezar.
 
 ### El worker de la cola
 
@@ -266,7 +272,8 @@ se permite el webhook sin `CHATBOT_APP_SECRET`; en producción no.
       en la API y en Vercel.
 - [ ] `ADMIN_PASSWORD` cambiada: en local es `altura`.
 - [ ] `CORS_ALLOWED_ORIGINS` con el dominio real de Vercel.
-- [ ] HTTPS en la API, o el navegador bloquea las peticiones.
+- [ ] HTTPS en la API. No es necesario para que funcione —el navegador no
+      la toca— pero sin él el `ADMIN_TOKEN` viaja en claro entre Vercel y AWS.
 - [ ] El disco donde viven las fotos es persistente (ver arriba).
 - [ ] Copia de la base: si es SQLite, es un archivo —`database/database.sqlite`—
       y hay que respaldarlo; Lightsail tiene snapshots automáticos.
