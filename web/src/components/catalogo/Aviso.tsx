@@ -4,8 +4,12 @@ import { useEffect, useState } from "react";
 import type { Aviso as AvisoDatos } from "@/lib/catalogo";
 
 /**
- * La banda de aviso, arriba de todo: una feria, un lote que llegó, un cierre
- * por vacaciones.
+ * El aviso: una feria, un lote que llegó, un cierre por vacaciones.
+ *
+ * Va DESPUÉS de la portada y dentro del contenedor, no pegado sobre la
+ * cabecera. Arriba del todo competía con el titular por lo primero que se lee
+ * y empujaba la página entera hacia abajo; acá aparece cuando el visitante ya
+ * sabe dónde está.
  *
  * Se puede cerrar, y queda cerrada en ese navegador. La marca se guarda contra
  * el TEXTO del aviso y no contra su id: el panel edita siempre la misma fila,
@@ -47,31 +51,35 @@ export default function Aviso({ aviso }: { aviso: AvisoDatos | null }) {
   };
 
   return (
-    <aside className="aviso" role="status">
-      <span className="aviso-etiqueta">
-        <span className="aviso-punto" aria-hidden="true" />
-        {aviso.etiqueta}
-      </span>
+    <aside className="aviso-caja">
+      <div className="aviso" role="status">
+        <span className="aviso-destello" aria-hidden="true" />
 
-      <div className="aviso-texto">
-        <p className="aviso-titulo">{aviso.titulo}</p>
-        {aviso.texto && <p className="aviso-bajada">{aviso.texto}</p>}
+        <span className="aviso-etiqueta">
+          <span className="aviso-punto" aria-hidden="true" />
+          {aviso.etiqueta}
+        </span>
+
+        <div className="aviso-texto">
+          <p className="aviso-titulo">{aviso.titulo}</p>
+          {aviso.texto && <p className="aviso-bajada">{aviso.texto}</p>}
+        </div>
+
+        {aviso.cta_texto && aviso.cta_url && (
+          <a
+            href={aviso.cta_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="boton aviso-boton"
+          >
+            {aviso.cta_texto}
+          </a>
+        )}
+
+        <button type="button" className="aviso-cerrar" onClick={cerrar} aria-label="Cerrar el aviso">
+          ✕
+        </button>
       </div>
-
-      {aviso.cta_texto && aviso.cta_url && (
-        <a
-          href={aviso.cta_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="boton boton-solido-claro aviso-boton"
-        >
-          {aviso.cta_texto}
-        </a>
-      )}
-
-      <button type="button" className="aviso-cerrar" onClick={cerrar} aria-label="Cerrar el aviso">
-        ✕
-      </button>
     </aside>
   );
 }

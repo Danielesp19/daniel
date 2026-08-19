@@ -792,64 +792,211 @@ body {
 
 /* ─── Movimiento reducido ─────────────────────────────────────────────────── */
 
-/* ─── Aviso ─────────────────────────────────────────────────────────────────
-   La banda de arriba del todo: una feria, un lote que llegó, un cierre. Sobre
-   tinta para que se despegue de la cabecera sin competir con el hero. */
-.aviso {
-  position: relative;
-  z-index: 61;
+
+/* ─── Cabecera ──────────────────────────────────────────────────────────────
+   La barra pegada arriba, con la línea de progreso encima y los enlaces de
+   sección con su subrayado. */
+.progreso {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 80;
+  width: 100%;
+  height: 2px;
+  pointer-events: none;
+}
+.progreso-avance {
+  width: 100%;
+  height: 100%;
+  background: var(--color-tinta);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+.cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 60;
   display: flex;
   align-items: center;
-  gap: clamp(10px, 2vw, 20px);
+  gap: 12px;
+  height: var(--barra);
+  padding: 0 clamp(16px, 4.5vw, 48px);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid var(--color-linea);
+  transition: box-shadow .35s ease;
+}
+/* Al bajar, una sombra de un pelo la despega del contenido. */
+.cabecera-scroll { box-shadow: 0 6px 24px rgba(10, 10, 10, 0.06); }
+
+.marca { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+
+/* El grano: un círculo con su hendidura, que gira al pasar el mouse. */
+.marca-grano {
+  position: relative;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--color-tinta);
+  overflow: hidden;
+  transition: transform .3s var(--salida);
+}
+.marca-grano > span {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  right: 2px;
+  height: 1px;
+  background: #FFF;
+  transform: translateY(-50%) rotate(28deg);
+}
+.marca:hover .marca-grano { transform: rotate(180deg); }
+
+.marca-nombre {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  letter-spacing: -0.01em;
+  transition: transform .35s var(--salida);
+}
+.marca:hover .marca-nombre { transform: translateX(2px); }
+
+/* Solo en escritorio: en celular estos cinco enlaces se llevan la barra
+   entera, y ahí el recorrido sigue siendo el dedo. */
+.cabecera-enlaces { display: none; align-items: center; gap: 26px; margin-right: 8px; }
+@media (min-width: 1000px) { .cabecera-enlaces { display: flex; } }
+
+.enlace-seccion {
+  position: relative;
+  display: inline-block;
+  padding: 4px 0;
+  font-size: 13.5px;
+  text-decoration: none;
+  color: var(--color-suave);
+  transition: color .3s ease;
+}
+.enlace-seccion:hover, .enlace-activo { color: var(--color-tinta); }
+
+/* El subrayado crece desde la izquierda: al pasar el mouse y, fijo, en la
+   sección que se está mirando. */
+.enlace-linea {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--color-tinta);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform .4s var(--salida);
+}
+.enlace-seccion:hover .enlace-linea,
+.enlace-activo .enlace-linea { transform: scaleX(1); }
+
+/* ─── Aviso ─────────────────────────────────────────────────────────────────
+   Una tarjeta oscura dentro del contenedor, después de la portada. No es una
+   banda pegada arriba: ahí competía con el titular por lo primero que se lee.
+
+   El dorado es el único color de acento del sitio y aparece solo acá. Es a
+   propósito: un aviso es excepcional por definición, y si el acento estuviera
+   en más sitios dejaría de avisar. */
+.aviso-caja {
+  display: block;
+  width: 100%;
+  max-width: var(--ancho);
+  margin-inline: auto;
+  padding-inline: var(--margen);
+  margin-block: clamp(30px, 5vw, 64px);
+}
+
+.aviso {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 2.4vw, 28px);
   flex-wrap: wrap;
-  padding: 11px clamp(16px, 4vw, 44px);
+  padding: clamp(18px, 3vw, 26px) clamp(18px, 3vw, 28px);
+  border-radius: 3px;
   background: var(--color-tinta);
   color: #FFF;
-  animation: avisoEntra .45s var(--salida) both;
+  animation: avisoEntra .5s var(--salida) both;
 }
 
 @keyframes avisoEntra {
-  from { opacity: 0; transform: translateY(-100%); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: none; }
 }
 
+/* El destello que cruza la tarjeta cada seis segundos. Es lo que hace que el
+   ojo vuelva sin que la tarjeta se mueva de sitio. */
+.aviso-destello {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, rgba(240,212,147,0) 30%, rgba(240,212,147,0.16), rgba(240,212,147,0) 70%);
+  animation: avisoDestella 6s linear infinite;
+}
+@keyframes avisoDestella { from { transform: translateX(-40%); } to { transform: translateX(40%); } }
+
 .aviso-etiqueta {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   flex-shrink: 0;
-  padding: 4px 11px;
+  padding: 6px 13px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  background: #F0D493;
+  color: #3D2C10;
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.18em;
+  font-size: 10px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-/* El punto que late: es lo que hace que el ojo vuelva a la banda. */
-.aviso-punto { width: 5px; height: 5px; border-radius: 50%; background: #FFF; animation: avisoLate 2.4s ease-in-out infinite; }
-@keyframes avisoLate { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+.aviso-punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #3D2C10;
+  animation: avisoLate 1.8s ease-in-out infinite;
+}
+@keyframes avisoLate {
+  0%, 100% { opacity: .45; transform: scale(.96); }
+  50%      { opacity: 1;   transform: scale(1.06); }
+}
 
-.aviso-texto { flex: 1 1 260px; min-width: 0; }
-.aviso-titulo { margin: 0; font-family: var(--font-serif); font-size: 16px; line-height: 1.25; }
-.aviso-bajada { margin: 2px 0 0; font-size: 12.5px; line-height: 1.5; color: rgba(255, 255, 255, 0.68); }
+.aviso-texto { position: relative; flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.aviso-titulo { margin: 0; font-family: var(--font-serif); font-size: clamp(19px, 2.6vw, 26px); line-height: 1.2; }
+.aviso-bajada { margin: 0; font-size: 14px; line-height: 1.55; color: rgba(255, 255, 255, 0.72); }
 
-.aviso-boton { flex-shrink: 0; min-height: 36px; padding: 8px 18px; font-size: 12.5px; }
+.aviso-boton {
+  position: relative;
+  flex-shrink: 0;
+  padding: 14px 22px;
+  background: #FFF;
+  color: var(--color-tinta);
+  font-weight: 500;
+}
+.aviso-boton:hover { transform: translateY(-2px); background: #F0EAE0; color: var(--color-tinta); }
 
 .aviso-cerrar {
+  position: relative;
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 50%;
   background: transparent;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.6);
   font-size: 13px;
   cursor: pointer;
-  transition: background .2s ease, color .2s ease;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
 }
-.aviso-cerrar:hover { background: rgba(255, 255, 255, 0.12); color: #FFF; }
+.aviso-cerrar:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255,255,255,0.4); color: #FFF; }
 
 /* ─── Recetas ───────────────────────────────────────────────────────────────
    La lista a la izquierda y el paso a paso a la derecha. Es la única sección
@@ -1024,6 +1171,159 @@ body {
 }
 .tarjeta:hover .tesela::after { transform: translateX(120%); }
 
+
+/* ─── Medallas ──────────────────────────────────────────────────────────────
+   Los podios al lado de la biografía. El hexágono se recorta con clip-path y
+   se rellena con un degradado metálico; encima va un hueco más oscuro para que
+   el número se lea, y un destello que lo cruza al pasar el mouse.
+
+   El metal se decide con una clase por medalla y todos los colores salen de
+   variables locales: así una medalla nueva es una clase más, no otra copia de
+   las mismas seis reglas. */
+.medallas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(8px, 1.2vw, 14px);
+  margin: clamp(22px, 3vw, 30px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.medalla {
+  --metal-claro: #F0D493;
+  --metal-medio: #C69A45;
+  --metal-oscuro: #7D5A1E;
+  --metal-halo: rgba(230, 201, 138, 0.5);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 15px clamp(6px, 1.2vw, 12px) 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: linear-gradient(#1B1714, #221D19);
+  transition: transform .45s var(--salida), box-shadow .45s ease;
+}
+.medalla:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 18px 40px rgba(20, 17, 15, 0.3), 0 0 0 1px var(--metal-halo);
+}
+
+.medalla-plata {
+  --metal-claro: #ECEAE5;
+  --metal-medio: #B9B6AE;
+  --metal-oscuro: #7C7972;
+  --metal-halo: rgba(236, 234, 229, 0.45);
+}
+.medalla-bronce {
+  --metal-claro: #E7B995;
+  --metal-medio: #B3764A;
+  --metal-oscuro: #7A4826;
+  --metal-halo: rgba(231, 185, 149, 0.45);
+}
+
+.medalla-emblema {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(58px, 7vw, 82px);
+  aspect-ratio: 82 / 88;
+}
+
+/* El resplandor de atrás, latiendo. Es lo que hace que el ojo caiga acá. */
+.medalla-halo {
+  position: absolute;
+  inset: -10px;
+  border-radius: 999px;
+  background: radial-gradient(circle, var(--metal-halo) 0%, rgba(0, 0, 0, 0) 68%);
+  animation: medallaLate 3.1s ease-in-out infinite;
+}
+@keyframes medallaLate {
+  0%, 100% { opacity: .45; transform: scale(.96); }
+  50%      { opacity: .85; transform: scale(1.05); }
+}
+
+/* El hexágono y su hueco comparten recorte; se declara una sola vez. */
+.medalla-hexagono,
+.medalla-hueco,
+.medalla-brillo {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(50% 0, 100% 26%, 100% 74%, 50% 100%, 0 74%, 0 26%);
+}
+
+.medalla-hexagono {
+  background: linear-gradient(150deg, var(--metal-claro), var(--metal-medio) 52%, var(--metal-oscuro));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+.medalla-hueco {
+  inset: 7px;
+  background: linear-gradient(160deg, rgba(20, 17, 15, 0.86), rgba(20, 17, 15, 0.55));
+}
+
+.medalla-brillo { overflow: hidden; }
+.medalla-brillo > span {
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(100deg, rgba(255,255,255,0), rgba(255,255,255,0.5), rgba(255,255,255,0));
+  transform: skewX(-18deg);
+}
+/* El destello cruza al pasar el mouse, no en bucle: en bucle y por triplicado
+   la sección entera parpadearía sola. */
+.medalla:hover .medalla-brillo > span { animation: medallaBrilla 1.1s var(--salida); }
+@keyframes medallaBrilla { from { left: -60%; } to { left: 130%; } }
+
+.medalla-puesto {
+  position: relative;
+  font-family: var(--font-serif);
+  font-size: clamp(19px, 2.4vw, 26px);
+  line-height: 1;
+  color: var(--metal-claro);
+  text-shadow: 0 0 12px var(--metal-halo);
+}
+
+.medalla-galones { display: flex; gap: 3px; }
+.galon {
+  width: 9px;
+  height: 9px;
+  background: var(--metal-claro);
+  clip-path: polygon(50% 0, 100% 100%, 50% 72%, 0 100%);
+}
+.galon-apagado { background: rgba(255, 255, 255, 0.18); }
+
+.medalla-rotulo {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--metal-claro);
+}
+
+.medalla-nombre {
+  font-family: var(--font-serif);
+  font-size: clamp(13px, 1.5vw, 16px);
+  line-height: 1.25;
+  text-align: center;
+  text-wrap: balance;
+  color: #FFF;
+}
+
+.medalla-detalle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.45);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -1054,8 +1354,16 @@ body {
 
   /* El punto del aviso late en bucle y el reflejo de las tarjetas cruza al
      pasar el mouse: los dos son movimiento que nadie pidió. */
-  .aviso-punto { animation: none; opacity: 1; }
+  .aviso-punto, .aviso-destello { animation: none; }
+  /* El grano gira y el nombre se corre al pasar el mouse: se quedan quietos. */
+  .marca:hover .marca-grano, .marca:hover .marca-nombre { transform: none; }
+  .aviso-punto { opacity: 1; }
   .tarjeta .tesela::after { display: none; }
+
+  /* El halo de las medallas late en bucle y el destello las cruza: los dos
+     son movimiento continuo que nadie pidió. */
+  .medalla-halo { animation: none; opacity: .6; }
+  .medalla:hover .medalla-brillo > span { animation: none; }
 }
 
 /* La red de seguridad para "sin JavaScript" vive en un <noscript> del layout,

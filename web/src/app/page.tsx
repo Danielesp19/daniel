@@ -49,11 +49,11 @@ export default async function Inicio() {
   return (
     <CarritoProvider>
       <Intro />
-      <Aviso aviso={aviso} />
       <Cabecera />
 
       <main>
         <Hero hero={hero} />
+        <Aviso aviso={aviso} />
         <Barista />
         <Catalogo categorias={categorias} />
         <Recetas recetas={recetas} />

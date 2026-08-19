@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRevelado } from "@/hooks/useRevelar";
 import { MARCA } from "@/lib/marca";
+import Medallas from "./Medallas";
 
 /**
  * Presentación de quien vende.
@@ -75,6 +76,8 @@ export default function Barista() {
               sacarle a su café lo que de verdad tiene. Lo que vendo acá es el mismo café que
               uso yo, el mismo equipo con el que compito y la misma forma de prepararlo.
             </p>
+
+            <Medallas />
 
             <dl
               className="revelar"
