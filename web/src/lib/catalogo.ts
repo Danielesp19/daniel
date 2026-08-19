@@ -68,6 +68,43 @@ export interface Categoria {
   productos: Producto[];
 }
 
+/** La banda de aviso de arriba del sitio. */
+export interface Aviso {
+  id: number;
+  etiqueta: string;
+  titulo: string;
+  texto: string | null;
+  cta_texto: string | null;
+  cta_url: string | null;
+}
+
+export interface Receta {
+  id: number;
+  nombre: string;
+  slug: string;
+  /** Filtrado, Inmersión, Espresso, Con leche… Es el filtro de la sección. */
+  metodo: string;
+  resumen: string | null;
+  detalle: string | null;
+  /** Lo que necesita el temporizador. null = receta sin reloj. */
+  duracion_seg: number | null;
+  /** La misma duración ya escrita: "2:45", "14 h". */
+  duracion: string | null;
+  ingredientes: string[];
+  pasos: string[];
+  imagen_url: string | null;
+  video_url: string | null;
+  video_poster_url: string | null;
+  /** El café que mejor le queda, si hay uno recomendado. */
+  producto: { id: number; nombre: string } | null;
+}
+
+export interface Pregunta {
+  id: number;
+  pregunta: string;
+  respuesta: string;
+}
+
 export interface Hero {
   id: number;
   titulo: string;
@@ -131,6 +168,22 @@ export const getHero = () =>
   pedir<Hero[]>("/catalogo/hero", { next: { revalidate: 60 } } as RequestInit).then(
     (h) => h[0] ?? null,
   );
+
+export const getAviso = () =>
+  pedir<Aviso | null>("/catalogo/aviso", { next: { revalidate: 60 } } as RequestInit);
+
+export const getRecetas = () =>
+  pedir<Receta[]>("/catalogo/recetas", { next: { revalidate: 60 } } as RequestInit).then((rs) =>
+    rs.map((r) => ({
+      ...r,
+      imagen_url: urlArchivo(r.imagen_url),
+      video_url: urlArchivo(r.video_url),
+      video_poster_url: urlArchivo(r.video_poster_url),
+    })),
+  );
+
+export const getPreguntas = () =>
+  pedir<Pregunta[]>("/catalogo/preguntas", { next: { revalidate: 60 } } as RequestInit);
 
 /**
  * Stock en vivo: id → unidades. Sin caché.

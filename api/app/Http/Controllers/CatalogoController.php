@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Aviso;
 use App\Models\Categoria;
 use App\Models\Hero;
+use App\Models\Pregunta;
 use App\Models\Producto;
+use App\Models\Receta;
 use App\Models\Sede;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -108,6 +111,63 @@ class CatalogoController extends Controller
             ]);
 
         return response()->json($heroes)
+            ->header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
+    }
+
+    /** El aviso de arriba del sitio, si hay uno encendido. */
+    public function aviso()
+    {
+        $aviso = Aviso::vigente();
+
+        return response()->json($aviso ? [
+            'id' => $aviso->id,
+            'etiqueta' => $aviso->etiqueta,
+            'titulo' => $aviso->titulo,
+            'texto' => $aviso->texto,
+            'cta_texto' => $aviso->tieneBoton() ? $aviso->cta_texto : null,
+            'cta_url' => $aviso->tieneBoton() ? $aviso->cta_url : null,
+        ] : null)
+            ->header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
+    }
+
+    /** Las recetas con sus pasos, para prepararlas en casa. */
+    public function recetas()
+    {
+        $recetas = Receta::visibles()->with('producto:id,nombre,slug')->get()
+            ->map(fn (Receta $r) => [
+                'id' => $r->id,
+                'nombre' => $r->nombre,
+                'slug' => $r->slug,
+                'metodo' => $r->metodo,
+                'resumen' => $r->resumen,
+                'detalle' => $r->detalle,
+                'duracion_seg' => $r->duracion_seg,
+                'duracion' => $r->duracionLegible(),
+                'ingredientes' => $r->ingredientes ?? [],
+                'pasos' => $r->pasos ?? [],
+                'imagen_url' => $r->imagen ? asset('storage/'.$r->imagen) : null,
+                'video_url' => $r->video ? asset('storage/'.$r->video) : null,
+                'video_poster_url' => $r->video_poster ? asset('storage/'.$r->video_poster) : null,
+                // El café recomendado viaja con su slug para poder enlazarlo
+                // con la ficha del catálogo.
+                'producto' => $r->producto ? ['id' => $r->producto->id, 'nombre' => $r->producto->nombre] : null,
+            ]);
+
+        return response()->json($recetas)
+            ->header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
+    }
+
+    /** Las preguntas frecuentes. */
+    public function preguntas()
+    {
+        $preguntas = Pregunta::visibles()->get()
+            ->map(fn (Pregunta $p) => [
+                'id' => $p->id,
+                'pregunta' => $p->pregunta,
+                'respuesta' => $p->respuesta,
+            ]);
+
+        return response()->json($preguntas)
             ->header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
     }
 

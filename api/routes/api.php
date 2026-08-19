@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\AvisoAdminController;
 use App\Http\Controllers\Admin\CategoriaAdminController;
 use App\Http\Controllers\Admin\HeroAdminController;
+use App\Http\Controllers\Admin\PreguntaAdminController;
 use App\Http\Controllers\Admin\ProductoAdminController;
+use App\Http\Controllers\Admin\RecetaAdminController;
 use App\Http\Controllers\Admin\SedeAdminController;
 use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\ChatbotWebhookController;
@@ -14,6 +17,9 @@ Route::prefix('catalogo')->group(function () {
     Route::get('/stock', [CatalogoController::class, 'stock']);
     Route::get('/sedes', [CatalogoController::class, 'sedes']);
     Route::get('/hero', [CatalogoController::class, 'hero']);
+    Route::get('/aviso', [CatalogoController::class, 'aviso']);
+    Route::get('/recetas', [CatalogoController::class, 'recetas']);
+    Route::get('/preguntas', [CatalogoController::class, 'preguntas']);
     Route::get('/productos/{producto}', [CatalogoController::class, 'show']);
 });
 
@@ -53,9 +59,25 @@ Route::middleware(['throttle:admin-api', 'admin.token'])->prefix('admin')->group
     Route::put('sedes/{sede}', [SedeAdminController::class, 'update']);
     Route::delete('sedes/{sede}', [SedeAdminController::class, 'destroy']);
 
-    // ── Portada ─────────────────────────────────────────────────────────────
+    // ── Portada y aviso ─────────────────────────────────────────────────────
     Route::get('hero', [HeroAdminController::class, 'show']);
     Route::post('hero', [HeroAdminController::class, 'update']);
+    Route::get('aviso', [AvisoAdminController::class, 'show']);
+    Route::post('aviso', [AvisoAdminController::class, 'update']);
+
+    // ── Recetas ─────────────────────────────────────────────────────────────
+    Route::post('recetas/reordenar', [RecetaAdminController::class, 'reordenar']);
+    Route::get('recetas', [RecetaAdminController::class, 'index']);
+    Route::post('recetas', [RecetaAdminController::class, 'store']);
+    Route::patch('recetas/{receta}', [RecetaAdminController::class, 'update']);
+    Route::delete('recetas/{receta}', [RecetaAdminController::class, 'destroy']);
+
+    // ── Preguntas frecuentes ────────────────────────────────────────────────
+    Route::post('preguntas/reordenar', [PreguntaAdminController::class, 'reordenar']);
+    Route::get('preguntas', [PreguntaAdminController::class, 'index']);
+    Route::post('preguntas', [PreguntaAdminController::class, 'store']);
+    Route::put('preguntas/{pregunta}', [PreguntaAdminController::class, 'update']);
+    Route::delete('preguntas/{pregunta}', [PreguntaAdminController::class, 'destroy']);
 });
 
 // ── Webhook del chatbot ─────────────────────────────────────────────────────

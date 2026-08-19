@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Producto;
 use App\Models\Sede;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -63,7 +64,7 @@ class SedeAdminController extends Controller
         // Los totales de los productos que tenían stock aquí quedaron altos:
         // se recalculan para que la columna vuelva a ser la suma de lo que
         // realmente queda en las sedes que siguen existiendo.
-        foreach (\App\Models\Producto::where('controla_stock', true)->get() as $producto) {
+        foreach (Producto::where('controla_stock', true)->get() as $producto) {
             $producto->recalcularTotal();
         }
 

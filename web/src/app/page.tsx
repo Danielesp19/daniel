@@ -1,5 +1,16 @@
 import type { Metadata } from "next";
-import { getCatalogo, getHero, type Categoria, type Hero as HeroDatos } from "@/lib/catalogo";
+import {
+  getAviso,
+  getCatalogo,
+  getHero,
+  getPreguntas,
+  getRecetas,
+  type Aviso as AvisoDatos,
+  type Categoria,
+  type Hero as HeroDatos,
+  type Pregunta,
+  type Receta,
+} from "@/lib/catalogo";
 import { MARCA } from "@/lib/marca";
 import { CarritoProvider } from "@/components/carrito/CarritoProvider";
 import BarraCarrito from "@/components/carrito/BarraCarrito";
@@ -8,6 +19,9 @@ import Cabecera from "@/components/catalogo/Cabecera";
 import Hero from "@/components/catalogo/Hero";
 import Barista from "@/components/catalogo/Barista";
 import Catalogo from "@/components/catalogo/Catalogo";
+import Recetas from "@/components/catalogo/Recetas";
+import Preguntas from "@/components/catalogo/Preguntas";
+import Aviso from "@/components/catalogo/Aviso";
 import PieSitio from "@/components/catalogo/PieSitio";
 
 export const metadata: Metadata = {
@@ -24,20 +38,26 @@ export default async function Inicio() {
   // Datos traídos en el servidor. Si el backend está caído, la página se
   // publica igual con lo que haya: mejor el hero y la presentación que un
   // error a pantalla completa.
-  const [categorias, hero] = await Promise.all([
+  const [categorias, hero, aviso, recetas, preguntas] = await Promise.all([
     getCatalogo().catch(() => [] as Categoria[]),
     getHero().catch(() => null as HeroDatos | null),
+    getAviso().catch(() => null as AvisoDatos | null),
+    getRecetas().catch(() => [] as Receta[]),
+    getPreguntas().catch(() => [] as Pregunta[]),
   ]);
 
   return (
     <CarritoProvider>
       <Intro />
+      <Aviso aviso={aviso} />
       <Cabecera />
 
       <main>
         <Hero hero={hero} />
         <Barista />
         <Catalogo categorias={categorias} />
+        <Recetas recetas={recetas} />
+        <Preguntas preguntas={preguntas} />
         <PieSitio />
       </main>
 

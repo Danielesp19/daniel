@@ -791,6 +791,239 @@ body {
 }
 
 /* ─── Movimiento reducido ─────────────────────────────────────────────────── */
+
+/* ─── Aviso ─────────────────────────────────────────────────────────────────
+   La banda de arriba del todo: una feria, un lote que llegó, un cierre. Sobre
+   tinta para que se despegue de la cabecera sin competir con el hero. */
+.aviso {
+  position: relative;
+  z-index: 61;
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 2vw, 20px);
+  flex-wrap: wrap;
+  padding: 11px clamp(16px, 4vw, 44px);
+  background: var(--color-tinta);
+  color: #FFF;
+  animation: avisoEntra .45s var(--salida) both;
+}
+
+@keyframes avisoEntra {
+  from { opacity: 0; transform: translateY(-100%); }
+  to   { opacity: 1; transform: none; }
+}
+
+.aviso-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* El punto que late: es lo que hace que el ojo vuelva a la banda. */
+.aviso-punto { width: 5px; height: 5px; border-radius: 50%; background: #FFF; animation: avisoLate 2.4s ease-in-out infinite; }
+@keyframes avisoLate { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+
+.aviso-texto { flex: 1 1 260px; min-width: 0; }
+.aviso-titulo { margin: 0; font-family: var(--font-serif); font-size: 16px; line-height: 1.25; }
+.aviso-bajada { margin: 2px 0 0; font-size: 12.5px; line-height: 1.5; color: rgba(255, 255, 255, 0.68); }
+
+.aviso-boton { flex-shrink: 0; min-height: 36px; padding: 8px 18px; font-size: 12.5px; }
+
+.aviso-cerrar {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease;
+}
+.aviso-cerrar:hover { background: rgba(255, 255, 255, 0.12); color: #FFF; }
+
+/* ─── Recetas ───────────────────────────────────────────────────────────────
+   La lista a la izquierda y el paso a paso a la derecha. Es la única sección
+   que no vende nada: enseña, y por eso va al final. */
+.contenedor-angosto { max-width: 860px; }
+
+.recetas-filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: clamp(18px, 3vw, 28px); }
+
+.filtro {
+  padding: 7px 16px;
+  border: 1px solid var(--color-linea);
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-suave);
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+  animation: pop .45s var(--salida) both;
+}
+.filtro:hover { border-color: var(--color-tinta); color: var(--color-tinta); }
+.filtro-activo { background: var(--color-tinta); border-color: var(--color-tinta); color: #FFF; }
+
+/* Aparición con un pelo de rebote, escalonada por el retraso que pone el
+   componente. Solo para las fichas y los filtros: en un titular se vería
+   caricaturesco. */
+@keyframes pop {
+  0%   { opacity: 0; transform: scale(.82); }
+  62%  { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.recetas {
+  display: grid;
+  gap: clamp(12px, 2vw, 20px);
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  align-items: start;
+}
+@media (max-width: 860px) { .recetas { grid-template-columns: 1fr; } }
+
+.recetas-lista { list-style: none; margin: 0; padding: 0; border: 1px solid var(--color-linea); background: var(--color-papel); }
+.recetas-lista li + li { border-top: 1px solid var(--color-linea); }
+
+.receta-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 15px;
+  border: none;
+  border-left: 2px solid transparent;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease;
+}
+.receta-fila:hover { background: var(--color-banda); }
+.receta-activa { background: var(--color-banda); border-left-color: var(--color-tinta); }
+
+.receta-numero { flex-shrink: 0; font-size: 9px; color: var(--color-rotulo); }
+.receta-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.receta-nombre { font-family: var(--font-serif); font-size: 16px; line-height: 1.2; }
+.receta-resumen { font-size: 11px; color: var(--color-suave); font-weight: 400; }
+.receta-metodo { flex-shrink: 0; font-size: 8.5px; }
+
+.receta-panel { padding: clamp(18px, 3vw, 28px); border: 1px solid var(--color-linea); background: var(--color-papel); }
+.receta-panel-cabeza { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.receta-titulo { font-size: clamp(21px, 3vw, 28px); line-height: 1.1; }
+.receta-detalle { margin: 6px 0 0; font-size: 13px; color: var(--color-suave); }
+
+.receta-ingredientes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.receta-ingredientes li {
+  padding: 4px 11px;
+  border: 1px solid var(--color-linea);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--color-fuerte);
+}
+
+.receta-pasos { margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 11px; }
+.receta-pasos li { display: flex; gap: 11px; font-size: 14px; line-height: 1.6; color: var(--color-fuerte); }
+.receta-paso-numero { flex-shrink: 0; width: 20px; font-size: 12px; color: var(--color-rotulo); }
+
+.receta-recomendado { margin: 18px 0 0; font-size: 13.5px; }
+.receta-recomendado .rotulo { display: inline; margin-right: 6px; }
+
+/* El reloj de la receta. */
+.reloj { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--color-linea); }
+.reloj-cifra { display: flex; align-items: baseline; gap: 9px; }
+.reloj-cifra .cifra { font-size: clamp(34px, 6vw, 46px); line-height: 1; }
+.reloj-unidad { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-rotulo); }
+
+.reloj-barra { height: 2px; margin: 14px 0 16px; background: var(--color-linea); overflow: hidden; }
+.reloj-avance { display: block; height: 100%; background: var(--color-tinta); transform-origin: left; transition: transform .25s linear; }
+
+.reloj-botones { display: flex; gap: 10px; flex-wrap: wrap; }
+.reloj-botones .boton { flex: 1 1 130px; }
+
+/* ─── Preguntas frecuentes ──────────────────────────────────────────────────*/
+.faq { list-style: none; margin: clamp(20px, 4vw, 34px) 0 0; padding: 0; border-top: 1px solid var(--color-linea); }
+.faq-fila { border-bottom: 1px solid var(--color-linea); }
+
+.faq-boton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.faq-pregunta { font-family: var(--font-serif); font-size: clamp(17px, 2.4vw, 21px); line-height: 1.3; }
+
+.faq-signo {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--color-linea);
+  border-radius: 50%;
+  font-size: 14px;
+  color: var(--color-suave);
+  transition: transform .28s var(--salida), background .2s ease, color .2s ease;
+}
+.faq-boton:hover .faq-signo { border-color: var(--color-tinta); color: var(--color-tinta); }
+/* 135° y no 45°: el "+" queda como "×" y de paso se nota que giró. */
+.faq-signo-abierto { transform: rotate(135deg); background: var(--color-tinta); border-color: var(--color-tinta); color: #FFF; }
+
+.faq-respuesta { margin: 0 0 20px; max-width: 62ch; font-size: 14.5px; line-height: 1.7; color: var(--color-suave); }
+
+.faq-envio { margin-top: clamp(26px, 4vw, 40px); }
+.faq-envio-titulo { font-size: 19px; }
+.faq-envio-campo { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.faq-envio-campo input {
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 12px 18px;
+  border: 1px solid var(--color-linea);
+  border-radius: 999px;
+  background: var(--color-papel);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-tinta);
+  outline: none;
+  transition: border-color .2s ease;
+}
+.faq-envio-campo input:focus { border-color: var(--color-tinta); }
+.faq-envio-nota { margin: 10px 0 0; font-size: 12.5px; color: var(--color-rotulo); }
+
+/* ─── Brillo al pasar sobre una tarjeta ─────────────────────────────────────
+   Un reflejo que cruza la foto una sola vez. Va sobre la tesela y no sobre la
+   tarjeta entera para que no barra el texto. */
+.tarjeta .tesela::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.22) 50%, transparent 62%);
+  transform: translateX(-120%);
+  transition: transform .75s var(--salida);
+}
+.tarjeta:hover .tesela::after { transform: translateX(120%); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -818,6 +1051,11 @@ body {
      fondo del contenedor. Un video en bucle detrás del titular es
      exactamente el movimiento que pidieron no ver. */
   .hero-video { display: none; }
+
+  /* El punto del aviso late en bucle y el reflejo de las tarjetas cruza al
+     pasar el mouse: los dos son movimiento que nadie pidió. */
+  .aviso-punto { animation: none; opacity: 1; }
+  .tarjeta .tesela::after { display: none; }
 }
 
 /* La red de seguridad para "sin JavaScript" vive en un <noscript> del layout,

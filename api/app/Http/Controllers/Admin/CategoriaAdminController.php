@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Categoria;
+use App\Support\Sitio;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -80,7 +81,7 @@ class CategoriaAdminController extends Controller
         // Un update() de constructor no dispara eventos de modelo, así que el
         // aviso al sitio hay que darlo a mano: si no, el orden nuevo no se ve
         // hasta que venza el minuto de caché.
-        \App\Support\Sitio::revalidar();
+        Sitio::revalidar();
 
         return $this->index();
     }

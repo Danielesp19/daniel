@@ -91,6 +91,44 @@ export interface AdminHero {
   activo: boolean;
 }
 
+/** La banda de aviso: solo textos y un botón. */
+export interface AdminAviso {
+  id: number;
+  etiqueta: string;
+  titulo: string;
+  texto: string | null;
+  cta_texto: string | null;
+  cta_url: string | null;
+  activo: boolean;
+}
+
+export interface AdminReceta {
+  id: number;
+  nombre: string;
+  slug: string;
+  metodo: string;
+  resumen: string | null;
+  detalle: string | null;
+  duracion_seg: number | null;
+  duracion: string | null;
+  ingredientes: string[];
+  pasos: string[];
+  producto_id: number | null;
+  producto: string | null;
+  activa: boolean;
+  orden: number;
+  imagen_url: string | null;
+  video_url: string | null;
+}
+
+export interface AdminPregunta {
+  id: number;
+  pregunta: string;
+  respuesta: string;
+  activa: boolean;
+  orden: number;
+}
+
 export function token(): string {
   return typeof window !== "undefined" ? (sessionStorage.getItem("admin_token") ?? "") : "";
 }
@@ -262,3 +300,68 @@ export const obtenerHero = () => pedir<AdminHero | null>("/hero", { headers: cab
 
 export const guardarHero = (datos: FormData) =>
   pedir<AdminHero>("/hero", { method: "POST", headers: cabeceras(), body: datos });
+
+// ── Aviso ───────────────────────────────────────────────────────────────────
+
+export const obtenerAviso = () => pedir<AdminAviso | null>("/aviso", { headers: cabeceras() });
+
+export const guardarAviso = (datos: Partial<AdminAviso>) =>
+  pedir<AdminAviso>("/aviso", {
+    method: "POST",
+    headers: cabecerasJson(),
+    body: JSON.stringify(datos),
+  });
+
+// ── Recetas ─────────────────────────────────────────────────────────────────
+
+export const listarRecetas = () =>
+  pedir<AdminReceta[]>("/recetas", { headers: cabeceras() }).then((rs) =>
+    rs.map((r) => ({ ...r, imagen_url: urlArchivo(r.imagen_url), video_url: urlArchivo(r.video_url) })),
+  );
+
+export const crearReceta = (datos: FormData) =>
+  pedir<AdminReceta>("/recetas", { method: "POST", headers: cabeceras(), body: datos });
+
+export const editarReceta = (id: number, datos: FormData) => {
+  // Los navegadores no mandan archivos por PATCH: va POST y Laravel traduce.
+  datos.append("_method", "PATCH");
+  return pedir<AdminReceta>(`/recetas/${id}`, { method: "POST", headers: cabeceras(), body: datos });
+};
+
+export const borrarReceta = (id: number) =>
+  pedir<null>(`/recetas/${id}`, { method: "DELETE", headers: cabeceras() });
+
+export const reordenarRecetas = (ids: number[]) =>
+  pedir<AdminReceta[]>("/recetas/reordenar", {
+    method: "POST",
+    headers: cabecerasJson(),
+    body: JSON.stringify({ ids }),
+  });
+
+// ── Preguntas frecuentes ────────────────────────────────────────────────────
+
+export const listarPreguntas = () => pedir<AdminPregunta[]>("/preguntas", { headers: cabeceras() });
+
+export const crearPregunta = (datos: Partial<AdminPregunta>) =>
+  pedir<AdminPregunta>("/preguntas", {
+    method: "POST",
+    headers: cabecerasJson(),
+    body: JSON.stringify(datos),
+  });
+
+export const editarPregunta = (id: number, datos: Partial<AdminPregunta>) =>
+  pedir<AdminPregunta>(`/preguntas/${id}`, {
+    method: "PUT",
+    headers: cabecerasJson(),
+    body: JSON.stringify(datos),
+  });
+
+export const borrarPregunta = (id: number) =>
+  pedir<null>(`/preguntas/${id}`, { method: "DELETE", headers: cabeceras() });
+
+export const reordenarPreguntas = (ids: number[]) =>
+  pedir<AdminPregunta[]>("/preguntas/reordenar", {
+    method: "POST",
+    headers: cabecerasJson(),
+    body: JSON.stringify({ ids }),
+  });

@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Categoria;
 use App\Models\Producto;
 use App\Models\Sede;
 use App\Support\ImageOptimizer;
+use App\Support\Sitio;
 use App\Support\VideoOptimizer;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
@@ -144,7 +144,7 @@ class ProductoAdminController extends Controller
 
         // update() de constructor no dispara eventos, así que el aviso al sitio
         // va a mano: si no, el orden nuevo espera al minuto de caché.
-        \App\Support\Sitio::revalidar();
+        Sitio::revalidar();
 
         return response()->json(['ok' => true]);
     }

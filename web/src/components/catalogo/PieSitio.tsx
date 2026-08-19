@@ -74,10 +74,13 @@ export default function PieSitio() {
           <Columna
             titulo="Tienda"
             enlaces={[
-              ["Cafés de origen", "#cat-cafes-de-origen"],
-              ["Café en grano", "#cat-cafe-en-grano"],
+              // Los enlaces por sección viven acá y no en la cabecera: es
+              // donde uno los busca cuando ya llegó al final.
+              ["Cafés", "#cat-cafes"],
               ["Equipo y artefactos", "#cat-artefactos"],
               ["Cursos y asesorías", "#cat-servicios"],
+              ["Recetas", "#recetas"],
+              ["Preguntas", "#preguntas"],
             ]}
           />
 

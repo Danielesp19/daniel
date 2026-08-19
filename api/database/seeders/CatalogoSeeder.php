@@ -42,7 +42,7 @@ class CatalogoSeeder extends Seeder
         // La página se sentía repetida cuando eran cinco: el café salía dos
         // veces (en grano y de origen) y dos secciones usaban el mismo
         // carrusel. Ahora cada una se dibuja distinto —vitrina, carrusel y
-        // tarjetas con video— y ninguna se parece a la anterior.
+        // bandas a lo ancho— y ninguna se parece a la anterior.
         //
         // El café de origen no necesita sección aparte: su ficha ya lo
         // distingue sola con finca, altura y puntaje SCA.
@@ -67,17 +67,6 @@ class CatalogoSeeder extends Seeder
             // elige comparando cuatro tarjetas del mismo tamaño.
             'modo_vitrina' => 'bandas',
             'orden' => 3,
-        ]);
-
-        // Apagada a propósito: estos cuatro videos son la base de la sección de
-        // recetas que viene después. Se siembran para no tener que volver a
-        // grabarlos, pero no salen en la página todavía.
-        $metodos = Categoria::create([
-            'nombre' => 'Métodos',
-            'descripcion' => 'Cómo preparo cada café según lo que quieras sacarle. Míralo y replícalo en tu casa.',
-            'modo_vitrina' => 'horizontal',
-            'activa' => false,
-            'orden' => 4,
         ]);
 
         // Los ocho cafés en una sola sección, de mayor a menor puntaje. El
@@ -140,28 +129,6 @@ class CatalogoSeeder extends Seeder
                 'descripcion' => 'Armada para espresso con leche: se sostiene en un capuchino y no se pierde bajo la espuma. La bolsa grande de todos los días.',
                 'region' => 'Huila · Tolima', 'proceso' => 'Lavado', 'tueste' => 'Medio oscuro',
                 'notas' => ['cacao', 'caramelo', 'nuez'],
-            ],
-        ]);
-
-        // Los métodos son informativos: la vitrina horizontal no muestra precio
-        // ni botón de agregar, así que aquí el precio queda en cero y el stock
-        // no se controla. Es la sección donde van los videos.
-        $this->sembrar($metodos, [
-            [
-                'nombre' => 'Espresso', 'precio_cop' => 0, 'gramos' => 0, 'controla_stock' => false,
-                'descripcion' => 'Nueve bares durante veintiocho segundos. Concentra el dulzor y no perdona un defecto del lote ni una molienda mal calibrada.',
-            ],
-            [
-                'nombre' => 'Capuchino', 'precio_cop' => 0, 'gramos' => 0, 'controla_stock' => false,
-                'descripcion' => 'Leche texturizada a punto de brillo, sin burbuja visible. Es donde se ve si el barista sabe manejar el vapor: el arte latte es la consecuencia, no el objetivo.',
-            ],
-            [
-                'nombre' => 'V60', 'precio_cop' => 0, 'gramos' => 0, 'controla_stock' => false,
-                'descripcion' => 'Filtrado por goteo. Taza limpia y aromática: es donde mejor se leen los cafés de altura y los procesos lavados.',
-            ],
-            [
-                'nombre' => 'Prensa francesa', 'precio_cop' => 0, 'gramos' => 0, 'controla_stock' => false,
-                'descripcion' => 'Inmersión total con filtro metálico. Deja pasar los aceites: más cuerpo, menos claridad. La más fácil de hacer bien en casa.',
             ],
         ]);
 

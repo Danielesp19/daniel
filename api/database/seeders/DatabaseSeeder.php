@@ -18,5 +18,6 @@ class DatabaseSeeder extends Seeder
         // contraseña compartida que vive en el frontend (ADMIN_PASSWORD), no
         // con una fila de la tabla `users`.
         $this->call(CatalogoSeeder::class);
+        $this->call(ContenidoSeeder::class);
     }
 }

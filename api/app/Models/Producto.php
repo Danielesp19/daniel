@@ -124,7 +124,7 @@ class Producto extends Model
      * Recibe las sedes ya cargadas para poder pintar un catálogo entero sin
      * repetir la misma consulta por producto.
      *
-     * @return \Illuminate\Support\Collection<int, array{sede: Sede, stock: int}>
+     * @return Collection<int, array{sede: Sede, stock: int}>
      */
     public function disponibilidad(?EloquentCollection $sedes = null): Collection
     {

@@ -8,8 +8,11 @@ import { COLOR } from "@/components/admin/ui";
 
 const NAV = [
   { href: "/admin/catalogo", etiqueta: "Catálogo", icono: "☰" },
+  { href: "/admin/recetas", etiqueta: "Recetas", icono: "◷" },
+  { href: "/admin/preguntas", etiqueta: "Preguntas", icono: "?" },
   { href: "/admin/sedes", etiqueta: "Sedes", icono: "⌂" },
   { href: "/admin/portada", etiqueta: "Portada", icono: "▣" },
+  { href: "/admin/aviso", etiqueta: "Aviso", icono: "!" },
 ];
 
 /**
