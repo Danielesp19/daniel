@@ -307,6 +307,80 @@ body {
 /* Lo que se despliega al tocar "ver más". */
 .desplegado { animation: abrir .3s ease both; }
 
+
+/* ─── Calculadora de ratios ─────────────────────────────────────────────────
+   Va al lado del reloj, dentro del panel de la receta. Las dos cantidades
+   están atadas por el ratio: se cambia una y la otra se recalcula.
+
+   En pantalla ancha reloj y calculadora comparten fila; en angosta se apilan,
+   porque los campos numéricos partidos a la mitad se vuelven inservibles. */
+.receta-herramientas {
+  display: grid;
+  gap: clamp(10px, 1.6vw, 16px);
+  margin-top: clamp(18px, 2.6vw, 26px);
+}
+@media (min-width: 720px) {
+  .receta-herramientas { grid-template-columns: 1fr 1fr; align-items: start; }
+}
+
+.calculadora {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: clamp(14px, 2vw, 18px);
+  border: 1px solid var(--color-linea);
+  background: var(--color-papel);
+}
+
+.calculadora-cabeza { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.calculadora-ratio { font-size: 19px; }
+
+.calculadora-control { display: grid; gap: 7px; }
+.calculadora-control input[type="range"] {
+  width: 100%;
+  accent-color: var(--color-tinta);
+  cursor: pointer;
+}
+
+.calculadora-campos { display: flex; align-items: flex-end; gap: 10px; }
+.calculadora-campos > label { flex: 1 1 0; display: grid; gap: 6px; min-width: 0; }
+
+/* La unidad va dentro del marco, no como texto suelto al lado: así el campo
+   se lee como una cantidad y no como un número perdido. */
+.calculadora-campo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-linea);
+  background: var(--color-papel);
+  transition: border-color .2s ease;
+}
+.calculadora-campo:focus-within { border-color: var(--color-tinta); }
+
+.calculadora-campo input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  background: none;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-tinta);
+  /* Las flechitas del campo numérico roban ancho y nadie las usa: el ratio
+     se mueve con el deslizador. */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.calculadora-campo input::-webkit-outer-spin-button,
+.calculadora-campo input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.calculadora-unidad { font-family: var(--font-mono); font-size: 11px; color: var(--color-rotulo); }
+.calculadora-signo { padding-bottom: 12px; color: var(--color-rotulo); font-size: 13px; }
+.calculadora-volver { align-self: flex-start; font-size: 9px; }
+
 /* ─── Bandas de servicio ────────────────────────────────────────────────────
    Un servicio por fila, a lo ancho, con su video o su foto de fondo y el texto
    encima. Es el formato de los servicios: no se eligen comparando precios en

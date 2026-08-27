@@ -94,6 +94,138 @@ function Temporizador({ segundos }: { segundos: number }) {
   );
 }
 
+
+/**
+ * Cómo se llama lo que sale, según el método.
+ *
+ * En un filtrado el segundo número es agua; en un espresso es lo que cae en la
+ * taza —peso, no volumen— y en un latte es leche. Llamarlo "agua" en los tres
+ * casos sería incorrecto justo donde el dato importa.
+ */
+function rotuloRendimiento(metodo: string): string {
+  const m = metodo.toLowerCase();
+  if (m.includes("espresso")) return "En taza";
+  if (m.includes("leche")) return "Leche";
+  return "Agua";
+}
+
+/** 16.67 → "16,7". Coma decimal, que es como se escribe acá. */
+function conComa(n: number): string {
+  return n.toFixed(1).replace(".", ",").replace(",0", "");
+}
+
+/**
+ * La calculadora de ratios, al lado del reloj.
+ *
+ * Arranca con las proporciones de la receta abierta y las dos cantidades
+ * quedan atadas por el ratio: se cambia una y la otra se recalcula. También se
+ * puede mover el ratio para subir o bajar la concentración sin tocar el café.
+ *
+ * Va en gramos las dos, no gramos y mililitros: para agua es equivalente, y en
+ * espresso lo que se pesa a la salida es peso. Una sola unidad evita tener que
+ * explicar cuál aplica en cada método.
+ *
+ * El estado guarda TEXTO y no números: mientras alguien borra para escribir
+ * otra cifra, el campo pasa por vacío, y con números eso obligaría a inventar
+ * un cero que empuja el cursor y pelea con quien está escribiendo.
+ */
+function Calculadora({ receta }: { receta: Receta }) {
+  const base = receta.ratio ?? 16;
+  const [ratio, setRatio] = useState(base);
+  const [cafe, setCafe] = useState(String(receta.cafe_g ?? 15));
+  const [rendimiento, setRendimiento] = useState(String(receta.agua_g ?? Math.round(15 * base)));
+
+  const rotulo = rotuloRendimiento(receta.metodo);
+
+  const cambiarCafe = (valor: string) => {
+    setCafe(valor);
+    const n = Number(valor);
+    if (valor !== "" && Number.isFinite(n)) setRendimiento(String(Math.round(n * ratio)));
+  };
+
+  const cambiarRendimiento = (valor: string) => {
+    setRendimiento(valor);
+    const n = Number(valor);
+    if (valor !== "" && Number.isFinite(n) && ratio > 0) setCafe(String(Math.round(n / ratio)));
+  };
+
+  // Mover el ratio deja el café quieto y recalcula lo que sale: es lo que uno
+  // quiere cuando busca la taza más o menos cargada con lo que ya pesó.
+  const cambiarRatio = (valor: number) => {
+    setRatio(valor);
+    const n = Number(cafe);
+    if (cafe !== "" && Number.isFinite(n)) setRendimiento(String(Math.round(n * valor)));
+  };
+
+  const alaReceta = () => {
+    setRatio(base);
+    setCafe(String(receta.cafe_g ?? 15));
+    setRendimiento(String(receta.agua_g ?? Math.round(15 * base)));
+  };
+
+  const cambiada = ratio !== base || Number(cafe) !== receta.cafe_g;
+
+  return (
+    <div className="calculadora">
+      <div className="calculadora-cabeza">
+        <span className="rotulo">Calculadora</span>
+        <span className="cifra calculadora-ratio">1:{conComa(ratio)}</span>
+      </div>
+
+      <label className="calculadora-control">
+        <span className="rotulo">Concentración</span>
+        <input
+          type="range"
+          min={2}
+          max={20}
+          step={0.5}
+          value={ratio}
+          onChange={(e) => cambiarRatio(Number(e.target.value))}
+          aria-label={`Ratio uno a ${conComa(ratio)}`}
+        />
+      </label>
+
+      <div className="calculadora-campos">
+        <label>
+          <span className="rotulo">Café</span>
+          <span className="calculadora-campo">
+            <input
+              type="number"
+              min={1}
+              inputMode="decimal"
+              value={cafe}
+              onChange={(e) => cambiarCafe(e.target.value)}
+            />
+            <span className="calculadora-unidad">g</span>
+          </span>
+        </label>
+
+        <span className="calculadora-signo" aria-hidden="true">→</span>
+
+        <label>
+          <span className="rotulo">{rotulo}</span>
+          <span className="calculadora-campo">
+            <input
+              type="number"
+              min={1}
+              inputMode="decimal"
+              value={rendimiento}
+              onChange={(e) => cambiarRendimiento(e.target.value)}
+            />
+            <span className="calculadora-unidad">g</span>
+          </span>
+        </label>
+      </div>
+
+      {cambiada && (
+        <button type="button" className="vermas calculadora-volver" onClick={alaReceta}>
+          Volver a la receta
+        </button>
+      )}
+    </div>
+  );
+}
+
 /**
  * La sección de recetas: los métodos como filtro, la lista a la izquierda y el
  * paso a paso a la derecha, con su reloj.
@@ -216,9 +348,12 @@ export default function Recetas({ recetas }: { recetas: Receta[] }) {
                 </p>
               )}
 
-              {elegida.duracion_seg ? (
-                <Temporizador key={elegida.id} segundos={elegida.duracion_seg} />
-              ) : null}
+              <div className="receta-herramientas">
+                {elegida.duracion_seg ? (
+                  <Temporizador key={`reloj-${elegida.id}`} segundos={elegida.duracion_seg} />
+                ) : null}
+                <Calculadora key={`calc-${elegida.id}`} receta={elegida} />
+              </div>
             </article>
           )}
         </div>

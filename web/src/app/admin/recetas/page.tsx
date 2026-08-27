@@ -245,6 +245,8 @@ function Formulario({
     metodo: receta?.metodo ?? METODOS[0],
     resumen: receta?.resumen ?? "",
     detalle: receta?.detalle ?? "",
+    cafe_g: receta?.cafe_g ? String(receta.cafe_g) : "",
+    agua_g: receta?.agua_g ? String(receta.agua_g) : "",
     duracion: aTexto(receta?.duracion_seg ?? null),
     producto_id: receta?.producto_id ? String(receta.producto_id) : "",
     activa: receta?.activa ?? true,
@@ -267,6 +269,10 @@ function Formulario({
       cuerpo.append("metodo", d.metodo);
       cuerpo.append("resumen", d.resumen);
       cuerpo.append("detalle", d.detalle);
+      // Vacíos no se mandan: el backend los deja como están, y mandar cadena
+      // vacía en un campo entero sería un error de validación.
+      if (d.cafe_g) cuerpo.append("cafe_g", d.cafe_g);
+      if (d.agua_g) cuerpo.append("agua_g", d.agua_g);
       cuerpo.append("activa", d.activa ? "1" : "0");
 
       const seg = aSegundos(d.duracion);
@@ -338,6 +344,32 @@ function Formulario({
           </Campo>
           <Campo etiqueta="Detalle" nota="La línea bajo el título: 15 g café · 250 ml agua a 94 °C">
             <input style={campo} value={d.detalle} onChange={(e) => set("detalle", e.target.value)} />
+          </Campo>
+        </div>
+
+        <div style={dos}>
+          <Campo etiqueta="Café (g)" nota="Alimenta la calculadora de ratios de la página.">
+            <input
+              style={campo}
+              type="number"
+              min={1}
+              value={d.cafe_g}
+              onChange={(e) => set("cafe_g", e.target.value)}
+              placeholder="15"
+            />
+          </Campo>
+          <Campo
+            etiqueta="Agua o rendimiento (g)"
+            nota="Lo que sale: agua en un filtrado, peso en taza en un espresso, leche en un latte."
+          >
+            <input
+              style={campo}
+              type="number"
+              min={1}
+              value={d.agua_g}
+              onChange={(e) => set("agua_g", e.target.value)}
+              placeholder="250"
+            />
           </Campo>
         </div>
 

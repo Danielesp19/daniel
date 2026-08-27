@@ -86,6 +86,11 @@ export interface Receta {
   metodo: string;
   resumen: string | null;
   detalle: string | null;
+  /** Gramos de café y de agua. Alimentan la calculadora de ratios. */
+  cafe_g: number | null;
+  agua_g: number | null;
+  /** agua ÷ café. 16.67 se lee "1:16,7". null si falta alguno de los dos. */
+  ratio: number | null;
   /** Lo que necesita el temporizador. null = receta sin reloj. */
   duracion_seg: number | null;
   /** La misma duración ya escrita: "2:45", "14 h". */

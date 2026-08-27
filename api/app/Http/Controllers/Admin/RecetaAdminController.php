@@ -87,6 +87,10 @@ class RecetaAdminController extends Controller
             'metodo' => $obligatorio.'|string|max:60',
             'resumen' => 'sometimes|nullable|string|max:255',
             'detalle' => 'sometimes|nullable|string|max:255',
+            // Topes generosos pero con techo: un cold brew son 100 g de café y
+            // 1000 g de agua; más que eso ya no es una receta de casa.
+            'cafe_g' => 'sometimes|nullable|integer|min:1|max:2000',
+            'agua_g' => 'sometimes|nullable|integer|min:1|max:20000',
             // Tope de 24 horas: un cold brew largo cabe, un número absurdo no.
             'duracion_seg' => 'sometimes|nullable|integer|min:0|max:86400',
             'ingredientes' => 'sometimes|nullable|array|max:12',
@@ -152,6 +156,9 @@ class RecetaAdminController extends Controller
             'metodo' => $r->metodo,
             'resumen' => $r->resumen,
             'detalle' => $r->detalle,
+            'cafe_g' => $r->cafe_g,
+            'agua_g' => $r->agua_g,
+            'ratio' => $r->ratio(),
             'duracion_seg' => $r->duracion_seg,
             'duracion' => $r->duracionLegible(),
             'ingredientes' => $r->ingredientes ?? [],

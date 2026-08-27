@@ -109,6 +109,10 @@ export interface AdminReceta {
   metodo: string;
   resumen: string | null;
   detalle: string | null;
+  /** Alimentan la calculadora de ratios de la página. */
+  cafe_g: number | null;
+  agua_g: number | null;
+  ratio: number | null;
   duracion_seg: number | null;
   duracion: string | null;
   ingredientes: string[];

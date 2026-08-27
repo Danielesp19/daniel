@@ -30,7 +30,7 @@ class Receta extends Model
     protected $table = 'recetas';
 
     protected $fillable = [
-        'nombre', 'slug', 'metodo', 'resumen', 'detalle', 'duracion_seg',
+        'nombre', 'slug', 'metodo', 'resumen', 'detalle', 'cafe_g', 'agua_g', 'duracion_seg',
         'ingredientes', 'pasos', 'producto_id',
         'imagen', 'video', 'video_poster', 'activa', 'orden',
     ];
@@ -38,6 +38,8 @@ class Receta extends Model
     protected $attributes = ['activa' => true, 'orden' => 0];
 
     protected $casts = [
+        'cafe_g' => 'integer',
+        'agua_g' => 'integer',
         'duracion_seg' => 'integer',
         'ingredientes' => 'array',
         'pasos' => 'array',
@@ -76,6 +78,21 @@ class Receta extends Model
     public function producto()
     {
         return $this->belongsTo(Producto::class);
+    }
+
+    /**
+     * La proporción café:agua, para la calculadora. null si falta algún dato.
+     *
+     * Se devuelve el divisor y no la cadena "1:16,7" porque quien lo pinta
+     * decide cómo redondearlo, y quien calcula necesita el número.
+     */
+    public function ratio(): ?float
+    {
+        if (! $this->cafe_g || ! $this->agua_g) {
+            return null;
+        }
+
+        return round($this->agua_g / $this->cafe_g, 2);
     }
 
     /**
