@@ -17,6 +17,13 @@ return [
     // DEBE definirse en producción: largo y aleatorio.
     'admin_token' => env('ADMIN_TOKEN'),
 
+    // A dónde llegan las preguntas que deja la gente en la página.
+    //
+    // Vacío = solo se guardan en la base y se leen desde el panel. Es el estado
+    // por defecto a propósito: sin correo configurado, intentar enviarlo
+    // fallaría en silencio y la consulta parecería perdida.
+    'consultas_correo' => env('CONSULTAS_CORREO', ''),
+
     // Zona horaria del negocio.
     'timezone' => env('TIENDA_TIMEZONE', 'America/Bogota'),
 

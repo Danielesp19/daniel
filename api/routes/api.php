@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AvisoAdminController;
 use App\Http\Controllers\Admin\CategoriaAdminController;
+use App\Http\Controllers\Admin\ConsultaAdminController;
 use App\Http\Controllers\Admin\HeroAdminController;
 use App\Http\Controllers\Admin\PreguntaAdminController;
 use App\Http\Controllers\Admin\ProductoAdminController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Admin\RecetaAdminController;
 use App\Http\Controllers\Admin\SedeAdminController;
 use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\ChatbotWebhookController;
+use App\Http\Controllers\ConsultaController;
 use Illuminate\Support\Facades\Route;
 
 // ── Catálogo público ────────────────────────────────────────────────────────
@@ -22,6 +24,11 @@ Route::prefix('catalogo')->group(function () {
     Route::get('/preguntas', [CatalogoController::class, 'preguntas']);
     Route::get('/productos/{producto}', [CatalogoController::class, 'show']);
 });
+
+// ── Buzón de preguntas ──────────────────────────────────────────────────────
+// Público y sin autenticar: es la única puerta por la que un desconocido
+// escribe en la base, así que va con límite por IP.
+Route::post('/consultas', [ConsultaController::class, 'store'])->middleware('throttle:consultas');
 
 // ── Administración ──────────────────────────────────────────────────────────
 // La usan el panel del frontend (/admin) y el chatbot de WhatsApp, los dos con
@@ -71,6 +78,11 @@ Route::middleware(['throttle:admin-api', 'admin.token'])->prefix('admin')->group
     Route::post('recetas', [RecetaAdminController::class, 'store']);
     Route::patch('recetas/{receta}', [RecetaAdminController::class, 'update']);
     Route::delete('recetas/{receta}', [RecetaAdminController::class, 'destroy']);
+
+    // ── Buzón de preguntas ──────────────────────────────────────────────────
+    Route::get('consultas', [ConsultaAdminController::class, 'index']);
+    Route::patch('consultas/{consulta}', [ConsultaAdminController::class, 'alternar']);
+    Route::delete('consultas/{consulta}', [ConsultaAdminController::class, 'destroy']);
 
     // ── Preguntas frecuentes ────────────────────────────────────────────────
     Route::post('preguntas/reordenar', [PreguntaAdminController::class, 'reordenar']);

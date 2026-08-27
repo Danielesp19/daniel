@@ -20,6 +20,15 @@ class AppServiceProvider extends ServiceProvider
         // martilleo por fuerza bruta del token Bearer.
         RateLimiter::for('admin-api', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));
 
+        // El buzón de preguntas es público y sin autenticar: es la única puerta
+        // por la que un desconocido puede escribir en la base. Tres por minuto
+        // alcanza de sobra para quien de verdad tiene una duda, y le quita la
+        // gracia a quien quiera llenarla de basura.
+        RateLimiter::for('consultas', fn (Request $request) => [
+            Limit::perMinute(3)->by($request->ip()),
+            Limit::perDay(20)->by($request->ip()),
+        ]);
+
         // Webhook del chatbot. La llave es el remitente del mensaje cuando se
         // puede leer, no la IP: todos los webhooks llegan desde el mismo puñado
         // de IPs de Meta, así que limitar por IP le pondría techo a TODOS los

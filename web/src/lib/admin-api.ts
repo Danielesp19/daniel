@@ -133,6 +133,15 @@ export interface AdminPregunta {
   orden: number;
 }
 
+/** Una pregunta que dejó alguien desde la página. */
+export interface AdminConsulta {
+  id: number;
+  mensaje: string;
+  contacto: string | null;
+  atendida: boolean;
+  recibida: string | null;
+}
+
 export function token(): string {
   return typeof window !== "undefined" ? (sessionStorage.getItem("admin_token") ?? "") : "";
 }
@@ -369,3 +378,18 @@ export const reordenarPreguntas = (ids: number[]) =>
     headers: cabecerasJson(),
     body: JSON.stringify({ ids }),
   });
+
+// ── Buzón de preguntas ──────────────────────────────────────────────────────
+
+export const listarConsultas = () =>
+  pedir<AdminConsulta[]>("/consultas", { headers: cabeceras() });
+
+/** Marca como atendida, o la devuelve a pendiente. */
+export const alternarConsulta = (id: number) =>
+  pedir<{ id: number; atendida: boolean }>(`/consultas/${id}`, {
+    method: "PATCH",
+    headers: cabeceras(),
+  });
+
+export const borrarConsulta = (id: number) =>
+  pedir<null>(`/consultas/${id}`, { method: "DELETE", headers: cabeceras() });

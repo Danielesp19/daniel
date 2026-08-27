@@ -191,6 +191,34 @@ export const getPreguntas = () =>
   pedir<Pregunta[]>("/catalogo/preguntas", { next: { revalidate: 60 } } as RequestInit);
 
 /**
+ * Deja una pregunta en el buzón. Devuelve el mensaje de agradecimiento.
+ *
+ * Va sin caché y por POST: es lo único que el visitante escribe en la base.
+ * El backend la guarda siempre y avisa por correo si hay uno configurado.
+ */
+export async function enviarConsulta(datos: { mensaje: string; contacto?: string }) {
+  const res = await fetch(`${BASE}/consultas`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(datos),
+  });
+
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    // 429 es el límite por IP. Decirlo tal cual evita que alguien crea que su
+    // pregunta se perdió y la mande cinco veces más.
+    if (res.status === 429) throw new Error("Muchas preguntas seguidas. Espera un momento.");
+    const primero = json.errors
+      ? (Object.values(json.errors as Record<string, string[]>)[0]?.[0] ?? null)
+      : null;
+    throw new Error(primero ?? json.message ?? "No se pudo enviar. Intenta de nuevo.");
+  }
+
+  return json as { ok: boolean; mensaje: string };
+}
+
+/**
  * Stock en vivo: id → unidades. Sin caché.
  *
  * El catálogo se sirve desde el CDN y su `stock` puede venir hasta un minuto
