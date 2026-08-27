@@ -3,17 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { enlaceWhatsApp, MARCA } from "@/lib/marca";
 
+/** Una entrada del menú. */
+interface Seccion {
+  id: string;
+  etiqueta: string;
+}
+
 /**
- * Las secciones a las que salta la cabecera.
- *
- * Los ids salen del catálogo (`cat-<slug>`) y de las dos secciones fijas. Si
- * una sección se apaga desde el panel su enlace desaparece solo, porque el
- * observador solo encuentra las que están en la página.
+ * Las dos secciones fijas del final. No salen del catálogo: son contenido del
+ * sitio, no categorías que el panel pueda borrar.
  */
-const SECCIONES = [
-  { id: "cat-cafes", etiqueta: "Cafés" },
-  { id: "cat-artefactos", etiqueta: "Artefactos" },
-  { id: "cat-servicios", etiqueta: "Servicios" },
+const FIJAS: Seccion[] = [
   { id: "recetas", etiqueta: "Recetas" },
   { id: "preguntas", etiqueta: "Preguntas" },
 ];
@@ -31,7 +31,21 @@ const SECCIONES = [
  * La barra de progreso no es decoración: en una sola página larga es lo único
  * que dice cuánto falta.
  */
-export default function Cabecera() {
+export default function Cabecera({ categorias = [] }: { categorias?: { slug: string; nombre: string }[] }) {
+  // El menú sale del catálogo REAL, no de una lista escrita a mano. Crear una
+  // sección desde el panel —"Básculas", "Molinos"— tiene que verse aquí sin
+  // que nadie toque código; con la lista fija, la sección nueva quedaba en la
+  // página pero invisible en el menú.
+  const secciones: Seccion[] = [
+    ...categorias.map((c) => ({ id: `cat-${c.slug}`, etiqueta: c.nombre })),
+    ...FIJAS,
+  ];
+
+  // El observador se rearma solo si CAMBIAN las secciones. `secciones` es un
+  // arreglo nuevo en cada render, así que ponerlo de dependencia recrearía el
+  // observador sesenta veces por segundo mientras se hace scroll.
+  const claveSecciones = secciones.map((s) => s.id).join(",");
+
   const [avance, setAvance] = useState(0);
   const [activa, setActiva] = useState<string | null>(null);
   const barra = useRef<HTMLDivElement>(null);
@@ -75,13 +89,14 @@ export default function Cabecera() {
       { rootMargin: "-58px 0px -55% 0px", threshold: 0 },
     );
 
-    for (const s of SECCIONES) {
+    for (const s of secciones) {
       const el = document.getElementById(s.id);
       if (el) observador.observe(el);
     }
 
     return () => observador.disconnect();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claveSecciones]);
 
   return (
     <>
@@ -102,7 +117,7 @@ export default function Cabecera() {
         <span style={{ flex: 1 }} />
 
         <div className="cabecera-enlaces">
-          {SECCIONES.map((s) => (
+          {secciones.map((s) => (
             <a key={s.id} href={`#${s.id}`} className={`enlace-seccion${activa === s.id ? " enlace-activo" : ""}`}>
               {s.etiqueta}
               <span className="enlace-linea" aria-hidden="true" />

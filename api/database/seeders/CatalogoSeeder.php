@@ -137,9 +137,13 @@ class CatalogoSeeder extends Seeder
         // obliga a que esos bloques sean opcionales y no decorativos.
         $this->sembrar($artefactos, [
             [
+                'nombre' => 'Kit para empezar', 'precio_cop' => 1140000, 'gramos' => 0, 'stock' => 3,
+                'descripcion' => 'Lo mínimo para preparar bien en casa, sin comprar de más: con qué moler, con qué filtrar y con qué pesar. Es lo que le recomiendo a quien arranca.',
+                'destacado' => true,
+            ],
+            [
                 'nombre' => 'Molino manual C40', 'precio_cop' => 890000, 'gramos' => 0, 'stock' => 4,
                 'descripcion' => 'Fresas cónicas de acero y clics marcados: la misma molienda hoy y en seis meses. Es el que llevo a competencia.',
-                'destacado' => true,
             ],
             [
                 'nombre' => 'Prensa de espresso portátil', 'precio_cop' => 420000, 'gramos' => 0, 'stock' => 6,
@@ -185,6 +189,34 @@ class CatalogoSeeder extends Seeder
                 'descripcion' => 'Carta corta de cocteles con café de especialidad para tu evento, con o sin alcohol. Se arma según lo que estés celebrando.',
             ],
         ]);
+
+        $this->armarKit();
+
+    }
+
+    /**
+     * Arma el kit con lo que trae adentro.
+     *
+     * Va después de sembrar los artefactos porque necesita que los tres
+     * productos ya existan: un kit apunta a productos, no los crea.
+     */
+    private function armarKit(): void
+    {
+        $kit = Producto::where('nombre', 'Kit para empezar')->first();
+
+        if (! $kit) {
+            return;
+        }
+
+        $piezas = Producto::whereIn('nombre', [
+            'Molino manual C40',
+            'Prensa francesa 800 ml',
+            'Báscula con cronómetro',
+        ])->pluck('id');
+
+        $kit->componentes()->sync(
+            $piezas->mapWithKeys(fn ($id, $i) => [$id => ['orden' => $i]])->all()
+        );
     }
 
     /**

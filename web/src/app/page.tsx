@@ -49,7 +49,7 @@ export default async function Inicio() {
   return (
     <CarritoProvider>
       <Intro />
-      <Cabecera />
+      <Cabecera categorias={categorias.map((c) => ({ slug: c.slug, nombre: c.nombre }))} />
 
       <main>
         <Hero hero={hero} />

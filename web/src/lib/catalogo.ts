@@ -57,6 +57,14 @@ export interface Producto {
 
   destacado: boolean;
   categoria?: string;
+
+  /**
+   * Lo que trae adentro, si es un kit. Vacío en todo lo demás.
+   *
+   * Un kit se vende como una cosa —un precio, una línea en el pedido— y esto
+   * es lo que le dice al comprador qué se lleva.
+   */
+  componentes: { id: number; nombre: string; slug: string }[];
 }
 
 export interface Categoria {
@@ -161,6 +169,7 @@ function normalizarProducto(p: Producto): Producto {
     // un minuto puede llegar catálogo sin este campo, y la ficha lo recorre
     // sin preguntar.
     sedes: p.sedes ?? [],
+    componentes: p.componentes ?? [],
   };
 }
 

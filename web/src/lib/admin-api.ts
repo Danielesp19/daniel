@@ -59,6 +59,8 @@ export interface AdminProducto {
   imagen_url: string | null;
   video_url: string | null;
   imagenes_extra: { id: number; url: string }[];
+  /** Los productos que incluye, si es un kit. */
+  componentes: { id: number; nombre: string }[];
 }
 
 export interface AdminSede {

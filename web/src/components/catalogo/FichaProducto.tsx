@@ -114,6 +114,20 @@ export default function FichaProducto({
 
           {producto.descripcion && <p className="ficha-descripcion">{producto.descripcion}</p>}
 
+          {/* Si es un kit, lo primero que hay que saber es qué trae: es la
+              razón por la que alguien lo mira en vez de comprar las piezas
+              sueltas. */}
+          {producto.componentes.length > 0 && (
+            <div className="ficha-kit">
+              <span className="rotulo">Incluye</span>
+              <ul>
+                {producto.componentes.map((c) => (
+                  <li key={c.id}>{c.nombre}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {ficha.length > 0 && (
             <dl className="ficha-datos">
               {ficha.map(([rotulo, valor]) => (

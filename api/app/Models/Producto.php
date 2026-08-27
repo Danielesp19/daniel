@@ -98,6 +98,29 @@ class Producto extends Model
     }
 
     /**
+     * Lo que trae adentro, si es un kit.
+     *
+     * Un kit se vende como una cosa —un precio, una línea en el pedido— y esto
+     * es lo que le dice al comprador qué se lleva. NO se descuenta inventario
+     * de los componentes al vender el kit: el kit tiene su propio stock, como
+     * cualquier producto, porque quien lo arma en el mostrador decide cuántos
+     * hay listos.
+     */
+    public function componentes()
+    {
+        return $this->belongsToMany(self::class, 'producto_componentes', 'producto_id', 'componente_id')
+            ->withPivot('orden')
+            ->orderBy('producto_componentes.orden');
+    }
+
+    /** ¿Es un kit? Lo es si trae algo adentro. */
+    public function esKit(): bool
+    {
+        return ($this->relationLoaded('componentes') ? $this->componentes : $this->componentes())
+            ->count() > 0;
+    }
+
+    /**
      * El inventario real, repartido por punto de venta.
      *
      * Ojo con la dirección de la verdad: ESTA relación manda, y la columna

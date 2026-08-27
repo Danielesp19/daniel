@@ -689,6 +689,29 @@ body {
   }
 }
 
+/* Lo que trae un kit adentro. Va arriba de la ficha técnica: es la razón por
+   la que alguien mira un kit en vez de las piezas sueltas. */
+.ficha-kit {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-linea);
+}
+.ficha-kit ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.ficha-kit li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+/* Un signo de suma en vez de una viñeta: dice "y además" sin una palabra. */
+.ficha-kit li::before {
+  content: "+";
+  position: absolute;
+  left: 0;
+  font-family: var(--font-mono);
+  color: var(--color-rotulo);
+}
+
 /* ─── Disponibilidad por sede ───────────────────────────────────────────────
    La lista de puntos de venta con lo que queda en cada uno, dentro de la ficha
    desplegada del producto.

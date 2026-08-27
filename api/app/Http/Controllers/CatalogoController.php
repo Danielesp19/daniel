@@ -17,7 +17,7 @@ class CatalogoController extends Controller
     public function index()
     {
         $categorias = Categoria::where('activa', true)
-            ->with(['productosVisibles.imagenes', 'productosVisibles.sedes'])
+            ->with(['productosVisibles.imagenes', 'productosVisibles.sedes', 'productosVisibles.componentes'])
             ->orderBy('orden')
             ->get();
 
@@ -55,7 +55,7 @@ class CatalogoController extends Controller
     public function show(Producto $producto)
     {
         abort_unless($producto->activo, 404);
-        $producto->load(['categoria', 'imagenes', 'sedes']);
+        $producto->load(['categoria', 'imagenes', 'sedes', 'componentes']);
 
         return response()->json($this->formato($producto, detalle: true));
     }
@@ -213,6 +213,13 @@ class CatalogoController extends Controller
                 ->all(),
 
             'destacado' => (bool) $p->destacado,
+
+            // Lo que trae adentro, si es un kit. Vacío en todo lo demás, que es
+            // la inmensa mayoría: el frontend pregunta por el largo.
+            'componentes' => ($p->relationLoaded('componentes') ? $p->componentes : $p->componentes()->get())
+                ->map(fn ($c) => ['id' => $c->id, 'nombre' => $c->nombre, 'slug' => $c->slug])
+                ->values()
+                ->all(),
 
             // Dónde hay y dónde no. Los servicios no llevan desglose: no se
             // guardan en ningún estante, y una lista de sedes en cero debajo de

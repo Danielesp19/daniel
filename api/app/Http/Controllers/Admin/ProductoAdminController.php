@@ -33,7 +33,7 @@ class ProductoAdminController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Producto::with(['categoria:id,nombre', 'sedes'])->orderBy('categoria_id')->orderBy('orden');
+        $query = Producto::with(['categoria:id,nombre', 'sedes', 'componentes'])->orderBy('categoria_id')->orderBy('orden');
 
         if ($buscar = trim((string) $request->query('buscar'))) {
             $termino = '%'.str_replace('%', '\%', $buscar).'%';
@@ -65,7 +65,7 @@ class ProductoAdminController extends Controller
 
     public function show(Producto $producto)
     {
-        return response()->json($this->formato($producto->load('categoria:id,nombre', 'sedes')));
+        return response()->json($this->formato($producto->load('categoria:id,nombre', 'sedes', 'componentes')));
     }
 
     /** Resumen de inventario: lo primero que un admin pregunta por chat. */
@@ -95,8 +95,9 @@ class ProductoAdminController extends Controller
 
         $producto = Producto::create($this->soloCampos($datos));
         $this->guardarMedios($request, $producto);
+        $this->guardarComponentes($request, $producto);
 
-        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'imagenes'])), 201);
+        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'imagenes', 'componentes'])), 201);
     }
 
     public function update(Request $request, Producto $producto)
@@ -105,8 +106,9 @@ class ProductoAdminController extends Controller
 
         $producto->update($this->soloCampos($datos));
         $this->guardarMedios($request, $producto);
+        $this->guardarComponentes($request, $producto);
 
-        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'imagenes'])));
+        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'imagenes', 'componentes'])));
     }
 
     /**
@@ -195,6 +197,10 @@ class ProductoAdminController extends Controller
             'destacado' => 'sometimes|boolean',
             'orden' => 'sometimes|integer|min:0',
 
+            // Los productos que incluye, si es un kit.
+            'componentes' => 'sometimes|nullable|array|max:12',
+            'componentes.*' => ['integer', Rule::exists('productos', 'id')],
+
             // Medios. Se validan aquí pero no se asignan con fill(): los
             // procesa guardarMedios(), que optimiza y guarda la ruta.
             'imagen' => 'sometimes|nullable|image|max:12288',
@@ -210,8 +216,36 @@ class ProductoAdminController extends Controller
     private function soloCampos(array $datos): array
     {
         return array_diff_key($datos, array_flip([
-            'imagen', 'video', 'imagenes_extra', 'quitar_imagen', 'quitar_video',
+            'imagen', 'video', 'imagenes_extra', 'quitar_imagen', 'quitar_video', 'componentes',
         ]));
+    }
+
+    /**
+     * Qué trae el kit adentro.
+     *
+     * Solo se toca si el campo viene: sin esto, guardar un producto desde otro
+     * sitio le vaciaría los componentes a un kit sin querer.
+     *
+     * Un kit no puede contenerse a sí mismo —se caería en un bucle al pintar la
+     * ficha— así que ese id se filtra en vez de rechazar el guardado entero por
+     * un componente mal elegido.
+     */
+    private function guardarComponentes(Request $request, Producto $producto): void
+    {
+        if (! $request->has('componentes')) {
+            return;
+        }
+
+        $ids = collect($request->input('componentes', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->reject(fn (int $id) => $id === $producto->id)
+            ->unique()
+            ->values();
+
+        $producto->componentes()->sync(
+            $ids->mapWithKeys(fn (int $id, int $i) => [$id => ['orden' => $i]])->all()
+        );
     }
 
     /**
@@ -407,6 +441,10 @@ class ProductoAdminController extends Controller
             // reemplazarlo o quitarlo.
             'imagen_url' => $p->imagen ? asset('storage/'.$p->imagen) : null,
             'video_url' => $p->video ? asset('storage/'.$p->video) : null,
+            'componentes' => ($p->relationLoaded('componentes') ? $p->componentes : $p->componentes()->get())
+                ->map(fn ($c) => ['id' => $c->id, 'nombre' => $c->nombre])
+                ->values()
+                ->all(),
             'imagenes_extra' => ($p->relationLoaded('imagenes') ? $p->imagenes : $p->imagenes()->get())
                 ->map(fn ($img) => ['id' => $img->id, 'url' => asset('storage/'.$img->ruta)])
                 ->values()

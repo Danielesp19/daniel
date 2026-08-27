@@ -144,6 +144,51 @@ class AdminApiTest extends TestCase
         $this->assertSame(1, $a->fresh()->orden);
     }
 
+    public function test_un_kit_guarda_lo_que_incluye(): void
+    {
+        $molino = $this->categoria->productos()->create(['nombre' => 'Molino', 'precio_cop' => 890000]);
+        $prensa = $this->categoria->productos()->create(['nombre' => 'Prensa', 'precio_cop' => 130000]);
+
+        $kit = $this->panel()->postJson('/api/admin/productos', [
+            'categoria_id' => $this->categoria->id,
+            'nombre' => 'Kit para empezar',
+            'precio_cop' => 1000000,
+            'componentes' => [$molino->id, $prensa->id],
+        ])->assertCreated();
+
+        $this->assertSame(
+            ['Molino', 'Prensa'],
+            Producto::find($kit->json('id'))->componentes->pluck('nombre')->all(),
+        );
+    }
+
+    public function test_un_kit_no_puede_contenerse_a_si_mismo(): void
+    {
+        // Se caería en un bucle al pintar la ficha. Se filtra el id en vez de
+        // rechazar el guardado entero por un componente mal elegido.
+        $kit = $this->categoria->productos()->create(['nombre' => 'Kit', 'precio_cop' => 100000]);
+
+        $this->panel()
+            ->patchJson("/api/admin/productos/{$kit->id}", ['componentes' => [$kit->id]])
+            ->assertOk();
+
+        $this->assertCount(0, $kit->fresh()->componentes);
+    }
+
+    public function test_guardar_sin_mandar_componentes_no_vacia_el_kit(): void
+    {
+        // El chatbot y otras vistas guardan productos sin saber de kits; si el
+        // campo ausente se interpretara como "vacío", le borrarían el
+        // contenido a un kit sin querer.
+        $pieza = $this->categoria->productos()->create(['nombre' => 'Pieza', 'precio_cop' => 1000]);
+        $kit = $this->categoria->productos()->create(['nombre' => 'Kit', 'precio_cop' => 100000]);
+        $kit->componentes()->sync([$pieza->id => ['orden' => 0]]);
+
+        $this->panel()->patchJson("/api/admin/productos/{$kit->id}", ['precio_cop' => 90000])->assertOk();
+
+        $this->assertCount(1, $kit->fresh()->componentes);
+    }
+
     // ── Categorías ───────────────────────────────────────────────────────────
 
     public function test_crea_y_edita_una_categoria(): void

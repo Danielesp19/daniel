@@ -7,6 +7,7 @@ import {
   borrarImagenExtra,
   moverStock,
   listarSedes,
+  listarProductos,
   type AdminProducto,
   type AdminCategoria,
   type AdminSede,
@@ -33,6 +34,8 @@ interface Borrador {
   puntaje_sca: string;
   activo: boolean;
   destacado: boolean;
+  /** Ids de los productos que incluye, si es un kit. */
+  componentes: number[];
 }
 
 function borradorDe(producto: AdminProducto | null, categoriaId: number): Borrador {
@@ -55,6 +58,7 @@ function borradorDe(producto: AdminProducto | null, categoriaId: number): Borrad
     puntaje_sca: producto?.puntaje_sca ? String(producto.puntaje_sca) : "",
     activo: producto?.activo ?? true,
     destacado: producto?.destacado ?? false,
+    componentes: producto?.componentes.map((c) => c.id) ?? [],
   };
 }
 
@@ -102,9 +106,18 @@ export default function FormularioProducto({
   const [guardando, setGuardando] = useState(false);
 
   const [sedes, setSedes] = useState<AdminSede[]>([]);
+  const [otros, setOtros] = useState<AdminProducto[]>([]);
   const [stock, setStock] = useState<Record<number, string>>({});
 
   const editando = producto !== null;
+
+  useEffect(() => {
+    // Los candidatos a componente de un kit. Se piden siempre —también al
+    // crear— porque un kit puede nacer ya armado.
+    listarProductos()
+      .then(setOtros)
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!editando) return;
@@ -157,6 +170,12 @@ export default function FormularioProducto({
       // entiende "no me mandaron el campo" y deja las que ya había.
       if (datos.notas.length === 0) cuerpo.append("notas", "");
       datos.notas.forEach((n) => cuerpo.append("notas[]", n));
+
+      // Igual que las notas: sin componentes hay que mandar el arreglo vacío
+      // explícito, o el backend entiende "no me lo mandaron" y deja los que
+      // ya había.
+      if (datos.componentes.length === 0) cuerpo.append("componentes", "");
+      datos.componentes.forEach((id) => cuerpo.append("componentes[]", String(id)));
 
       if (imagen) cuerpo.append("imagen", imagen);
       if (video) cuerpo.append("video", video);
@@ -490,6 +509,37 @@ export default function FormularioProducto({
             onChange={(e) => setExtras(Array.from(e.target.files ?? []))}
             style={{ fontSize: 12.5 }}
           />
+        </div>
+
+        {/* ── Kit ── */}
+        <Titulo nota="Deja esto vacío en un producto normal. Un kit se vende como una sola cosa —un precio, una línea en el pedido— y esto es lo que le dice al comprador qué se lleva.">
+          Qué incluye
+        </Titulo>
+
+        <div style={{ display: "grid", gap: 8, maxHeight: 220, overflowY: "auto", padding: 2 }}>
+          {otros
+            .filter((o) => o.id !== producto?.id)
+            .map((o) => (
+              <Interruptor
+                key={o.id}
+                etiqueta={o.nombre}
+                nota={o.categoria ?? undefined}
+                valor={datos.componentes.includes(o.id)}
+                onChange={(marcado) =>
+                  set(
+                    "componentes",
+                    marcado
+                      ? [...datos.componentes, o.id]
+                      : datos.componentes.filter((id) => id !== o.id),
+                  )
+                }
+              />
+            ))}
+          {otros.length === 0 && (
+            <p style={{ margin: 0, fontSize: 12.5, color: COLOR.suave }}>
+              No hay otros productos todavía.
+            </p>
+          )}
         </div>
 
         {/* ── Publicación ── */}
