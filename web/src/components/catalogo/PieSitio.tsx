@@ -89,6 +89,7 @@ export default function PieSitio() {
             titulo="Sígueme"
             enlaces={[
               ["Instagram", MARCA.instagram],
+              ["TikTok", MARCA.tiktok],
               ["Threads", MARCA.threads],
               ["WhatsApp", enlaceWhatsApp(`Hola ${MARCA.nombre}, quiero hacer un pedido.`)],
             ]}

@@ -46,7 +46,7 @@ export default function Barista() {
           >
             <Image
               src="/img5.jpg"
-              alt="Daniel Buitrón en la barra, junto a su máquina de espresso"
+              alt="Daniel Buitron en la barra, junto a su máquina de espresso"
               fill
               sizes="(max-width: 900px) 100vw, 420px"
               style={{ objectFit: "cover", objectPosition: "center 22%" }}
@@ -71,7 +71,7 @@ export default function Barista() {
                 transitionDelay: "160ms",
               }}
             >
-              Soy Daniel Buitrón, barista profesional y competidor de arte latte. Llevo años
+              Soy Daniel Buitron, barista profesional y competidor de arte latte. Llevo años
               detrás de una máquina: compitiendo, montando barras y enseñándole a otros a
               sacarle a su café lo que de verdad tiene. Lo que vendo acá es el mismo café que
               uso yo, el mismo equipo con el que compito y la misma forma de prepararlo.

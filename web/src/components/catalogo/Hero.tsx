@@ -26,6 +26,11 @@ const POSTER_FONDO = "/videos/hero.jpg";
  * peso justo ahí, así que el texto queda sobre la parte más oscura y la mitad
  * de arriba —donde está la escena— se ve limpia.
  *
+ * Los textos entran escalonados y despacio —cada uno espera a que el anterior
+ * termine de asentarse—. Estuvieron el doble de rápidos y el cliente no
+ * alcanzaba a leer su propia presentación antes de que la siguiente línea ya
+ * estuviera encima.
+ *
  * Los podios ya no van aquí debajo: pasaron a la presentación del barista,
  * como medallas. En una cinta pegada al hero se leían como una nota al pie;
  * al lado de su biografía son lo que respalda lo que dice.
@@ -106,7 +111,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
           className="epigrafe"
           style={{
             color: "rgba(255,255,255,0.8)",
-            animation: "entrar .8s cubic-bezier(.2,.7,.2,1) .1s both",
+            animation: "entrar 1.1s cubic-bezier(.2,.7,.2,1) .25s both",
           }}
         >
           {etiqueta}
@@ -119,7 +124,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
             lineHeight: 0.98,
             maxWidth: "12ch",
             marginTop: 18,
-            animation: "entrar .9s cubic-bezier(.2,.7,.2,1) .22s both",
+            animation: "entrar 1.2s cubic-bezier(.2,.7,.2,1) .55s both",
           }}
         >
           {recto} {cursiva && <em>{cursiva}</em>}
@@ -132,7 +137,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
             fontSize: 15,
             lineHeight: 1.6,
             color: "rgba(255,255,255,0.82)",
-            animation: "entrar .9s cubic-bezier(.2,.7,.2,1) .34s both",
+            animation: "entrar 1.2s cubic-bezier(.2,.7,.2,1) .95s both",
           }}
         >
           {subtitulo}
@@ -148,7 +153,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
             width: "100%",
             maxWidth: 420,
             marginTop: 28,
-            animation: "entrar .9s cubic-bezier(.2,.7,.2,1) .46s both",
+            animation: "entrar 1.2s cubic-bezier(.2,.7,.2,1) 1.3s both",
           }}
         >
           <a

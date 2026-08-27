@@ -34,10 +34,14 @@ export default function BandaServicio({
   // una barra para eventos depende de invitados, duración y ciudad.
   const desde = producto.precio_cop >= 500000;
 
-  // Precio en cero = no se vende, se explica. Los métodos de preparación usan
-  // esta misma banda y no se agendan: mostrarles "$0" y un botón de agendar
-  // sería ofrecer algo que no existe.
-  const seVende = producto.precio_cop > 0;
+  // Precio en cero = se cotiza, no que no se preste. El cliente publica los
+  // suyos como referencia y quiere poder quitarlos sin que el servicio deje de
+  // poder agendarse: quien pregunta por WhatsApp recibe el precio de viva voz.
+  //
+  // Por eso el precio y el botón son independientes. Antes iban juntos y poner
+  // el precio en cero escondía también el "Agendar", que es justo lo contrario
+  // de lo que se busca.
+  const tienePrecio = producto.precio_cop > 0;
 
   const mensaje = `Hola ${MARCA.nombre}, quiero agendar: ${producto.nombre}.`;
 
@@ -59,22 +63,22 @@ export default function BandaServicio({
 
         {producto.descripcion && <p className="banda-bajada">{producto.descripcion}</p>}
 
-        {seVende && (
-          <div className="banda-pie">
+        <div className="banda-pie">
+          {tienePrecio && (
             <span className="cifra banda-precio">
               {desde && <span className="banda-desde">desde</span>}${pesos(producto.precio_cop)}
             </span>
+          )}
 
-            <a
-              href={enlaceWhatsApp(mensaje)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="boton boton-grande boton-solido-claro"
-            >
-              Agendar
-            </a>
-          </div>
-        )}
+          <a
+            href={enlaceWhatsApp(mensaje)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="boton boton-grande boton-solido-claro"
+          >
+            {tienePrecio ? "Agendar" : "Consultar precio"}
+          </a>
+        </div>
       </div>
     </article>
   );

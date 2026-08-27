@@ -6,7 +6,9 @@
  * competencias reales, no adjetivos.
  */
 export const MARCA = {
-  nombre: "Daniel Buitrón",
+  // Sin tilde en la "o": así figura en su cédula, y es el nombre con el que
+  // factura. Lo pidió él expresamente en la revisión del 19 de agosto.
+  nombre: "Daniel Buitron",
   oficio: "Barista profesional",
   ciudad: "Pitalito, Huila",
 
@@ -22,6 +24,13 @@ export const MARCA = {
 
   instagram: "https://www.instagram.com/danielbuitron.barista/",
   threads: "https://www.threads.com/@danielbuitron.barista",
+
+  /**
+   * PROVISIONAL: el usuario se dedujo del de Instagram y Threads, que son el
+   * mismo. Hay que confirmarlo con él antes de publicar — un enlace roto en el
+   * pie es peor que no tener el enlace.
+   */
+  tiktok: "https://www.tiktok.com/@danielbuitron.barista",
 
   descripcion:
     "Subcampeón Nacional de Arte Latte. Cursos, experiencias y café de especialidad del Huila.",
