@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Receta } from "@/lib/catalogo";
 import { useRevelado } from "@/hooks/useRevelar";
+import Molienda from "./Molienda";
 
 /** Cuenta atrás en mm:ss. Por encima de una hora se dice en horas. */
 function reloj(segundos: number): string {
@@ -357,6 +358,8 @@ export default function Recetas({ recetas }: { recetas: Receta[] }) {
             </article>
           )}
         </div>
+
+        <Molienda />
       </div>
     </section>
   );
