@@ -1,4 +1,5 @@
 import { enlaceWhatsApp, MARCA } from "@/lib/marca";
+import IconoRed, { type Red } from "./IconoRed";
 
 /**
  * Cierre y pie.
@@ -84,14 +85,13 @@ export default function PieSitio() {
             ]}
           />
 
-          <Columna
-            externos
-            titulo="Sígueme"
-            enlaces={[
-              ["Instagram", MARCA.instagram],
-              ["TikTok", MARCA.tiktok],
-              ["Threads", MARCA.threads],
-              ["WhatsApp", enlaceWhatsApp(`Hola ${MARCA.nombre}, quiero hacer un pedido.`)],
+          <ColumnaRedes
+            redes={[
+              ["instagram", "Instagram", MARCA.instagram],
+              ["tiktok", "TikTok", MARCA.tiktok],
+              ["facebook", "Facebook", MARCA.facebook],
+              ["threads", "Threads", MARCA.threads],
+              ["whatsapp", "WhatsApp", enlaceWhatsApp(`Hola ${MARCA.nombre}, quiero hacer un pedido.`)],
             ]}
           />
 
@@ -129,6 +129,33 @@ export default function PieSitio() {
         </div>
       </footer>
     </>
+  );
+}
+
+/**
+ * Las redes, con su logo.
+ *
+ * El nombre va escrito al lado del icono y no solo el icono: cuatro siluetas
+ * en fila obligan a reconocerlas, y la de Threads no la distingue todo el
+ * mundo. El icono ayuda a encontrar la que se busca; la palabra confirma.
+ */
+function ColumnaRedes({ redes }: { redes: Array<readonly [Red, string, string]> }) {
+  return (
+    <div style={{ display: "grid", gap: 10, alignContent: "start" }}>
+      <span className="rotulo">Sígueme</span>
+      {redes.map(([red, texto, url]) => (
+        <a
+          key={red}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="enlace-red"
+        >
+          <IconoRed red={red} />
+          {texto}
+        </a>
+      ))}
+    </div>
   );
 }
 

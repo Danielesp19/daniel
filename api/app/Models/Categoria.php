@@ -10,8 +10,18 @@ class Categoria extends Model
 {
     use Concerns\SlugUnico;
 
-    /** Cómo se dibuja la categoría en el catálogo web. Ver la migración. */
-    public const VITRINAS = ['grid', 'carrusel', 'vertical', 'bandas', 'horizontal'];
+    /**
+     * Cómo se dibuja el RESTO de la sección.
+     *
+     * Los tres primeros son los que ofrece el panel. Los destacados ya no
+     * dependen del modo: van en grande arriba de la sección, en cualquiera de
+     * ellos, así que el modo solo decide cómo se acomoda lo que queda.
+     *
+     * `grid`, `vertical` y `horizontal` siguen aceptándose para no romper
+     * categorías creadas antes, pero no se ofrecen: `vertical` hacía justo lo
+     * que ahora hace cualquier modo con un destacado adentro.
+     */
+    public const VITRINAS = ['carrusel', 'dos', 'bandas', 'grid', 'vertical', 'horizontal'];
 
     protected $table = 'categorias';
 

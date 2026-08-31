@@ -25,12 +25,10 @@ export const MARCA = {
   instagram: "https://www.instagram.com/danielbuitron.barista/",
   threads: "https://www.threads.com/@danielbuitron.barista",
 
-  /**
-   * PROVISIONAL: el usuario se dedujo del de Instagram y Threads, que son el
-   * mismo. Hay que confirmarlo con él antes de publicar — un enlace roto en el
-   * pie es peor que no tener el enlace.
-   */
-  tiktok: "https://www.tiktok.com/@danielbuitron.barista",
+  // Confirmados por él en la revisión del 27 de agosto. Ojo: el usuario de
+  // TikTok lleva guion bajo y el de Instagram lleva punto — no son el mismo.
+  tiktok: "https://www.tiktok.com/@danielbuitron_barista",
+  facebook: "https://www.facebook.com/danielbuitron.barista",
 
   descripcion:
     "Subcampeón Nacional de Arte Latte. Cursos, experiencias y café de especialidad del Huila.",

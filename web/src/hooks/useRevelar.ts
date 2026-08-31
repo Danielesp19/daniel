@@ -12,8 +12,7 @@ import { useEffect, useRef, useState } from "react";
  * Cada elemento se revela UNA vez y se deja de observar: re-animar al subir y
  * bajar marea. Los márgenes negativos recortan el viewport por arriba y por
  * abajo para que un elemento no cuente como visible hasta entrar en la franja
- * central — sin eso, en una pantalla alta entran cuatro tarjetas a la vez y el
- * observer las dispara todas juntas.
+ * central; que no se disparen todas juntas lo resuelve la cola del final.
  */
 let observador: IntersectionObserver | null = null;
 
@@ -39,7 +38,18 @@ function observar(el: Element, alRevelar: () => void): () => void {
           observador!.unobserve(e.target);
         }
       },
-      { rootMargin: "-8% 0px -18% 0px", threshold: 0.15 },
+      // Umbral CERO, no una fracción del elemento.
+      //
+      // `threshold` mide qué proporción del ELEMENTO está dentro del cuadro, y
+      // eso es imposible de alcanzar para algo más alto que la pantalla: una
+      // sección de 5000 px en un celular no puede mostrar más del 12 % de sí
+      // misma, así que con 0.15 nunca se revelaba y quedaba invisible para
+      // siempre. Pasaba con cualquier sección larga en móvil.
+      //
+      // Quién entra en cuadro ya lo decide el `rootMargin`, que recorta la
+      // franja útil por arriba y por abajo; y que no se disparen todas juntas
+      // lo resuelve la cola de abajo, no el umbral.
+      { rootMargin: "-8% 0px -18% 0px", threshold: 0 },
     );
   }
 

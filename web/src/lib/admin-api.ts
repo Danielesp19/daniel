@@ -11,7 +11,7 @@
 const BASE = "/api-tienda/admin";
 
 /** Cómo se dibuja una sección en el catálogo. */
-export type ModoVitrina = "grid" | "carrusel" | "vertical" | "bandas" | "horizontal";
+export type ModoVitrina = "carrusel" | "dos" | "bandas" | "grid" | "vertical" | "horizontal";
 
 export interface AdminCategoria {
   id: number;

@@ -47,15 +47,20 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
   const recto = corte > 0 ? titulo.slice(0, corte + 1) : titulo;
   const cursiva = corte > 0 ? titulo.slice(corte + 1).trim() : null;
 
-  // "svh", no "dvh": dvh se recalcula en vivo cuando el navegador móvil
-  // esconde y muestra la barra de direcciones al scrollear, y en una sección
-  // alta eso se ve como que el hero cambia de tamaño solo.
   return (
     <section
       id="hero"
       style={{
         position: "relative",
-        height: "min(90svh, 780px)",
+        // Pantalla completa, menos la cabecera fija: el hero es lo primero que
+        // se ve y el cliente lo quiere ocupando todo. Se descuenta `--barra`
+        // para que la barra no quede montada sobre el titular.
+        //
+        // "svh" y no "dvh": dvh se recalcula en vivo cuando el navegador móvil
+        // esconde y muestra la barra de direcciones al scrollear, y en una
+        // sección de pantalla completa eso se ve como que el hero cambia de
+        // tamaño solo mientras uno baja.
+        height: "calc(100svh - var(--barra))",
         minHeight: 540,
         overflow: "hidden",
         // El póster va de fondo del contenedor y no solo como `poster` del

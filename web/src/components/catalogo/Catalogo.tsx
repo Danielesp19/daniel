@@ -1,6 +1,6 @@
 "use client";
 
-import type { Categoria, Producto } from "@/lib/catalogo";
+import type { Categoria } from "@/lib/catalogo";
 import { useRevelado } from "@/hooks/useRevelar";
 import BandaServicio from "./BandaServicio";
 import Carrusel from "./Carrusel";
@@ -58,6 +58,18 @@ function Seccion({ categoria, tono }: { categoria: Categoria; tono: string }) {
 
   const modo = categoria.modo_vitrina;
 
+  // Los destacados salen en grande arriba de la sección, en CUALQUIER modo, y
+  // el modo solo decide cómo se acomoda lo que queda. Antes eso lo hacía un
+  // modo aparte ("vertical") que ponía en grande al PRIMERO de la lista, no al
+  // marcado: la casilla de destacado solo pintaba un sello y no cambiaba nada.
+  //
+  // Las bandas y las tarjetas con video no entran acá: ya son formatos a lo
+  // ancho, y meterles un panel gigante encima sería el mismo tratamiento dos
+  // veces seguidas.
+  const admiteDestacados = modo !== "bandas" && modo !== "horizontal";
+  const destacados = admiteDestacados ? categoria.productos.filter((p) => p.destacado) : [];
+  const resto = admiteDestacados ? categoria.productos.filter((p) => !p.destacado) : categoria.productos;
+
   return (
     <section
       ref={ref}
@@ -68,33 +80,40 @@ function Seccion({ categoria, tono }: { categoria: Categoria; tono: string }) {
       <div className="contenedor">
         <Cabeza categoria={categoria} />
 
-        {modo === "carrusel" ? (
-          <Carrusel productos={categoria.productos} />
-        ) : modo === "bandas" ? (
-          <div className="bandas">
-            {categoria.productos.map((p, i) => (
-              <BandaServicio key={p.id} producto={p} numero={i + 1} />
-            ))}
-          </div>
-        ) : modo === "horizontal" ? (
-          <div className="grilla grilla-videos">
-            {categoria.productos.map((p, i) => (
-              <Envoltura key={p.id} indice={i}>
-                <TarjetaVideo producto={p} numero={i + 1} />
-              </Envoltura>
-            ))}
-          </div>
-        ) : modo === "vertical" ? (
-          <Vitrina productos={categoria.productos} />
-        ) : (
-          <div className="grilla grilla-productos">
-            {categoria.productos.map((p, i) => (
-              <Envoltura key={p.id} indice={i}>
-                <TarjetaProducto producto={p} />
-              </Envoltura>
+        {destacados.length > 0 && (
+          <div className="destacados">
+            {destacados.map((p) => (
+              <Destacado key={p.id} producto={p} />
             ))}
           </div>
         )}
+
+        {resto.length > 0 &&
+          (modo === "carrusel" ? (
+            <Carrusel productos={resto} />
+          ) : modo === "bandas" ? (
+            <div className="bandas">
+              {resto.map((p, i) => (
+                <BandaServicio key={p.id} producto={p} numero={i + 1} />
+              ))}
+            </div>
+          ) : modo === "horizontal" ? (
+            <div className="grilla grilla-videos">
+              {resto.map((p, i) => (
+                <Envoltura key={p.id} indice={i}>
+                  <TarjetaVideo producto={p} numero={i + 1} />
+                </Envoltura>
+              ))}
+            </div>
+          ) : (
+            <div className={`grilla ${modo === "dos" ? "grilla-dos" : "grilla-productos"}`}>
+              {resto.map((p, i) => (
+                <Envoltura key={p.id} indice={i}>
+                  <TarjetaProducto producto={p} />
+                </Envoltura>
+              ))}
+            </div>
+          ))}
       </div>
     </section>
   );
@@ -147,26 +166,6 @@ function leyenda(categoria: Categoria): string {
   return propias[categoria.slug] ?? `${String(categoria.productos.length).padStart(2, "0")} referencias`;
 }
 
-/** Vitrina: el primero en grande, el resto en grilla debajo. */
-function Vitrina({ productos }: { productos: Producto[] }) {
-  const [primero, ...resto] = productos;
-
-  return (
-    <>
-      <Destacado producto={primero} />
-
-      {resto.length > 0 && (
-        <div className="grilla grilla-productos" style={{ marginTop: "clamp(10px, 2vw, 18px)" }}>
-          {resto.map((p, i) => (
-            <Envoltura key={p.id} indice={i}>
-              <TarjetaProducto producto={p} />
-            </Envoltura>
-          ))}
-        </div>
-      )}
-    </>
-  );
-}
 
 /**
  * Envuelve una tarjeta para escalonar su entrada. El retraso se corta en la

@@ -269,6 +269,39 @@ body {
 .grilla-productos { grid-template-columns: repeat(auto-fill, minmax(min(100%, 175px), 1fr)); }
 .grilla-videos    { grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
 
+/* Cada tarjeta del carrusel. En escritorio caben cinco o seis. */
+.tira-item {
+  flex: 0 0 clamp(175px, 42vw, 220px);
+  scroll-snap-align: start;
+}
+
+/* Dos por fila, fijas. No es `auto-fill`: el punto de este modo es que sean
+   exactamente dos y se vean grandes, no que quepan las que quepan. */
+.grilla-dos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* Los destacados, uno debajo del otro. Antes solo podía haber uno —lo dibujaba
+   el modo "vertical" tomando el primero de la lista— y ahora pueden ser
+   varios: el aire entre ellos es lo que impide que dos paneles gigantes
+   seguidos se lean como uno solo partido. */
+.destacados {
+  display: grid;
+  gap: clamp(10px, 1.6vw, 18px);
+  margin-bottom: clamp(10px, 2vw, 18px);
+}
+
+/* En celular TODO va a ancho completo: una tarjeta a media pantalla deja el
+   nombre del café en tres renglones y la foto del tamaño de una estampilla. */
+@media (max-width: 640px) {
+  .grilla-productos,
+  .grilla-videos,
+  .grilla-dos { grid-template-columns: 1fr; }
+
+  /* El carrusel también, pero dejando un asomo de la siguiente: es lo único
+     que dice que hay más hacia el lado. A ancho completo exacto, el carrusel
+     se ve idéntico a una lista y nadie desliza. */
+  .tira-item { flex-basis: 86vw; }
+}
+
 /* Filas que se pasan deslizando, sin barra de scroll visible. */
 .tiras { scrollbar-width: none; }
 .tiras::-webkit-scrollbar { display: none; }
@@ -381,6 +414,20 @@ body {
 .calculadora-signo { padding-bottom: 12px; color: var(--color-rotulo); font-size: 13px; }
 .calculadora-volver { align-self: flex-start; font-size: 9px; }
 
+
+/* Un enlace de red social: el logo y el nombre, alineados por el centro. */
+.enlace-red {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  text-decoration: none;
+  color: var(--color-fuerte);
+  transition: color .2s ease;
+}
+.enlace-red:hover { color: var(--color-tinta); }
+.enlace-red svg { color: var(--color-rotulo); transition: color .2s ease; }
+.enlace-red:hover svg { color: var(--color-tinta); }
 
 /* ─── Referencia de molienda ────────────────────────────────────────────────
    Los tamaños de grano dibujados al tamaño real de la pantalla, para comparar

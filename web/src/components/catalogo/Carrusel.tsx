@@ -73,16 +73,7 @@ export default function Carrusel({ productos }: { productos: Producto[] }) {
         }}
       >
         {productos.map((producto) => (
-          <div
-            key={producto.id}
-            style={{
-              // Cuántas caben: cinco o seis en escritorio, dos y un asomo en
-              // celular. El asomo importa — es lo que dice que hay más hacia
-              // el lado sin tener que explicarlo.
-              flex: "0 0 clamp(175px, 42vw, 220px)",
-              scrollSnapAlign: "start",
-            }}
-          >
+          <div key={producto.id} className="tira-item">
             <TarjetaProducto producto={producto} />
           </div>
         ))}

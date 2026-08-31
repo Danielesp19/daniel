@@ -19,13 +19,28 @@ import {
 import { COLOR, campo, rotulo, Campo, Boton, Cabecera, Aviso, Flechas, Hoja, Interruptor } from "@/components/admin/ui";
 import FormularioProducto from "@/components/admin/FormularioProducto";
 
+/**
+ * Los tres modos que ofrece el panel.
+ *
+ * Solo deciden cómo se acomoda lo que NO está destacado: los destacados salen
+ * en grande arriba de la sección en cualquiera de los tres.
+ *
+ * Los modos viejos —grid, vertical, horizontal— siguen dibujándose para no
+ * romper categorías creadas antes, pero no se ofrecen: "vertical" hacía justo
+ * lo que ahora hace cualquier modo con un destacado adentro.
+ */
 const VITRINAS: { valor: ModoVitrina; texto: string }[] = [
-  { valor: "grid", texto: "Grilla de tarjetas" },
-  { valor: "carrusel", texto: "Carrusel — una fila que se corre" },
-  { valor: "vertical", texto: "Vitrina — uno en grande y el resto en grilla" },
-  { valor: "bandas", texto: "Bandas — una fila por producto, con el video de fondo" },
-  { valor: "horizontal", texto: "Tarjetas con video" },
+  { valor: "carrusel", texto: "Horizontal — una fila que se corre de lado" },
+  { valor: "dos", texto: "Vertical — dos productos por fila" },
+  { valor: "bandas", texto: "Vertical — bandas a lo ancho, como servicios" },
 ];
+
+/** Los modos viejos, para poder nombrarlos en la lista de secciones. */
+const VITRINAS_VIEJAS: Record<string, string> = {
+  grid: "Grilla de tarjetas (modo antiguo)",
+  vertical: "Vitrina (modo antiguo)",
+  horizontal: "Tarjetas con video (modo antiguo)",
+};
 
 /**
  * El catálogo entero en una pantalla: las secciones en su orden, y dentro de
@@ -181,7 +196,9 @@ export default function CatalogoAdmin() {
                   </div>
                   <div style={{ marginTop: 2, fontSize: 12.5, color: COLOR.suave }}>
                     {suyos.length} {suyos.length === 1 ? "producto" : "productos"} ·{" "}
-                    {VITRINAS.find((v) => v.valor === c.modo_vitrina)?.texto ?? c.modo_vitrina}
+                    {VITRINAS.find((v) => v.valor === c.modo_vitrina)?.texto ??
+                      VITRINAS_VIEJAS[c.modo_vitrina] ??
+                      c.modo_vitrina}
                   </div>
                 </button>
 
@@ -371,13 +388,20 @@ function FormularioCategoria({
           />
         </Campo>
 
-        <Campo etiqueta="Cómo se muestra" nota="Dale un modo distinto a cada sección: si dos usan el mismo, la página se siente repetida.">
+        <Campo
+          etiqueta="Cómo se muestra"
+          nota="Solo cambia lo que NO está destacado: los destacados salen en grande arriba, en cualquiera de los tres. Dale un modo distinto a cada sección — si dos usan el mismo, la página se siente repetida."
+        >
           <select style={campo} value={modo} onChange={(e) => setModo(e.target.value as ModoVitrina)}>
             {VITRINAS.map((v) => (
               <option key={v.valor} value={v.valor}>
                 {v.texto}
               </option>
             ))}
+            {/* Si la sección todavía usa un modo viejo, hay que poder verlo
+                seleccionado en vez de que el selector muestre otro por defecto
+                y lo cambie sin querer al guardar. */}
+            {VITRINAS_VIEJAS[modo] && <option value={modo}>{VITRINAS_VIEJAS[modo]}</option>}
           </select>
         </Campo>
 
