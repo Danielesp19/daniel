@@ -1438,14 +1438,23 @@ body {
 }
 .reloj-listo { border-color: var(--color-tinta); }
 .reloj-cifra { display: flex; align-items: baseline; gap: 9px; }
-.reloj-cifra .cifra { font-size: clamp(26px, 4.4vw, 34px); line-height: 1; }
+.reloj-cifra .cifra {
+  font-size: clamp(26px, 4.4vw, 34px);
+  line-height: 1;
+  /* La mono deja mucho aire alrededor de los dos puntos y "0 : 40" se lee como
+     tres cosas sueltas en vez de una cuenta atrás. */
+  letter-spacing: -0.05em;
+}
 .reloj-unidad { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-rotulo); }
 
 .reloj-barra { height: 2px; margin: 10px 0 12px; background: var(--color-linea); overflow: hidden; }
 .reloj-avance { display: block; height: 100%; background: var(--color-tinta); transform-origin: left; transition: transform .25s linear; }
 
 .reloj-botones { display: flex; gap: 8px; flex-wrap: wrap; }
-.reloj-botones .boton { flex: 1 1 110px; padding: 8px 14px; font-size: 12px; }
+/* Iniciar manda y se lleva el ancho; reiniciar es el que casi nunca se toca. */
+.reloj-botones .boton { padding: 8px 14px; font-size: 12px; }
+.reloj-botones .boton-solido { flex: 2 1 130px; }
+.reloj-botones .boton-linea { flex: 1 1 90px; }
 
 /* ─── Preguntas frecuentes ──────────────────────────────────────────────────*/
 .faq { list-style: none; margin: clamp(20px, 4vw, 34px) 0 0; padding: 0; border-top: 1px solid var(--color-linea); }
