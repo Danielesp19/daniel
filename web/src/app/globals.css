@@ -269,6 +269,35 @@ body {
 .grilla-productos { grid-template-columns: repeat(auto-fill, minmax(min(100%, 175px), 1fr)); }
 .grilla-videos    { grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
 
+/* ─── Mosaico de un kit ─────────────────────────────────────────────────────
+   Un kit son varias cosas metidas en una, así que su tesela muestra las piezas
+   juntas en vez de una sola foto. La rejilla cambia según cuántas haya: con
+   tres, la primera manda y ocupa la columna alta, porque tres celdas iguales
+   dejan un hueco o parten la foto principal.
+
+   El separador es una línea de un pelo del color del fondo, no un `gap`: así
+   las fotos se leen como un solo bloque cortado y no como cuatro tarjetitas
+   sueltas dentro de otra tarjeta. */
+.mosaico {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  gap: 1px;
+  background: var(--color-linea);
+}
+.seccion-oscura .mosaico { background: var(--linea-o); }
+
+.mosaico-celda { position: relative; overflow: hidden; background: var(--color-tesela); }
+.seccion-oscura .mosaico-celda { background: var(--color-tesela-o); }
+
+.mosaico-2 { grid-template-columns: 1fr 1fr; }
+
+.mosaico-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+/* La primera ocupa toda la columna izquierda: es la foto del kit armado. */
+.mosaico-3 .mosaico-celda:first-child { grid-row: span 2; }
+
+.mosaico-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+
 /* Cada tarjeta del carrusel. En escritorio caben cinco o seis. */
 .tira-item {
   flex: 0 0 clamp(175px, 42vw, 220px);

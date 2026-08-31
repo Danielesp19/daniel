@@ -86,6 +86,43 @@ export default function TeselaFoto({
     );
   }
 
+  // Un KIT con varias fotos se dibuja como mosaico: son varias cosas metidas
+  // en una, y una sola foto obliga a leer la lista de abajo para saber qué
+  // trae. Con las piezas a la vista se entiende de un vistazo.
+  //
+  // Solo los kits. Un café con cuatro fotos quiere su foto principal grande,
+  // no cuatro miniaturas; ahí las adicionales son la galería, no el contenido.
+  const fotos = [producto.imagen_url, ...producto.imagenes_extra].filter(Boolean) as string[];
+  const esKit = producto.componentes.length > 0;
+
+  if (esKit && fotos.length >= 2) {
+    // Máximo cuatro: con más, cada pieza queda del tamaño de una estampilla y
+    // el mosaico deja de decir nada.
+    const muestra = fotos.slice(0, 4);
+
+    return (
+      <div className={`mosaico mosaico-${muestra.length}`} aria-label={producto.nombre}>
+        {muestra.map((url, i) => (
+          <span key={url} className="mosaico-celda">
+            <Image
+              src={url}
+              alt=""
+              aria-hidden="true"
+              fill
+              sizes={sizes}
+              draggable={false}
+              style={{
+                objectFit: "cover",
+                filter: producto.agotado ? "saturate(0.15) opacity(0.5)" : undefined,
+              }}
+              priority={prioridad && i === 0}
+            />
+          </span>
+        ))}
+      </div>
+    );
+  }
+
   const relleno = producto.imagen_url ? null : fotoDeRelleno(producto.id);
 
   return (
