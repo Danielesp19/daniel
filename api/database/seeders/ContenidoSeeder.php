@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Aviso;
 use App\Models\Pregunta;
+use App\Models\Producto;
 use App\Models\Receta;
 use Illuminate\Database\Seeder;
 
@@ -41,11 +42,11 @@ class ContenidoSeeder extends Seeder
                 'duracion_seg' => 165,
                 'ingredientes' => ['15 g de café', '250 ml de agua a 94 °C', 'Filtro de papel V60'],
                 'pasos' => [
-                    'Enjuaga el filtro y precalienta la jarra. Bota el agua.',
-                    'Muele medio, tipo arena de mar. Nivela la cama.',
-                    'Bloom: 45 ml y espera 40 segundos.',
-                    'Tres vertidos de 70 ml en espiral, sin tocar el borde.',
-                    'Termina cerca de 2:45. Gira la jarra antes de servir.',
+                    ['texto' => 'Enjuaga el filtro y precalienta la jarra. Bota el agua.'],
+                    ['texto' => 'Muele medio, tipo arena de mar. Nivela la cama.'],
+                    ['texto' => 'Bloom: 45 ml y espera 40 segundos.', 'segundos' => 40, 'temporizador_etiqueta' => 'Bloom'],
+                    ['texto' => 'Tres vertidos de 70 ml en espiral, sin tocar el borde.'],
+                    ['texto' => 'Termina cerca de 2:45. Gira la jarra antes de servir.', 'segundos' => 165, 'temporizador_etiqueta' => 'Total'],
                 ],
             ],
             [
@@ -58,11 +59,11 @@ class ContenidoSeeder extends Seeder
                 'duracion_seg' => 240,
                 'ingredientes' => ['30 g de café', '500 ml de agua a 93 °C', 'Filtro Chemex'],
                 'pasos' => [
-                    'Filtro con el triple pliegue hacia el pico. Enjuaga.',
-                    'Molienda un paso más gruesa que la del V60.',
-                    'Bloom con 90 ml, 45 segundos.',
-                    'Vertidos de 130 ml cada minuto, lento y al centro.',
-                    'Retira el filtro en cuanto gotee despacio.',
+                    ['texto' => 'Filtro con el triple pliegue hacia el pico. Enjuaga.'],
+                    ['texto' => 'Molienda un paso más gruesa que la del V60.'],
+                    ['texto' => 'Bloom con 90 ml, 45 segundos.', 'segundos' => 45, 'temporizador_etiqueta' => 'Bloom'],
+                    ['texto' => 'Vertidos de 130 ml cada minuto, lento y al centro.', 'segundos' => 240, 'temporizador_etiqueta' => 'Total'],
+                    ['texto' => 'Retira el filtro en cuanto gotee despacio.'],
                 ],
             ],
             [
@@ -75,10 +76,10 @@ class ContenidoSeeder extends Seeder
                 'duracion_seg' => 240,
                 'ingredientes' => ['30 g de café', '500 ml de agua a 92 °C'],
                 'pasos' => [
-                    'Molienda gruesa. Precalienta la prensa.',
-                    'Agrega toda el agua de una y arranca el reloj.',
-                    'A los 4:00 rompe la costra y retira la espuma.',
-                    'Baja el filtro despacio y sirve todo de inmediato.',
+                    ['texto' => 'Molienda gruesa. Precalienta la prensa.'],
+                    ['texto' => 'Agrega toda el agua de una y arranca el reloj.', 'segundos' => 240, 'temporizador_etiqueta' => 'Infusión'],
+                    ['texto' => 'A los 4:00 rompe la costra y retira la espuma.'],
+                    ['texto' => 'Baja el filtro despacio y sirve todo de inmediato.'],
                 ],
             ],
             [
@@ -91,10 +92,10 @@ class ContenidoSeeder extends Seeder
                 'duracion_seg' => 50400,
                 'ingredientes' => ['100 g de café', '1 L de agua fría', 'Filtro de papel para colar'],
                 'pasos' => [
-                    'Molienda muy gruesa, como pimienta partida.',
-                    'Mezcla con agua fría y tapa. Nevera 14 horas.',
-                    'Cuela por filtro de papel sin apretar el borra.',
-                    'Sirve 1:1 con agua o leche y bastante hielo.',
+                    ['texto' => 'Molienda muy gruesa, como pimienta partida.'],
+                    ['texto' => 'Mezcla con agua fría y tapa. Nevera 14 horas.', 'segundos' => 50400, 'temporizador_etiqueta' => 'Reposo'],
+                    ['texto' => 'Cuela por filtro de papel sin apretar el borra.'],
+                    ['texto' => 'Sirve 1:1 con agua o leche y bastante hielo.'],
                 ],
             ],
             [
@@ -107,10 +108,10 @@ class ContenidoSeeder extends Seeder
                 'duracion_seg' => 28,
                 'ingredientes' => ['18 g de café', 'Canasta doble'],
                 'pasos' => [
-                    '18 g, distribuye y prensa parejo, sin golpear.',
-                    'Purga el grupo dos segundos antes de montar.',
-                    'Busca 36 g en taza entre 26 y 30 segundos.',
-                    'Si sale rápido cierra la molienda; si se ahoga, ábrela.',
+                    ['texto' => '18 g, distribuye y prensa parejo, sin golpear.'],
+                    ['texto' => 'Purga el grupo dos segundos antes de montar.'],
+                    ['texto' => 'Busca 36 g en taza entre 26 y 30 segundos.', 'segundos' => 28, 'temporizador_etiqueta' => 'Extracción'],
+                    ['texto' => 'Si sale rápido cierra la molienda; si se ahoga, ábrela.'],
                 ],
             ],
             [
@@ -123,10 +124,10 @@ class ContenidoSeeder extends Seeder
                 'duracion_seg' => 210,
                 'ingredientes' => ['16 g de café', 'Agua caliente hasta la válvula'],
                 'pasos' => [
-                    'Llena la base con agua ya caliente, hasta la válvula.',
-                    'Molienda media, nivelada, sin prensar.',
-                    'Fuego bajo y tapa abierta para verla salir.',
-                    'Retira en cuanto suene: lo último amarga.',
+                    ['texto' => 'Llena la base con agua ya caliente, hasta la válvula.'],
+                    ['texto' => 'Molienda media, nivelada, sin prensar.'],
+                    ['texto' => 'Fuego bajo y tapa abierta para verla salir.', 'segundos' => 210, 'temporizador_etiqueta' => 'En el fuego'],
+                    ['texto' => 'Retira en cuanto suene: lo último amarga.'],
                 ],
             ],
             [
@@ -139,16 +140,47 @@ class ContenidoSeeder extends Seeder
                 'duracion_seg' => 60,
                 'ingredientes' => ['36 g de espresso', '180 ml de leche entera fría'],
                 'pasos' => [
-                    'Espresso listo en taza precalentada.',
-                    'Airea la leche 3 segundos, luego hunde la lanceta.',
-                    'Busca 60 °C: la jarra deja de aguantarse con la mano.',
-                    'Golpea, gira y vierte alto; termina bajo y al centro.',
+                    ['texto' => 'Espresso listo en taza precalentada.'],
+                    ['texto' => 'Airea la leche 3 segundos, luego hunde la lanceta.', 'segundos' => 3, 'temporizador_etiqueta' => 'Aireado'],
+                    ['texto' => 'Busca 60 °C: la jarra deja de aguantarse con la mano.'],
+                    ['texto' => 'Golpea, gira y vierte alto; termina bajo y al centro.'],
                 ],
             ],
         ];
 
         foreach ($recetas as $orden => $datos) {
-            Receta::create($datos + ['orden' => $orden]);
+            $pasos = $datos['pasos'] ?? [];
+            unset($datos['pasos']);
+
+            $receta = Receta::create($datos + ['orden' => $orden]);
+
+            foreach ($pasos as $i => $paso) {
+                $receta->pasos()->create($paso + ['orden' => $i]);
+            }
+        }
+
+        // Los artefactos que usa cada método, para que la receta los
+        // recomiende. Se buscan por nombre porque el seeder del catálogo corre
+        // antes y los ids dependen del orden de inserción.
+        $usa = [
+            'V60 para uno' => ['Kit V60 completo', 'Molino manual C40', 'Báscula con cronómetro'],
+            'Chemex para dos' => ['Molino manual C40', 'Báscula con cronómetro'],
+            'Prensa francesa' => ['Prensa francesa 800 ml', 'Molino manual C40'],
+            'Cold brew de un día' => ['Molino manual C40'],
+            'Espresso en casa' => ['Prensa de espresso portátil', 'Molino manual C40'],
+            'Moka italiana' => ['Molino manual C40'],
+            'Latte con leche texturizada' => ['Jarra de leche 600 ml'],
+        ];
+
+        foreach ($usa as $nombreReceta => $nombresArtefactos) {
+            $receta = Receta::where('nombre', $nombreReceta)->first();
+            if (! $receta) {
+                continue;
+            }
+            $ids = Producto::whereIn('nombre', $nombresArtefactos)->pluck('id');
+            $receta->artefactos()->sync(
+                $ids->mapWithKeys(fn ($id, $i) => [$id => ['orden' => $i]])->all()
+            );
         }
 
         $preguntas = [

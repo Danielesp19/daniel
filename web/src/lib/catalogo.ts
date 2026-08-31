@@ -104,12 +104,33 @@ export interface Receta {
   /** La misma duración ya escrita: "2:45", "14 h". */
   duracion: string | null;
   ingredientes: string[];
-  pasos: string[];
+  /** Cada paso con su imagen y su reloj, los dos opcionales. */
+  pasos: PasoReceta[];
+  /** Los artefactos que usa y están a la venta. */
+  artefactos: ArtefactoReceta[];
+  /** El id del video en YouTube. null = receta sin video. */
+  youtube_id: string | null;
   imagen_url: string | null;
-  video_url: string | null;
-  video_poster_url: string | null;
   /** El café que mejor le queda, si hay uno recomendado. */
   producto: { id: number; nombre: string } | null;
+}
+
+export interface PasoReceta {
+  id: number;
+  texto: string;
+  imagen_url: string | null;
+  /** Segundos del temporizador de ESTE paso. null = paso sin reloj. */
+  segundos: number | null;
+  /** "Bloom", "Infusión". Sin etiqueta se muestra solo el tiempo. */
+  etiqueta: string | null;
+}
+
+export interface ArtefactoReceta {
+  id: number;
+  nombre: string;
+  precio_cop: number;
+  agotado: boolean;
+  imagen_url: string | null;
 }
 
 export interface Pregunta {
@@ -191,8 +212,8 @@ export const getRecetas = () =>
     rs.map((r) => ({
       ...r,
       imagen_url: urlArchivo(r.imagen_url),
-      video_url: urlArchivo(r.video_url),
-      video_poster_url: urlArchivo(r.video_poster_url),
+      pasos: (r.pasos ?? []).map((paso) => ({ ...paso, imagen_url: urlArchivo(paso.imagen_url) })),
+      artefactos: (r.artefactos ?? []).map((a) => ({ ...a, imagen_url: urlArchivo(a.imagen_url) })),
     })),
   );
 

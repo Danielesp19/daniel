@@ -133,7 +133,9 @@ class CatalogoController extends Controller
     /** Las recetas con sus pasos, para prepararlas en casa. */
     public function recetas()
     {
-        $recetas = Receta::visibles()->with('producto:id,nombre,slug')->get()
+        $recetas = Receta::visibles()
+            ->with(['producto:id,nombre,slug', 'pasos', 'artefactos'])
+            ->get()
             ->map(fn (Receta $r) => [
                 'id' => $r->id,
                 'nombre' => $r->nombre,
@@ -147,10 +149,31 @@ class CatalogoController extends Controller
                 'duracion_seg' => $r->duracion_seg,
                 'duracion' => $r->duracionLegible(),
                 'ingredientes' => $r->ingredientes ?? [],
-                'pasos' => $r->pasos ?? [],
+
+                // Cada paso con su imagen y su reloj. El reloj va en el paso y
+                // no en la receta: es donde uno lo va a tocar.
+                'pasos' => $r->pasos->map(fn ($paso) => [
+                    'id' => $paso->id,
+                    'texto' => $paso->texto,
+                    'imagen_url' => $paso->imagen ? asset('storage/'.$paso->imagen) : null,
+                    'segundos' => $paso->segundos,
+                    'etiqueta' => $paso->temporizador_etiqueta,
+                ])->values()->all(),
+
+                // Los artefactos que usa. Solo los que están a la venta: uno
+                // agotado o escondido no se puede recomendar.
+                'artefactos' => $r->artefactos->where('activo', true)->map(fn ($a) => [
+                    'id' => $a->id,
+                    'nombre' => $a->nombre,
+                    'precio_cop' => (int) $a->precio_cop,
+                    'agotado' => $a->agotado(),
+                    'imagen_url' => $a->imagen ? asset('storage/'.$a->imagen) : null,
+                ])->values()->all(),
+
+                // El video se ve de YouTube: de ahí sale también la miniatura,
+                // así que una receta con video no necesita foto propia.
+                'youtube_id' => $r->youtubeId(),
                 'imagen_url' => $r->imagen ? asset('storage/'.$r->imagen) : null,
-                'video_url' => $r->video ? asset('storage/'.$r->video) : null,
-                'video_poster_url' => $r->video_poster ? asset('storage/'.$r->video_poster) : null,
                 // El café recomendado viaja con su slug para poder enlazarlo
                 // con la ficha del catálogo.
                 'producto' => $r->producto ? ['id' => $r->producto->id, 'nombre' => $r->producto->nombre] : null,

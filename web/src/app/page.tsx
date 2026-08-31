@@ -56,7 +56,7 @@ export default async function Inicio() {
         <Aviso aviso={aviso} />
         <Barista />
         <Catalogo categorias={categorias} />
-        <Recetas recetas={recetas} />
+        <Recetas recetas={recetas} productos={categorias.flatMap((c) => c.productos)} />
         <Preguntas preguntas={preguntas} />
         <PieSitio />
       </main>

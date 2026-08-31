@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Receta } from "@/lib/catalogo";
+import { createPortal } from "react-dom";
+import type { Producto, Receta } from "@/lib/catalogo";
+import { pesos } from "@/lib/formato";
 import { useRevelado } from "@/hooks/useRevelar";
+import FichaProducto from "./FichaProducto";
 import Molienda from "./Molienda";
 
 /** Cuenta atrás en mm:ss. Por encima de una hora se dice en horas. */
@@ -23,7 +26,7 @@ function reloj(segundos: number): string {
  * cuatro minutos ese atraso se nota. Aquí el intervalo solo repinta; la cuenta
  * sale siempre de la diferencia entre dos marcas de tiempo.
  */
-function Temporizador({ segundos }: { segundos: number }) {
+function Temporizador({ segundos, etiqueta }: { segundos: number; etiqueta?: string | null }) {
   const [restante, setRestante] = useState(segundos);
   const [corriendo, setCorriendo] = useState(false);
   const finRef = useRef(0);
@@ -62,10 +65,13 @@ function Temporizador({ segundos }: { segundos: number }) {
   const avance = segundos > 0 ? 1 - restante / segundos : 0;
 
   return (
-    <div className="reloj">
+    <div className={`reloj${listo ? " reloj-listo" : ""}`}>
       <div className="reloj-cifra">
         <span className="cifra">{reloj(restante)}</span>
-        <span className="reloj-unidad">{listo ? "listo" : corriendo ? "en curso" : "min"}</span>
+        <span className="reloj-unidad">
+          {etiqueta ? `${etiqueta} · ` : ""}
+          {listo ? "listo" : corriendo ? "en curso" : "min"}
+        </span>
       </div>
 
       <div className="reloj-barra" aria-hidden="true">
@@ -227,32 +233,291 @@ function Calculadora({ receta }: { receta: Receta }) {
   );
 }
 
+
+/** La miniatura de YouTube. La versión `hq` existe siempre; las grandes no. */
+function miniaturaYoutube(id: string): string {
+  return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+}
+
 /**
- * La sección de recetas: los métodos como filtro, la lista a la izquierda y el
- * paso a paso a la derecha, con su reloj.
+ * El video, con fachada.
+ *
+ * No se monta el iframe de YouTube hasta que alguien lo pide: cada iframe
+ * arrastra cerca de un mega de scripts y traería el rastreo de Google a una
+ * página que no lo necesita. Hasta el clic solo hay una imagen.
+ *
+ * Se usa `youtube-nocookie` para que YouTube no deje cookies de publicidad
+ * mientras se mira la receta.
+ */
+function Video({ id, titulo }: { id: string; titulo: string }) {
+  const [andando, setAndando] = useState(false);
+
+  if (andando) {
+    return (
+      <div className="receta-video">
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`}
+          title={titulo}
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="receta-video receta-video-fachada"
+      onClick={() => setAndando(true)}
+      aria-label={`Reproducir el video de ${titulo}`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={miniaturaYoutube(id)} alt="" loading="lazy" />
+      <span className="receta-play" aria-hidden="true">▶</span>
+    </button>
+  );
+}
+
+/**
+ * Una receta en la vitrina: foto, nombre y "Ver receta".
+ *
+ * La foto sale del video cuando hay uno. Así el panel no tiene que subir dos
+ * veces la misma imagen —una para el video y otra para la tarjeta— y una receta
+ * grabada queda completa con solo pegar el enlace de YouTube.
+ */
+function TarjetaReceta({ receta, onAbrir }: { receta: Receta; onAbrir: () => void }) {
+  const foto = receta.imagen_url ?? (receta.youtube_id ? miniaturaYoutube(receta.youtube_id) : null);
+
+  return (
+    <article className="receta-tarjeta">
+      <div className="receta-tarjeta-foto">
+        {foto ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={foto} alt="" loading="lazy" />
+        ) : (
+          <span className="receta-tarjeta-vacia" aria-hidden="true">☕</span>
+        )}
+        {receta.youtube_id && <span className="receta-tarjeta-video">Video</span>}
+      </div>
+
+      <div className="receta-tarjeta-cuerpo">
+        <h4 className="nombre receta-tarjeta-nombre">{receta.nombre}</h4>
+        {receta.resumen && <p className="receta-tarjeta-resumen">{receta.resumen}</p>}
+
+        <div className="receta-tarjeta-pie">
+          <span className="cifra receta-tarjeta-dato">
+            {[receta.duracion, receta.ratio ? `1:${conComa(receta.ratio)}` : null]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>
+          <button type="button" className="vermas" onClick={onAbrir}>
+            Ver receta
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/**
+ * La receta completa, en hoja flotante.
+ *
+ * Los pasos mandan: cada uno lleva su texto, su foto si la tiene y SU reloj
+ * debajo. Un solo temporizador para toda la receta obligaba a acordarse de cuál
+ * de los tiempos estaba corriendo; con uno por paso, el bloom de 40 segundos y
+ * la infusión de 4 minutos son dos relojes distintos, cada uno donde se usa.
+ */
+function HojaReceta({
+  receta,
+  onCerrar,
+  onArtefacto,
+}: {
+  receta: Receta | null;
+  onCerrar: () => void;
+  onArtefacto: (id: number) => void;
+}) {
+  const cerrarRef = useRef<HTMLButtonElement>(null);
+  const foco = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!receta) return;
+
+    foco.current = document.activeElement as HTMLElement | null;
+    cerrarRef.current?.focus();
+
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCerrar();
+    };
+    window.addEventListener("keydown", alTeclear);
+
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("keydown", alTeclear);
+      document.body.style.overflow = overflow;
+      foco.current?.focus();
+    };
+  }, [receta, onCerrar]);
+
+  if (!receta || typeof document === "undefined") return null;
+
+  const datos: Array<[string, string]> = [];
+  if (receta.cafe_g) datos.push(["Café", `${receta.cafe_g} g`]);
+  if (receta.agua_g) datos.push([rotuloRendimiento(receta.metodo), `${receta.agua_g} g`]);
+  if (receta.ratio) datos.push(["Ratio", `1:${conComa(receta.ratio)}`]);
+  if (receta.duracion) datos.push(["Tiempo", receta.duracion]);
+
+  return createPortal(
+    <div className="ficha-fondo" onClick={onCerrar}>
+      <article
+        className="ficha hoja-receta"
+        role="dialog"
+        aria-modal="true"
+        aria-label={receta.nombre}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button ref={cerrarRef} type="button" className="ficha-cerrar" aria-label="Cerrar" onClick={onCerrar}>
+          ×
+        </button>
+
+        <div className="hoja-receta-cuerpo">
+          <span className="rotulo">{receta.metodo}</span>
+          <h2 className="nombre ficha-nombre">{receta.nombre}</h2>
+          {receta.detalle && <p className="ficha-descripcion">{receta.detalle}</p>}
+
+          {receta.youtube_id && <Video id={receta.youtube_id} titulo={receta.nombre} />}
+
+          {datos.length > 0 && (
+            <dl className="ficha-datos">
+              {datos.map(([rotulo, valor]) => (
+                <div key={rotulo}>
+                  <dt className="rotulo" style={{ fontSize: 8.5, letterSpacing: "0.18em" }}>
+                    {rotulo}
+                  </dt>
+                  <dd>{valor}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          {receta.ingredientes.length > 0 && (
+            <ul className="receta-ingredientes">
+              {receta.ingredientes.map((ing) => (
+                <li key={ing}>{ing}</li>
+              ))}
+            </ul>
+          )}
+
+          {receta.pasos.length > 0 && (
+            <ol className="receta-pasos">
+              {receta.pasos.map((paso, i) => (
+                <li key={paso.id}>
+                  <span className="cifra receta-paso-numero">{String(i + 1).padStart(2, "0")}</span>
+                  <div className="receta-paso-cuerpo">
+                    <p className="receta-paso-texto">{paso.texto}</p>
+
+                    {paso.imagen_url && (
+                      <div className="receta-paso-foto">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={paso.imagen_url} alt="" loading="lazy" />
+                      </div>
+                    )}
+
+                    {/* El reloj de ESTE paso, justo debajo de lo que hay que
+                        hacer. Se le pasa `key` para que cambiar de receta lo
+                        devuelva a cero en vez de seguir contando el anterior. */}
+                    {paso.segundos ? (
+                      <Temporizador
+                        key={`reloj-${paso.id}`}
+                        segundos={paso.segundos}
+                        etiqueta={paso.etiqueta}
+                      />
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+
+          {receta.producto && (
+            <p className="receta-recomendado">
+              <span className="rotulo">Queda mejor con</span> {receta.producto.nombre}
+            </p>
+          )}
+
+          {/* Lo que se usó, y que además está a la venta. El backend solo manda
+              los artefactos activos, así que aquí no hay que filtrar nada. */}
+          {receta.artefactos.length > 0 && (
+            <div className="receta-artefactos">
+              <span className="rotulo">Lo que uso para esta receta</span>
+              <ul>
+                {receta.artefactos.map((a) => (
+                  <li key={a.id}>
+                    <button type="button" onClick={() => onArtefacto(a.id)}>
+                      <span className="receta-artefacto-foto">
+                        {a.imagen_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={a.imagen_url} alt="" loading="lazy" />
+                        ) : null}
+                      </span>
+                      <span className="receta-artefacto-info">
+                        <span className="receta-artefacto-nombre">{a.nombre}</span>
+                        <span className="cifra receta-artefacto-precio">
+                          {a.agotado ? "Agotado" : pesos(a.precio_cop)}
+                        </span>
+                      </span>
+                      <span className="vermas" aria-hidden="true">Ver</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <Calculadora key={`calc-${receta.id}`} receta={receta} />
+        </div>
+      </article>
+    </div>,
+    document.body,
+  );
+}
+
+/**
+ * La sección de recetas: un riel por método y la receta en hoja.
+ *
+ * Va por método y no en una lista sola porque un filtrado y un espresso no se
+ * comparan entre sí — quien busca cómo hacer un V60 no está decidiendo entre
+ * eso y un latte. Cada método es su propio estante, y el riel horizontal deja
+ * meter recetas nuevas sin que la sección crezca hacia abajo sin fin.
  *
  * Es la única sección de la página que no vende nada: enseña. Por eso va al
  * final, después de todo lo que se puede comprar o agendar.
  */
-export default function Recetas({ recetas }: { recetas: Receta[] }) {
+export default function Recetas({
+  recetas,
+  productos = [],
+}: {
+  recetas: Receta[];
+  /** El catálogo, para poder abrir la ficha de un artefacto recomendado. */
+  productos?: Producto[];
+}) {
   const { ref, props } = useRevelado<HTMLElement>();
-  const [metodo, setMetodo] = useState<string>("Todas");
-  const [elegidaId, setElegidaId] = useState<number | null>(recetas[0]?.id ?? null);
+  const [abierta, setAbierta] = useState<Receta | null>(null);
+  const [artefacto, setArtefacto] = useState<Producto | null>(null);
 
-  // Los métodos que existen de verdad, en el orden en que aparecen. Nada de
-  // una lista fija: si el panel agrega "Sifón", el filtro sale solo.
-  const metodos = useMemo(() => {
-    const vistos: string[] = [];
-    for (const r of recetas) if (!vistos.includes(r.metodo)) vistos.push(r.metodo);
-    return ["Todas", ...vistos];
+  // Los métodos que existen de verdad, en el orden en que llegan. Nada de una
+  // lista fija: si el panel agrega "Sifón", el estante sale solo.
+  const grupos = useMemo(() => {
+    const mapa = new Map<string, Receta[]>();
+    for (const r of recetas) {
+      const lista = mapa.get(r.metodo);
+      if (lista) lista.push(r);
+      else mapa.set(r.metodo, [r]);
+    }
+    return [...mapa.entries()];
   }, [recetas]);
-
-  const visibles = metodo === "Todas" ? recetas : recetas.filter((r) => r.metodo === metodo);
-
-  // Si el filtro deja fuera la receta abierta, se pasa a la primera que quede:
-  // el panel de la derecha no puede quedar mostrando algo que la lista ya no
-  // tiene.
-  const elegida = visibles.find((r) => r.id === elegidaId) ?? visibles[0] ?? null;
 
   if (recetas.length === 0) return null;
 
@@ -275,92 +540,45 @@ export default function Recetas({ recetas }: { recetas: Receta[] }) {
               transitionDelay: "160ms",
             }}
           >
-            Las mismas proporciones que uso en barra. Elige el método, sigue los pasos y deja correr
-            el reloj.
+            Las mismas proporciones que uso en barra. Elige el método, mira el video y deja correr el
+            reloj de cada paso.
           </p>
         </div>
 
-        <div className="recetas-filtros revelar" style={{ transitionDelay: "200ms" }}>
-          {metodos.map((m, i) => (
-            <button
-              key={m}
-              type="button"
-              className={`filtro${m === metodo ? " filtro-activo" : ""}`}
-              aria-pressed={m === metodo}
-              onClick={() => setMetodo(m)}
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
+        {grupos.map(([metodo, lista], g) => (
+          <div key={metodo} className="recetas-grupo revelar" style={{ transitionDelay: `${200 + g * 60}ms` }}>
+            <div className="recetas-grupo-cabeza">
+              <h3 className="recetas-grupo-nombre">{metodo}</h3>
+              <span className="rotulo">
+                {String(lista.length).padStart(2, "0")} {lista.length === 1 ? "receta" : "recetas"}
+              </span>
+            </div>
 
-        <div className="recetas">
-          <ol className="recetas-lista revelar" style={{ transitionDelay: "240ms" }}>
-            {visibles.map((r, i) => (
-              <li key={r.id}>
-                <button
-                  type="button"
-                  className={`receta-fila${r.id === elegida?.id ? " receta-activa" : ""}`}
-                  onClick={() => setElegidaId(r.id)}
-                  aria-current={r.id === elegida?.id}
-                >
-                  <span className="rotulo receta-numero">{String(i + 1).padStart(2, "0")}</span>
-                  <span className="receta-info">
-                    <span className="receta-nombre">{r.nombre}</span>
-                    {r.resumen && <span className="receta-resumen cifra">{r.resumen}</span>}
-                  </span>
-                  <span className="rotulo receta-metodo">{r.metodo}</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-
-          {elegida && (
-            <article className="receta-panel revelar" style={{ transitionDelay: "300ms" }}>
-              <header className="receta-panel-cabeza">
-                <div>
-                  <h3 className="nombre receta-titulo">{elegida.nombre}</h3>
-                  {elegida.detalle && <p className="receta-detalle">{elegida.detalle}</p>}
-                </div>
-                <span className="rotulo">{elegida.metodo}</span>
-              </header>
-
-              {elegida.ingredientes.length > 0 && (
-                <ul className="receta-ingredientes">
-                  {elegida.ingredientes.map((ing) => (
-                    <li key={ing}>{ing}</li>
-                  ))}
-                </ul>
-              )}
-
-              <ol className="receta-pasos">
-                {elegida.pasos.map((paso, i) => (
-                  <li key={i}>
-                    <span className="cifra receta-paso-numero">{i + 1}</span>
-                    <span>{paso}</span>
-                  </li>
-                ))}
-              </ol>
-
-              {elegida.producto && (
-                <p className="receta-recomendado">
-                  <span className="rotulo">Queda mejor con</span> {elegida.producto.nombre}
-                </p>
-              )}
-
-              <div className="receta-herramientas">
-                {elegida.duracion_seg ? (
-                  <Temporizador key={`reloj-${elegida.id}`} segundos={elegida.duracion_seg} />
-                ) : null}
-                <Calculadora key={`calc-${elegida.id}`} receta={elegida} />
-              </div>
-            </article>
-          )}
-        </div>
+            {/* Riel horizontal con anclaje: en el celular cada tarjeta queda
+                encuadrada sola al arrastrar, sin quedarse a medio camino. */}
+            <div className="recetas-riel">
+              {lista.map((r) => (
+                <TarjetaReceta key={r.id} receta={r} onAbrir={() => setAbierta(r)} />
+              ))}
+            </div>
+          </div>
+        ))}
 
         <Molienda />
       </div>
+
+      <HojaReceta
+        receta={abierta}
+        onCerrar={() => setAbierta(null)}
+        onArtefacto={(id) => {
+          const p = productos.find((x) => x.id === id);
+          if (p) setArtefacto(p);
+        }}
+      />
+
+      {/* La ficha del artefacto va encima de la receta: se mira el molino, se
+          cierra y se sigue en el paso donde iba. */}
+      <FichaProducto producto={artefacto} onCerrar={() => setArtefacto(null)} />
     </section>
   );
 }

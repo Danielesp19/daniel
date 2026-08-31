@@ -82,7 +82,7 @@ export default function RecetasAdmin() {
   }
 
   async function quitar(r: AdminReceta) {
-    if (!confirm(`¿Borrar «${r.nombre}»? También se borran su foto y su video.`)) return;
+    if (!confirm(`¿Borrar «${r.nombre}»? También se borran sus pasos y sus fotos.`)) return;
     try {
       await borrarReceta(r.id);
       cargar();
@@ -97,7 +97,7 @@ export default function RecetasAdmin() {
     <>
       <Cabecera
         titulo="Recetas"
-        bajada="Las proporciones y los pasos que salen en la página, con su temporizador. Van en este orden."
+        bajada="Las recetas de la página, agrupadas por método. Cada paso puede llevar foto y su propio temporizador."
       >
         <Boton tono="solido" onClick={() => setCreando(true)}>
           + Receta
@@ -229,6 +229,163 @@ function Lista({
   );
 }
 
+/**
+ * Un paso mientras se edita.
+ *
+ * `imagen` es la ruta de la que ya está guardada y `archivo` la que acaban de
+ * escoger. Se llevan las dos porque el backend borra y vuelve a crear los pasos
+ * en cada guardado: sin `imagen` de vuelta, editar un texto le borraría la foto
+ * a todos los pasos que no se tocaron.
+ */
+interface PasoEdicion {
+  texto: string;
+  imagen: string | null;
+  imagen_url: string | null;
+  archivo: File | null;
+  /** Escrito como en la duración: "0:40", "4:00". Vacío = paso sin reloj. */
+  duracion: string;
+  etiqueta: string;
+}
+
+function pasoVacio(): PasoEdicion {
+  return { texto: "", imagen: null, imagen_url: null, archivo: null, duracion: "", etiqueta: "" };
+}
+
+/**
+ * El editor de pasos.
+ *
+ * Cada paso es una tarjeta con su texto, su foto y su temporizador. El reloj va
+ * en el paso y no en la receta porque una receta tiene varios: el bloom de 40
+ * segundos y la infusión de 4 minutos son dos tiempos distintos, y en la página
+ * cada uno sale debajo del paso al que pertenece.
+ */
+function Pasos({ valores, onChange }: { valores: PasoEdicion[]; onChange: (v: PasoEdicion[]) => void }) {
+  const editar = (i: number, cambio: Partial<PasoEdicion>) =>
+    onChange(valores.map((p, j) => (j === i ? { ...p, ...cambio } : p)));
+
+  const mover = (i: number, direccion: -1 | 1) => {
+    const destino = i + direccion;
+    if (destino < 0 || destino >= valores.length) return;
+    const copia = [...valores];
+    [copia[i], copia[destino]] = [copia[destino], copia[i]];
+    onChange(copia);
+  };
+
+  return (
+    <div>
+      <span style={rotulo}>Pasos</span>
+      <p style={{ margin: "0 0 10px", fontSize: 12, color: COLOR.suave }}>
+        En orden. Cada uno puede llevar una foto y su propio temporizador — por ejemplo uno de 1:00
+        para el bloom y otro de 4:00 para la infusión.
+      </p>
+
+      <div style={{ display: "grid", gap: 10 }}>
+        {valores.map((p, i) => (
+          <div
+            key={i}
+            style={{
+              display: "grid",
+              gap: 10,
+              padding: 12,
+              background: COLOR.fondo,
+              border: `1px solid ${COLOR.linea}`,
+              borderRadius: 10,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ ...rotulo, marginBottom: 0 }}>Paso {i + 1}</span>
+              <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                <Flechas
+                  onSubir={() => mover(i, -1)}
+                  onBajar={() => mover(i, 1)}
+                  arribaBloqueada={i === 0}
+                  abajoBloqueada={i === valores.length - 1}
+                />
+                <Boton
+                  chico
+                  tono="plano"
+                  type="button"
+                  onClick={() => onChange(valores.filter((_, j) => j !== i))}
+                  aria-label={`Quitar el paso ${i + 1}`}
+                >
+                  ✕
+                </Boton>
+              </div>
+            </div>
+
+            <textarea
+              style={{ ...campo, minHeight: 60, resize: "vertical", fontFamily: "inherit" }}
+              value={p.texto}
+              placeholder="Qué hay que hacer en este paso"
+              onChange={(e) => editar(i, { texto: e.target.value })}
+            />
+
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+              }}
+            >
+              <Campo etiqueta="Temporizador" nota="0:40, 4:00. Vacío = sin reloj.">
+                <input
+                  style={campo}
+                  value={p.duracion}
+                  placeholder="0:40"
+                  onChange={(e) => editar(i, { duracion: e.target.value })}
+                />
+              </Campo>
+              <Campo etiqueta="Nombre del reloj" nota="Bloom, Infusión…">
+                <input
+                  style={campo}
+                  value={p.etiqueta}
+                  onChange={(e) => editar(i, { etiqueta: e.target.value })}
+                />
+              </Campo>
+              <Campo etiqueta="Foto del paso">
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ fontSize: 12, width: "100%", maxWidth: "100%" }}
+                  onChange={(e) => editar(i, { archivo: e.target.files?.[0] ?? null })}
+                />
+              </Campo>
+            </div>
+
+            {(p.archivo || p.imagen_url) && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {p.imagen_url && !p.archivo && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={p.imagen_url}
+                    alt=""
+                    style={{ width: 54, height: 54, objectFit: "cover", borderRadius: 6 }}
+                  />
+                )}
+                <span style={{ fontSize: 12, color: COLOR.suave }}>
+                  {p.archivo ? `Se subirá ${p.archivo.name}` : "Tiene foto"}
+                </span>
+                <Boton
+                  chico
+                  tono="plano"
+                  type="button"
+                  onClick={() => editar(i, { archivo: null, imagen: null, imagen_url: null })}
+                >
+                  Quitar foto
+                </Boton>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <Boton chico type="button" onClick={() => onChange([...valores, pasoVacio()])} style={{ marginTop: 10 }}>
+        + Agregar paso {valores.length + 1}
+      </Boton>
+    </div>
+  );
+}
+
 function Formulario({
   receta,
   productos,
@@ -245,6 +402,7 @@ function Formulario({
     metodo: receta?.metodo ?? METODOS[0],
     resumen: receta?.resumen ?? "",
     detalle: receta?.detalle ?? "",
+    video_youtube: receta?.video_youtube ?? "",
     cafe_g: receta?.cafe_g ? String(receta.cafe_g) : "",
     agua_g: receta?.agua_g ? String(receta.agua_g) : "",
     duracion: aTexto(receta?.duracion_seg ?? null),
@@ -252,9 +410,18 @@ function Formulario({
     activa: receta?.activa ?? true,
   });
   const [ingredientes, setIngredientes] = useState<string[]>(receta?.ingredientes ?? []);
-  const [pasos, setPasos] = useState<string[]>(receta?.pasos ?? []);
+  const [pasos, setPasos] = useState<PasoEdicion[]>(
+    (receta?.pasos ?? []).map((p) => ({
+      texto: p.texto,
+      imagen: p.imagen,
+      imagen_url: p.imagen_url,
+      archivo: null,
+      duracion: aTexto(p.segundos),
+      etiqueta: p.temporizador_etiqueta ?? "",
+    })),
+  );
+  const [artefactos, setArtefactos] = useState<number[]>((receta?.artefactos ?? []).map((a) => a.id));
   const [imagen, setImagen] = useState<File | null>(null);
-  const [video, setVideo] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
 
@@ -269,6 +436,7 @@ function Formulario({
       cuerpo.append("metodo", d.metodo);
       cuerpo.append("resumen", d.resumen);
       cuerpo.append("detalle", d.detalle);
+      cuerpo.append("video_youtube", d.video_youtube);
       // Vacíos no se mandan: el backend los deja como están, y mandar cadena
       // vacía en un campo entero sería un error de validación.
       if (d.cafe_g) cuerpo.append("cafe_g", d.cafe_g);
@@ -280,19 +448,29 @@ function Formulario({
       if (d.producto_id) cuerpo.append("producto_id", d.producto_id);
 
       // Las líneas en blanco se caen: quedan de darle a "Agregar" y no
-      // escribir, y publicarlas dejaría un paso vacío numerado en la página.
-      const limpiar = (xs: string[]) => xs.map((x) => x.trim()).filter(Boolean);
-      const ings = limpiar(ingredientes);
-      const ps = limpiar(pasos);
+      // escribir, y publicarlas dejaría un renglón vacío en la página.
+      const ings = ingredientes.map((x) => x.trim()).filter(Boolean);
       // Sin elementos hay que mandar el campo vacío explícito, o el backend
       // entiende "no me lo mandaron" y deja los de antes.
       if (ings.length === 0) cuerpo.append("ingredientes", "");
       ings.forEach((x) => cuerpo.append("ingredientes[]", x));
+
+      const ps = pasos.filter((p) => p.texto.trim());
       if (ps.length === 0) cuerpo.append("pasos", "");
-      ps.forEach((x) => cuerpo.append("pasos[]", x));
+      ps.forEach((p, i) => {
+        cuerpo.append(`pasos[${i}][texto]`, p.texto.trim());
+        const s = aSegundos(p.duracion);
+        if (s) cuerpo.append(`pasos[${i}][segundos]`, String(s));
+        if (p.etiqueta.trim()) cuerpo.append(`pasos[${i}][temporizador_etiqueta]`, p.etiqueta.trim());
+        // La foto que ya estaba: sin esto el backend la daría por borrada.
+        if (p.imagen && !p.archivo) cuerpo.append(`pasos[${i}][imagen_actual]`, p.imagen);
+        if (p.archivo) cuerpo.append(`pasos[${i}][imagen]`, p.archivo);
+      });
+
+      if (artefactos.length === 0) cuerpo.append("artefactos", "");
+      artefactos.forEach((id) => cuerpo.append("artefactos[]", String(id)));
 
       if (imagen) cuerpo.append("imagen", imagen);
-      if (video) cuerpo.append("video", video);
 
       if (receta) await editarReceta(receta.id, cuerpo);
       else await crearReceta(cuerpo);
@@ -328,7 +506,7 @@ function Formulario({
           <Campo etiqueta="Nombre">
             <input style={campo} value={d.nombre} onChange={(e) => set("nombre", e.target.value)} required />
           </Campo>
-          <Campo etiqueta="Método" nota="Es el filtro de la sección en la página.">
+          <Campo etiqueta="Método" nota="Agrupa las recetas en la página: cada método es un estante.">
             <input style={campo} list="metodos" value={d.metodo} onChange={(e) => set("metodo", e.target.value)} />
             <datalist id="metodos">
               {METODOS.map((m) => (
@@ -338,8 +516,20 @@ function Formulario({
           </Campo>
         </div>
 
+        <Campo
+          etiqueta="Video de YouTube"
+          nota="Pega el enlace del video. De ahí sale también la foto de la tarjeta, así que con video no hace falta subir foto."
+        >
+          <input
+            style={campo}
+            value={d.video_youtube}
+            placeholder="https://www.youtube.com/watch?v=…"
+            onChange={(e) => set("video_youtube", e.target.value)}
+          />
+        </Campo>
+
         <div style={dos}>
-          <Campo etiqueta="Resumen" nota="La línea corta de la lista: 15 g · 250 ml · 2:45">
+          <Campo etiqueta="Resumen" nota="La línea corta de la tarjeta: 15 g · 250 ml · 2:45">
             <input style={campo} value={d.resumen} onChange={(e) => set("resumen", e.target.value)} />
           </Campo>
           <Campo etiqueta="Detalle" nota="La línea bajo el título: 15 g café · 250 ml agua a 94 °C">
@@ -374,7 +564,10 @@ function Formulario({
         </div>
 
         <div style={dos}>
-          <Campo etiqueta="Duración" nota="Para el temporizador. Escribe 2:45, o 14h para un cold brew. Vacío = sin reloj.">
+          <Campo
+            etiqueta="Duración total"
+            nota="Solo para mostrarla en la tarjeta. Los relojes van en cada paso."
+          >
             <input style={campo} value={d.duracion} onChange={(e) => set("duracion", e.target.value)} placeholder="2:45" />
           </Campo>
           <Campo etiqueta="Café recomendado" nota="Sale como “queda mejor con”.">
@@ -398,22 +591,13 @@ function Formulario({
           marcador={() => "·"}
         />
 
-        <Lista
-          etiqueta="Pasos"
-          nota="En orden. Se numeran solos en la página."
-          valores={pasos}
-          onChange={setPasos}
-          marcador={(i) => String(i + 1)}
-        />
+        <Pasos valores={pasos} onChange={setPasos} />
 
-        <div style={dos}>
-          <Campo etiqueta="Foto">
-            <input type="file" accept="image/*" onChange={(e) => setImagen(e.target.files?.[0] ?? null)} style={{ fontSize: 12.5 }} />
-          </Campo>
-          <Campo etiqueta="Video">
-            <input type="file" accept="video/*" onChange={(e) => setVideo(e.target.files?.[0] ?? null)} style={{ fontSize: 12.5 }} />
-          </Campo>
-        </div>
+        <Artefactos productos={productos} elegidos={artefactos} onChange={setArtefactos} />
+
+        <Campo etiqueta="Foto" nota="Opcional. Sin foto y sin video, la tarjeta sale con una taza.">
+          <input type="file" accept="image/*" onChange={(e) => setImagen(e.target.files?.[0] ?? null)} style={{ fontSize: 12.5 }} />
+        </Campo>
 
         <Interruptor
           etiqueta="Visible en la página"
@@ -423,5 +607,84 @@ function Formulario({
         />
       </div>
     </Hoja>
+  );
+}
+
+/**
+ * Los artefactos que usa la receta.
+ *
+ * Se eligen del catálogo, no se escriben: así la página puede mostrar el precio
+ * y el stock de verdad, y si el molino se agota la receta deja de ofrecerlo
+ * sola. Solo salen los productos que se cuentan — una asesoría no es un
+ * artefacto que se use para preparar café.
+ */
+function Artefactos({
+  productos,
+  elegidos,
+  onChange,
+}: {
+  productos: AdminProducto[];
+  elegidos: number[];
+  onChange: (v: number[]) => void;
+}) {
+  const alternar = (id: number) =>
+    onChange(elegidos.includes(id) ? elegidos.filter((x) => x !== id) : [...elegidos, id]);
+
+  // Agrupados por categoría: el catálogo mezcla cafés y máquinas, y una fila
+  // plana de treinta fichas no dice cuál es cuál. Los servicios no entran: no
+  // son algo que se use para preparar café.
+  const grupos = new Map<string, AdminProducto[]>();
+  for (const p of productos.filter((x) => x.controla_stock)) {
+    const clave = p.categoria ?? "Sin categoría";
+    const lista = grupos.get(clave);
+    if (lista) lista.push(p);
+    else grupos.set(clave, [p]);
+  }
+  const candidatos = [...grupos.entries()];
+
+  return (
+    <div>
+      <span style={rotulo}>Artefactos que se usan</span>
+      <p style={{ margin: "0 0 10px", fontSize: 12, color: COLOR.suave }}>
+        Salen recomendados al final de la receta, con su precio. Si están agotados se muestran igual,
+        marcados como agotados.
+      </p>
+
+      {candidatos.length === 0 ? (
+        <p style={{ fontSize: 12.5, color: COLOR.suave }}>No hay productos en el catálogo todavía.</p>
+      ) : (
+        <div style={{ display: "grid", gap: 12 }}>
+          {candidatos.map(([categoria, lista]) => (
+            <div key={categoria}>
+              <span style={{ ...rotulo, marginBottom: 6 }}>{categoria}</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                {lista.map((p) => {
+                  const activo = elegidos.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => alternar(p.id)}
+                      aria-pressed={activo}
+                      style={{
+                        padding: "6px 13px",
+                        borderRadius: 999,
+                        border: `1px solid ${activo ? COLOR.tinta : COLOR.linea}`,
+                        background: activo ? COLOR.tinta : "transparent",
+                        color: activo ? "#FFF" : COLOR.suave,
+                        fontSize: 12.5,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {p.nombre}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

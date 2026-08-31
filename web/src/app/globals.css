@@ -1287,73 +1287,160 @@ body {
 .aviso-cerrar:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255,255,255,0.4); color: #FFF; }
 
 /* ─── Recetas ───────────────────────────────────────────────────────────────
-   La lista a la izquierda y el paso a paso a la derecha. Es la única sección
-   que no vende nada: enseña, y por eso va al final. */
+   Un riel horizontal por método y la receta completa en hoja flotante. Es la
+   única sección que no vende nada: enseña, y por eso va al final. */
 .contenedor-angosto { max-width: 860px; }
 
-.recetas-filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: clamp(18px, 3vw, 28px); }
+.recetas-grupo + .recetas-grupo { margin-top: clamp(26px, 4vw, 44px); }
 
-.filtro {
-  padding: 7px 16px;
-  border: 1px solid var(--color-linea);
-  border-radius: 999px;
-  background: transparent;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  color: var(--color-suave);
-  cursor: pointer;
-  transition: background .18s ease, color .18s ease, border-color .18s ease;
-  animation: pop .45s var(--salida) both;
+.recetas-grupo-cabeza {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--color-linea);
 }
-.filtro:hover { border-color: var(--color-tinta); color: var(--color-tinta); }
-.filtro-activo { background: var(--color-tinta); border-color: var(--color-tinta); color: #FFF; }
-
-/* Aparición con un pelo de rebote, escalonada por el retraso que pone el
-   componente. Solo para las fichas y los filtros: en un titular se vería
-   caricaturesco. */
-@keyframes pop {
-  0%   { opacity: 0; transform: scale(.82); }
-  62%  { opacity: 1; transform: scale(1.04); }
-  100% { opacity: 1; transform: scale(1); }
+.recetas-grupo-nombre {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(19px, 2.6vw, 24px);
+  font-weight: 400;
+  line-height: 1;
 }
 
-.recetas {
+/* El riel. `scroll-snap` encuadra cada tarjeta al arrastrar en el celular; sin
+   él las tarjetas quedan cortadas a la mitad y no se sabe si hay más.
+   El padding de abajo deja aire para la sombra al pasar por encima. */
+.recetas-riel {
   display: grid;
-  gap: clamp(12px, 2vw, 20px);
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  align-items: start;
+  grid-auto-flow: column;
+  grid-auto-columns: 300px;
+  justify-content: start;
+  gap: clamp(12px, 2vw, 18px);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 8px;
+  margin-inline: calc(var(--margen-riel, 0px) * -1);
+  padding-inline: var(--margen-riel, 0px);
+  /* Sin esto el anclaje pega la primera tarjeta contra el borde y se come el
+     margen: el ancla mira el borde del scrollport, no el del padding. */
+  scroll-padding-inline: var(--margen-riel, 0px);
+  scrollbar-width: thin;
 }
-@media (max-width: 860px) { .recetas { grid-template-columns: 1fr; } }
+/* Ancho fijo y alineadas a la izquierda: con dos recetas en un método, dejar
+   que se estiren a media pantalla cada una se ve como un error de maqueta. */
+.recetas-riel > * { scroll-snap-align: start; }
 
-.recetas-lista { list-style: none; margin: 0; padding: 0; border: 1px solid var(--color-linea); background: var(--color-papel); }
-.recetas-lista li + li { border-top: 1px solid var(--color-linea); }
+@media (max-width: 640px) {
+  /* En el celular el riel se sale del contenedor a propósito: así la primera
+     tarjeta arranca alineada con el texto pero el riel llega hasta el borde,
+     que es lo que le dice al dedo que ahí se arrastra. */
+  .recetas-riel { --margen-riel: var(--margen); }
+  .recetas-riel { grid-auto-columns: 78%; }
+  .recetas-riel > * { width: 100%; }
+}
 
-.receta-fila {
+.receta-tarjeta {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--color-linea);
+  background: var(--color-papel);
+  transition: transform .2s var(--salida), box-shadow .2s var(--salida);
+}
+.receta-tarjeta:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,.09); }
+
+.receta-tarjeta-foto {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--color-banda);
+}
+.receta-tarjeta-foto img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s var(--salida); }
+.receta-tarjeta:hover .receta-tarjeta-foto img { transform: scale(1.04); }
+.receta-tarjeta-vacia { position: absolute; inset: 0; display: grid; place-items: center; font-size: 40px; opacity: .3; }
+
+.receta-tarjeta-video {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.72);
+  color: #FFF;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.receta-tarjeta-cuerpo { display: flex; flex-direction: column; gap: 6px; flex: 1; padding: 14px 15px 15px; }
+.receta-tarjeta-nombre { font-size: 17px; line-height: 1.2; }
+.receta-tarjeta-resumen {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--color-suave);
+  /* Dos líneas y corta: si no, una tarjeta con reseña larga desalinea el riel. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.receta-tarjeta-pie {
   display: flex;
   align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 13px 15px;
-  border: none;
-  border-left: 2px solid transparent;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  transition: background .18s ease, border-color .18s ease;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 10px;
 }
-.receta-fila:hover { background: var(--color-banda); }
-.receta-activa { background: var(--color-banda); border-left-color: var(--color-tinta); }
+.receta-tarjeta-dato { font-size: 11px; color: var(--color-rotulo); }
 
-.receta-numero { flex-shrink: 0; font-size: 9px; color: var(--color-rotulo); }
-.receta-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.receta-nombre { font-family: var(--font-serif); font-size: 16px; line-height: 1.2; }
-.receta-resumen { font-size: 11px; color: var(--color-suave); font-weight: 400; }
-.receta-metodo { flex-shrink: 0; font-size: 8.5px; }
+/* ─── La receta abierta ─────────────────────────────────────────────────── */
+/* Hereda el fondo y el marco de `.ficha`: es la misma hoja del producto. */
+.hoja-receta { max-width: 680px; }
+.hoja-receta .ficha-cerrar { position: absolute; right: 12px; top: 12px; z-index: 2; }
+/* El que hace scroll es el cuerpo, no la hoja: así el botón de cerrar queda
+   fijo arriba mientras se bajan los pasos. */
+.hoja-receta-cuerpo { padding: clamp(20px, 3.4vw, 32px); overflow-y: auto; }
+.hoja-receta .calculadora { margin-top: 22px; }
 
-.receta-panel { padding: clamp(18px, 3vw, 28px); border: 1px solid var(--color-linea); background: var(--color-papel); }
-.receta-panel-cabeza { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
-.receta-titulo { font-size: clamp(21px, 3vw, 28px); line-height: 1.1; }
-.receta-detalle { margin: 6px 0 0; font-size: 13px; color: var(--color-suave); }
+.receta-video {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 16px 0 4px;
+  padding: 0;
+  border: 1px solid var(--color-linea);
+  background: #000;
+  overflow: hidden;
+  cursor: pointer;
+}
+.receta-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.receta-video-fachada img { width: 100%; height: 100%; object-fit: cover; opacity: .82; transition: opacity .2s ease, transform .5s var(--salida); }
+.receta-video-fachada:hover img { opacity: 1; transform: scale(1.03); }
+
+.receta-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  padding-left: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.94);
+  color: #111;
+  font-size: 17px;
+  transition: transform .2s var(--salida);
+}
+.receta-video-fachada:hover .receta-play { transform: translate(-50%, -50%) scale(1.08); }
 
 .receta-ingredientes {
   display: flex;
@@ -1371,24 +1458,64 @@ body {
   color: var(--color-fuerte);
 }
 
-.receta-pasos { margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 11px; }
-.receta-pasos li { display: flex; gap: 11px; font-size: 14px; line-height: 1.6; color: var(--color-fuerte); }
-.receta-paso-numero { flex-shrink: 0; width: 20px; font-size: 12px; color: var(--color-rotulo); }
+.receta-pasos { margin: 20px 0 0; padding: 0; list-style: none; display: grid; gap: 18px; }
+.receta-pasos li { display: flex; gap: 12px; }
+.receta-paso-numero { flex-shrink: 0; width: 24px; font-size: 12px; color: var(--color-rotulo); padding-top: 2px; }
+.receta-paso-cuerpo { flex: 1; min-width: 0; }
+.receta-paso-texto { margin: 0; font-size: 14px; line-height: 1.6; color: var(--color-fuerte); }
 
-.receta-recomendado { margin: 18px 0 0; font-size: 13.5px; }
+.receta-paso-foto { margin-top: 10px; border: 1px solid var(--color-linea); overflow: hidden; }
+.receta-paso-foto img { display: block; width: 100%; height: auto; }
+
+.receta-recomendado { margin: 20px 0 0; font-size: 13.5px; }
 .receta-recomendado .rotulo { display: inline; margin-right: 6px; }
 
-/* El reloj de la receta. */
-.reloj { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--color-linea); }
-.reloj-cifra { display: flex; align-items: baseline; gap: 9px; }
-.reloj-cifra .cifra { font-size: clamp(34px, 6vw, 46px); line-height: 1; }
-.reloj-unidad { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-rotulo); }
+/* Los artefactos que usa la receta y están a la venta. */
+.receta-artefactos { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--color-linea); }
+.receta-artefactos ul { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+.receta-artefactos button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid var(--color-linea);
+  background: var(--color-fondo);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease;
+}
+.receta-artefactos button:hover { border-color: var(--color-tinta); background: var(--color-banda); }
+.receta-artefacto-foto {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  background: var(--color-banda);
+  overflow: hidden;
+}
+.receta-artefacto-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.receta-artefacto-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.receta-artefacto-nombre { font-family: var(--font-serif); font-size: 14.5px; line-height: 1.25; }
+.receta-artefacto-precio { font-size: 11.5px; color: var(--color-suave); }
 
-.reloj-barra { height: 2px; margin: 14px 0 16px; background: var(--color-linea); overflow: hidden; }
+/* El reloj de un paso. Va debajo del texto al que pertenece, no al final de la
+   receta: es donde uno lo va a tocar. */
+.reloj {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-linea);
+  background: var(--color-fondo);
+}
+.reloj-listo { border-color: var(--color-tinta); }
+.reloj-cifra { display: flex; align-items: baseline; gap: 9px; }
+.reloj-cifra .cifra { font-size: clamp(26px, 4.4vw, 34px); line-height: 1; }
+.reloj-unidad { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-rotulo); }
+
+.reloj-barra { height: 2px; margin: 10px 0 12px; background: var(--color-linea); overflow: hidden; }
 .reloj-avance { display: block; height: 100%; background: var(--color-tinta); transform-origin: left; transition: transform .25s linear; }
 
-.reloj-botones { display: flex; gap: 10px; flex-wrap: wrap; }
-.reloj-botones .boton { flex: 1 1 130px; }
+.reloj-botones { display: flex; gap: 8px; flex-wrap: wrap; }
+.reloj-botones .boton { flex: 1 1 110px; padding: 8px 14px; font-size: 12px; }
 
 /* ─── Preguntas frecuentes ──────────────────────────────────────────────────*/
 .faq { list-style: none; margin: clamp(20px, 4vw, 34px) 0 0; padding: 0; border-top: 1px solid var(--color-linea); }

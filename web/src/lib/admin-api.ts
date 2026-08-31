@@ -118,13 +118,28 @@ export interface AdminReceta {
   duracion_seg: number | null;
   duracion: string | null;
   ingredientes: string[];
-  pasos: string[];
+  /** Cada paso con su foto y su temporizador, los dos opcionales. */
+  pasos: AdminPaso[];
+  /** Los artefactos que usa la receta, para recomendarlos. */
+  artefactos: { id: number; nombre: string }[];
+  /** El enlace tal como lo pegaron, y el id que se sacó de él. */
+  video_youtube: string | null;
+  youtube_id: string | null;
   producto_id: number | null;
   producto: string | null;
   activa: boolean;
   orden: number;
   imagen_url: string | null;
-  video_url: string | null;
+}
+
+export interface AdminPaso {
+  id: number;
+  texto: string;
+  /** La ruta relativa: es lo que se devuelve al guardar para conservarla. */
+  imagen: string | null;
+  imagen_url: string | null;
+  segundos: number | null;
+  temporizador_etiqueta: string | null;
 }
 
 export interface AdminPregunta {
@@ -331,7 +346,11 @@ export const guardarAviso = (datos: Partial<AdminAviso>) =>
 
 export const listarRecetas = () =>
   pedir<AdminReceta[]>("/recetas", { headers: cabeceras() }).then((rs) =>
-    rs.map((r) => ({ ...r, imagen_url: urlArchivo(r.imagen_url), video_url: urlArchivo(r.video_url) })),
+    rs.map((r) => ({
+      ...r,
+      imagen_url: urlArchivo(r.imagen_url),
+      pasos: (r.pasos ?? []).map((p) => ({ ...p, imagen_url: urlArchivo(p.imagen_url) })),
+    })),
   );
 
 export const crearReceta = (datos: FormData) =>

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Support\Sitio;
-use App\Support\VideoPoster;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -30,9 +29,10 @@ class Receta extends Model
     protected $table = 'recetas';
 
     protected $fillable = [
-        'nombre', 'slug', 'metodo', 'resumen', 'detalle', 'cafe_g', 'agua_g', 'duracion_seg',
-        'ingredientes', 'pasos', 'producto_id',
-        'imagen', 'video', 'video_poster', 'activa', 'orden',
+        'nombre', 'slug', 'metodo', 'resumen', 'detalle', 'video_youtube',
+        'cafe_g', 'agua_g', 'duracion_seg',
+        'ingredientes', 'producto_id',
+        'imagen', 'activa', 'orden',
     ];
 
     protected $attributes = ['activa' => true, 'orden' => 0];
@@ -42,7 +42,6 @@ class Receta extends Model
         'agua_g' => 'integer',
         'duracion_seg' => 'integer',
         'ingredientes' => 'array',
-        'pasos' => 'array',
         'activa' => 'boolean',
         'orden' => 'integer',
     ];
@@ -57,21 +56,61 @@ class Receta extends Model
                 $receta->slug = static::slugLibre(Str::slug($receta->nombre), 'receta');
             }
         });
-
-        // El póster es el primer cuadro del video: lo que se ve mientras baja.
-        // Mismo trato que en Producto, para que valga igual venga de donde
-        // venga el video.
-        static::saving(function (self $receta) {
-            if (! $receta->isDirty('video')) {
-                return;
-            }
-            $receta->video_poster = $receta->video ? VideoPoster::generate($receta->video) : null;
-        });
     }
 
     public function scopeVisibles(Builder $q): Builder
     {
         return $q->where('activa', true)->orderBy('orden');
+    }
+
+    /** Los pasos, en orden. */
+    public function pasos()
+    {
+        return $this->hasMany(RecetaPaso::class)->orderBy('orden');
+    }
+
+    /**
+     * Los artefactos que usa. Si están a la venta, la receta los recomienda:
+     * quien va a preparar algo es justo quien necesita el molino.
+     */
+    public function artefactos()
+    {
+        return $this->belongsToMany(Producto::class, 'receta_artefactos', 'receta_id', 'producto_id')
+            ->withPivot('orden')
+            ->orderBy('receta_artefactos.orden');
+    }
+
+    /**
+     * El id del video de YouTube, sacado de cualquiera de sus formatos de URL.
+     *
+     * Se guarda la URL como la pegó el admin —que es lo que él reconoce si
+     * vuelve a mirarla— y el id se extrae al leer. Cubre youtu.be, /watch?v=,
+     * /embed/ y /shorts/, que son las cuatro formas en que YouTube reparte el
+     * mismo video.
+     */
+    public function youtubeId(): ?string
+    {
+        if (! $this->video_youtube) {
+            return null;
+        }
+
+        $patrones = [
+            '~youtu\.be/([A-Za-z0-9_-]{11})~',
+            '~[?&]v=([A-Za-z0-9_-]{11})~',
+            '~/embed/([A-Za-z0-9_-]{11})~',
+            '~/shorts/([A-Za-z0-9_-]{11})~',
+        ];
+
+        foreach ($patrones as $patron) {
+            if (preg_match($patron, $this->video_youtube, $m)) {
+                return $m[1];
+            }
+        }
+
+        // Por si pegan el id pelado.
+        return preg_match('~^[A-Za-z0-9_-]{11}$~', trim($this->video_youtube))
+            ? trim($this->video_youtube)
+            : null;
     }
 
     /** El café que mejor le queda. Opcional: no toda receta recomienda uno. */

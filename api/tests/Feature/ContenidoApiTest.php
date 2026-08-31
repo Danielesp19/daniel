@@ -103,11 +103,62 @@ class ContenidoApiTest extends TestCase
                 'metodo' => 'Filtrado',
                 'duracion_seg' => 240,
                 'ingredientes' => ['30 g de café', '500 ml de agua'],
-                'pasos' => ['Enjuaga el filtro.', 'Bloom con 90 ml.'],
+                'pasos' => [
+                    ['texto' => 'Enjuaga el filtro.'],
+                    ['texto' => 'Bloom con 90 ml.', 'segundos' => 40, 'temporizador_etiqueta' => 'Bloom'],
+                ],
             ])
             ->assertCreated()
             ->assertJsonPath('slug', 'chemex-para-dos')
-            ->assertJsonCount(2, 'pasos');
+            ->assertJsonCount(2, 'pasos')
+            // El reloj vive en SU paso: una receta puede tener varios, y el de
+            // los 40 segundos del bloom no es el de los 4 minutos de la
+            // infusión.
+            ->assertJsonPath('pasos.0.segundos', null)
+            ->assertJsonPath('pasos.1.segundos', 40)
+            ->assertJsonPath('pasos.1.temporizador_etiqueta', 'Bloom');
+    }
+
+    public function test_guardar_la_receta_sin_mandar_pasos_no_los_borra(): void
+    {
+        $receta = Receta::create(['nombre' => 'V60', 'metodo' => 'Filtrado']);
+        $receta->pasos()->create(['orden' => 0, 'texto' => 'Enjuaga el filtro.']);
+
+        // Un guardado que solo toca el nombre no puede llevarse por delante los
+        // pasos: el panel manda `pasos` solo cuando el editor estuvo abierto.
+        $this->panel()
+            ->patchJson("/api/admin/recetas/{$receta->id}", ['nombre' => 'V60 para uno'])
+            ->assertOk()
+            ->assertJsonCount(1, 'pasos');
+    }
+
+    public function test_el_id_de_youtube_se_saca_del_enlace(): void
+    {
+        $receta = Receta::create([
+            'nombre' => 'V60',
+            'metodo' => 'Filtrado',
+            'video_youtube' => 'https://youtu.be/dQw4w9WgXcQ?t=30',
+        ]);
+        $receta->pasos()->create(['orden' => 0, 'texto' => 'Enjuaga el filtro.']);
+
+        $this->getJson('/api/catalogo/recetas')
+            ->assertOk()
+            ->assertJsonPath('0.youtube_id', 'dQw4w9WgXcQ');
+    }
+
+    public function test_solo_se_recomiendan_los_artefactos_a_la_venta(): void
+    {
+        $categoria = Categoria::create(['nombre' => 'Artefactos', 'orden' => 1]);
+        $molino = $categoria->productos()->create(['nombre' => 'Molino C40', 'precio_cop' => 900000]);
+        $oculto = $categoria->productos()->create(['nombre' => 'Chemex vieja', 'precio_cop' => 120000, 'activo' => false]);
+
+        $receta = Receta::create(['nombre' => 'V60', 'metodo' => 'Filtrado']);
+        $receta->artefactos()->sync([$molino->id => ['orden' => 0], $oculto->id => ['orden' => 1]]);
+
+        $this->getJson('/api/catalogo/recetas')
+            ->assertOk()
+            ->assertJsonCount(1, '0.artefactos')
+            ->assertJsonPath('0.artefactos.0.nombre', 'Molino C40');
     }
 
     public function test_borrar_el_cafe_recomendado_no_borra_la_receta(): void
