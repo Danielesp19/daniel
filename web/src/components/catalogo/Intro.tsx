@@ -1,24 +1,28 @@
 import { MARCA } from "@/lib/marca";
 
 /**
- * Cortina de entrada: un cisne de arte latte que se dibuja trazo por trazo
- * sobre la taza, con vapor, y termina en la firma.
+ * Cortina de entrada: un tulipán de arte latte, visto en planta.
  *
- * Es la segunda escena que mandó Daniel ("Animacion Latte 2"). El cisne no es
- * un capricho estético: es una figura bastante más difícil de verter que una
- * rosetta, y abrir con ella dice de entrada de qué nivel se está hablando.
+ * Entra la taza, entra la jarra inclinada desde arriba a la derecha y el chorro
+ * de leche empieza a caer. Cada inyección revela una capa del tulipán —cinco
+ * lóbulos y la punta— y el remate atraviesa las capas de arriba abajo. La
+ * jarra no se va y luego aparece el dibujo: se disuelve mientras el dibujo
+ * crece, que es lo que pasa de verdad al verter.
  *
- * Dos cambios sobre la original:
+ * CÓMO SE DIBUJA. Cada capa es una elipse RELLENA que se revela con una
+ * máscara cuyo contenido es un solo trazo barrido de izquierda a derecha:
+ * `pathLength={1}` con `strokeDasharray="1"` y el `dashoffset` animado de 1 a
+ * 0. Ese par de valores sirve para todas las geometrías sin recalcular nada, y
+ * el relleno da la silueta de leche de verdad —alas que se afinan, borde
+ * empujado por la capa siguiente— que un trazo de grosor constante no puede
+ * dar.
  *
- *  · RITMO. La original dura 6,7 s, que para una portada es una eternidad —
- *    quien vuelve al sitio la ve entera cada vez. Todos los tiempos se
- *    multiplican por RITMO, así que se acelera o se frena el conjunto entero
- *    tocando un solo número, sin desarmar la coreografía.
- *  · COLOR. Los acentos de la original se cambian por los del sitio: cereza y
- *    verde hoja. El escenario se queda oscuro a propósito: el brillo de la
- *    taza es lo que sostiene la escena, y sobre papel se pierde.
+ * TIEMPOS. Hay una sola constante de ritmo, `--beat`, en globals.css: doce
+ * tiempos de 0,2 s son 2,4 s de cortina. Se acelera o se frena la coreografía
+ * entera tocando ese número, sin desarmar nada. Dos segundos y medio es el
+ * techo: quien vuelve al sitio la ve entera cada vez.
  *
- * Sigue siendo CSS puro, sin una línea de JavaScript, por dos razones:
+ * Es CSS puro, sin una línea de JavaScript, por dos razones:
  *
  *  1. No hay estado que hidratar, así que no puede desincronizarse con el
  *     servidor ni romper la hidratación del resto de la página.
@@ -30,145 +34,164 @@ import { MARCA } from "@/lib/marca";
  */
 
 /**
- * Cuánto se comprime la escena original. 0,25 la deja en la cuarta parte: la
- * cortina empieza a irse a 1,73 s y termina de salir a 2,43 s, contra los
- * 6,7 s del original. Subirlo la alarga; bajarlo la apura.
+ * Los barridos que revelan el tulipán, EN EL ORDEN EN QUE SE VIERTEN: primero
+ * el charco de crema donde aterriza el chorro, después cada inyección —cada
+ * una más arriba y más angosta que la anterior— y al final la punta.
  *
- * Estuvo en 0,5 (4,9 s) y se sentía como una espera: quien vuelve al sitio la
- * ve entera cada vez, y a la segunda visita cinco segundos son eternos. En
- * 2,4 s todavía se alcanza a leer el trazo del cisne y la firma.
+ * `grosor` es el ancho del barrido, y tiene que cubrir de sobra la altura de
+ * su elipse: si se queda corto, la capa se revela por una franja y se ve el
+ * corte. `capa` es la elipse que ese barrido descubre.
  */
-const RITMO = 0.25;
-
-/** Convierte un tiempo de la escena original al ritmo de acá. */
-const t = (segundos: number) => `${(segundos * RITMO).toFixed(2)}s`;
-
-/**
- * Los trazos del cisne, EN EL ORDEN EN QUE SE VIERTEN: primero el cuerpo,
- * después las plumas del ala una sobre otra, la cola, el pecho y el cuello en
- * ese arco de S que es lo que cuesta, la cabeza, el pico y por último las
- * ondas del agua. Ese orden es el que hace que se lea como alguien vertiendo
- * y no como un dibujo que aparece.
- */
-const TRAZOS = [
-  { d: "M100 208 Q116 228 160 230 Q216 228 230 202 Q238 184 224 172", grosor: 9, dura: 0.8, espera: 0.9 },
-  { d: "M116 202 Q114 168 148 152 Q186 136 222 150 Q192 152 172 168 Q150 186 148 208", grosor: 11, dura: 0.75, espera: 1.6 },
-  { d: "M142 210 Q146 178 178 164 Q206 154 226 162 Q200 168 186 184 Q172 198 172 214", grosor: 10, dura: 0.7, espera: 2.2 },
-  { d: "M168 214 Q176 190 202 178 Q220 172 232 178 Q212 186 202 198 Q192 208 194 216", grosor: 9, dura: 0.65, espera: 2.75 },
-  { d: "M226 170 Q244 158 250 142", grosor: 7, dura: 0.5, espera: 3.25 },
-  { d: "M112 214 Q94 190 100 162 Q106 138 122 122 Q138 106 132 88 Q126 70 108 64", grosor: 12, dura: 0.9, espera: 3.6 },
-  { d: "M108 64 Q94 60 90 70 Q88 80 100 84 Q110 86 116 80", grosor: 8, dura: 0.5, espera: 4.45 },
-  { d: "M92 68 L70 79 L92 78", grosor: 4.5, dura: 0.35, espera: 4.9 },
-  { d: "M84 244 Q160 268 236 242", grosor: 5, dura: 0.6, espera: 5.2, opacidad: 0.6 },
-  { d: "M108 258 Q160 274 212 256", grosor: 4, dura: 0.55, espera: 5.55, opacidad: 0.35 },
-];
-
-/** Los tres hilos de vapor, cada uno con su ritmo para que no vayan a compás. */
-const VAPOR = [
-  { d: "M58 112 C48 92 66 82 56 62 C49 46 62 36 56 20", opacidad: 0.4, dura: 4.2, espera: 4.6, origen: "58px 112px" },
-  { d: "M76 114 C67 96 82 86 73 68 C66 54 77 44 72 30", opacidad: 0.32, dura: 4.7, espera: 5.0, origen: "76px 114px" },
-  { d: "M93 112 C86 96 97 86 90 70 C84 58 92 50 88 38", opacidad: 0.26, dura: 5.0, espera: 5.4, origen: "93px 112px" },
+const CAPAS = [
+  { id: 1, grosor: 72, barrido: "M 72 236 Q 160 242 248 236", cy: 236, rx: 74, ry: 30 },
+  { id: 2, grosor: 66, barrido: "M 79 216 Q 160 221 241 216", cy: 216, rx: 67, ry: 27 },
+  { id: 3, grosor: 64, barrido: "M 88 196 Q 160 201 232 196", cy: 196, rx: 58, ry: 26 },
+  { id: 4, grosor: 62, barrido: "M 98 176 Q 160 181 222 176", cy: 176, rx: 48, ry: 25 },
+  { id: 5, grosor: 60, barrido: "M 109 155 Q 160 160 211 155", cy: 155, rx: 37, ry: 24 },
+  { id: 6, grosor: 60, barrido: "M 121 132 Q 160 137 199 132", cy: 132, rx: 25, ry: 24 },
 ];
 
 export default function Intro() {
   return (
-    // La cortina se retira apenas termina la firma. El retraso se calcula con
-    // el mismo RITMO que todo lo demás: si se cambia el ritmo, la salida se
-    // acomoda sola en vez de quedar colgada al final.
-    <div className="latte" aria-hidden="true" style={{ animationDelay: t(6.9) }}>
-      {/* Manchas de color que van a la deriva por detrás de todo. Son lo único
-          que rompe el fondo plano y le da profundidad a la escena. */}
-      <div className="latte-mancha latte-mancha-cereza" />
-      <div className="latte-mancha latte-mancha-hoja" />
-      <div className="latte-vineta" />
+    <div className="cortina" role="presentation" aria-hidden="true">
+      {/* Manchas de color a la deriva por detrás de todo: es lo único que rompe
+          el fondo plano. Van en los dos acentos del sitio. */}
+      <div className="cortina-mancha cortina-mancha-cereza" />
+      <div className="cortina-mancha cortina-mancha-hoja" />
 
-      <div className="latte-escena">
-        {/* ── Vapor ── */}
-        <svg viewBox="0 0 140 130" className="latte-vapor">
-          {VAPOR.map((v) => (
-            <path
-              key={v.d}
-              d={v.d}
-              fill="none"
-              stroke={`rgba(245,234,216,${v.opacidad})`}
-              strokeWidth="4.5"
-              strokeLinecap="round"
-              style={{
-                transformOrigin: v.origen,
-                animation: `latteVapor ${t(v.dura)} ease-in-out ${t(v.espera)} infinite`,
-              }}
-            />
-          ))}
+      <div className="cortina-escena">
+        <svg className="cortina-taza" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="cortinaCafe" cx="46%" cy="34%" r="74%">
+              <stop offset="0%" stopColor="#52341D" />
+              <stop offset="60%" stopColor="#452A16" />
+              <stop offset="100%" stopColor="#3A2312" />
+            </radialGradient>
+            <radialGradient id="cortinaPlato" cx="44%" cy="34%" r="76%">
+              <stop offset="0%" stopColor="#241609" />
+              <stop offset="100%" stopColor="#160C05" />
+            </radialGradient>
+            <clipPath id="cortinaDentro">
+              <circle cx="160" cy="160" r="110" />
+            </clipPath>
+            {/* La leche no es plana: más brillante en el borde de ataque. */}
+            <linearGradient id="cortinaLeche" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#FFFCF4" />
+              <stop offset="55%" stopColor="#F7F0E3" />
+              <stop offset="100%" stopColor="#E9DCC4" />
+            </linearGradient>
+
+            {CAPAS.map((capa) => (
+              <mask
+                key={capa.id}
+                id={`cortinaBarrido${capa.id}`}
+                maskUnits="userSpaceOnUse"
+                x="0"
+                y="0"
+                width="320"
+                height="320"
+              >
+                <path
+                  className={`cortina-trazo cortina-trazo-${capa.id}`}
+                  pathLength={1}
+                  strokeDasharray="1"
+                  strokeDashoffset="1"
+                  strokeWidth={capa.grosor}
+                  d={capa.barrido}
+                />
+              </mask>
+            ))}
+          </defs>
+
+          {/* Plato */}
+          <circle cx="160" cy="160" r="150" fill="url(#cortinaPlato)" />
+          <circle cx="160" cy="160" r="150" fill="none" stroke="rgba(198,113,57,0.30)" strokeWidth="2" />
+          <circle cx="160" cy="160" r="131" fill="none" stroke="rgba(247,240,227,0.10)" strokeWidth="1.5" />
+
+          {/* Borde de la taza */}
+          <circle cx="160" cy="160" r="120" fill="#2A1A10" />
+          <circle cx="160" cy="160" r="120" fill="none" stroke="rgba(247,240,227,0.40)" strokeWidth="3" />
+
+          {/* Superficie de café con su crema */}
+          <circle cx="160" cy="160" r="112" fill="url(#cortinaCafe)" />
+          <ellipse cx="126" cy="118" rx="56" ry="38" fill="rgba(247,240,227,0.055)" />
+
+          {/* El tulipán. Se pintan de la punta hacia abajo para que cada capa
+              nueva quede POR DEBAJO de la anterior: así el borde de fuga se ve
+              empujado por la que sigue, como en la taza. */}
+          <g
+            fill="url(#cortinaLeche)"
+            stroke="rgba(44,26,13,0.42)"
+            strokeWidth="2"
+            clipPath="url(#cortinaDentro)"
+          >
+            {[...CAPAS].reverse().map((capa) => (
+              <ellipse
+                key={capa.id}
+                mask={`url(#cortinaBarrido${capa.id})`}
+                cx="160"
+                cy={capa.cy}
+                rx={capa.rx}
+                ry={capa.ry}
+              />
+            ))}
+          </g>
+
+          {/* El remate: atraviesa las capas de arriba abajo y cierra la figura. */}
+          <path
+            className="cortina-trazo cortina-trazo-7 cortina-crema"
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset="1"
+            strokeWidth="4"
+            fill="none"
+            clipPath="url(#cortinaDentro)"
+            d="M 160 110 C 163 164 162 218 160 260"
+          />
+
+          {/* El chorro: lo que cae es justo lo que va dibujando. */}
+          <path
+            className="cortina-trazo cortina-chorro"
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset="1"
+            strokeWidth="5"
+            fill="none"
+            d="M 206 112 Q 194 166 168 222"
+          />
+
+          <g className="cortina-jarra">
+            <g
+              className="cortina-jarra-disuelve"
+              transform="translate(214 90) scale(0.86)"
+              fill="#3A2312"
+              stroke="rgba(247,240,227,0.62)"
+              strokeWidth="5"
+              strokeLinejoin="round"
+            >
+              {/* Cuerpo alto y pico largo en V, apuntando al centro de la taza. */}
+              <path
+                d="M -18 6 L 14 -44 L 14 -70 Q 14 -82 28 -82 L 52 -82 Q 66 -82 64 -70
+                   L 56 -18 Q 54 -6 40 -6 L 14 -6 Q 6 -6 2 -2 Z"
+              />
+              {/* Asa cerrada, unida a la pared en los dos extremos. */}
+              <path
+                d="M 64 -70 C 92 -70 97 -57 97 -46 C 97 -33 85 -24 56 -24
+                   L 61 -35 C 81 -35 87 -39 87 -46 C 87 -54 82 -60 62 -60 Z"
+              />
+              {/* La leche adentro: un filo claro en la boca. */}
+              <path
+                d="M 20 -74 L 58 -74"
+                stroke="rgba(247,240,227,0.30)"
+                strokeWidth="4"
+                strokeLinecap="round"
+                fill="none"
+              />
+            </g>
+          </g>
         </svg>
 
-        {/* ── Taza ── */}
-        <div className="latte-taza">
-          <div className="latte-halo" />
-          {/* Anillo que se expande una sola vez al aparecer la taza: es el
-              golpe que la asienta sobre el plato. */}
-          <div className="latte-anillo" style={{ animation: `latteAnillo ${t(2.2)} ease-out ${t(0.4)} both` }} />
-
-          <div className="latte-cuerpo" style={{ animation: `latteTaza ${t(0.9)} cubic-bezier(.34,1.4,.5,1) both` }}>
-            <div className="latte-plato" />
-            <div className="latte-borde" />
-            <div className="latte-cafe" />
-            <div className="latte-crema" />
-            <div className="latte-brillo" />
-
-            {/* El cisne. */}
-            <svg viewBox="0 0 320 320" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-              <g fill="none" stroke="#F7F0E3" strokeLinecap="round" strokeLinejoin="round">
-                {TRAZOS.map((trazo) => (
-                  <path
-                    key={trazo.d}
-                    d={trazo.d}
-                    strokeWidth={trazo.grosor}
-                    opacity={trazo.opacidad}
-                    // pathLength=1 hace que el largo del trazo sea 1 sin
-                    // importar su geometría real, así que el mismo par
-                    // dasharray/dashoffset sirve para dibujar los diez.
-                    pathLength={1}
-                    strokeDasharray="1"
-                    style={{
-                      animation: `latteTrazo ${t(trazo.dura)} cubic-bezier(.4,0,.2,1) ${t(trazo.espera)} both`,
-                    }}
-                  />
-                ))}
-              </g>
-
-              {/* El ojo y el pico van al final: son los dos toques que
-                  convierten la silueta en un animal. */}
-              <circle
-                cx="98"
-                cy="72"
-                r="3.2"
-                fill="#52341D"
-                style={{ opacity: 0, animation: `latteSube ${t(0.35)} ease ${t(5.0)} both` }}
-              />
-              <path
-                d="M92 68 L70 79 L92 78 Z"
-                fill="#F7F0E3"
-                stroke="#F7F0E3"
-                strokeWidth="2"
-                strokeLinejoin="round"
-                style={{ opacity: 0, animation: `latteSube ${t(0.3)} ease ${t(5.1)} both` }}
-              />
-            </svg>
-
-            <div className="latte-aro" />
-          </div>
-        </div>
-
-        {/* ── Firma ── */}
-        <div className="latte-firma" style={{ animation: `latteSube ${t(0.9)} ease ${t(5.8)} both` }}>
-          <span className="epigrafe" style={{ color: "rgba(245,234,216,.62)" }}>
-            Arte latte
-          </span>
-          <span className="titular" style={{ fontSize: 32, color: "#F5EAD8" }}>
-            {MARCA.nombre}
-          </span>
-          <span className="latte-filete" />
-        </div>
+        <div className="cortina-firma">{MARCA.nombre}</div>
       </div>
     </div>
   );
