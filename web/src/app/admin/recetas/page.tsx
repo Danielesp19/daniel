@@ -17,6 +17,18 @@ import { COLOR, campo, rotulo, Campo, Boton, Cabecera, Aviso, Flechas, Hoja, Int
 
 const METODOS = ["Filtrado", "Inmersión", "Espresso", "Con leche"];
 
+/**
+ * Los puntos de molienda, en micras. Son los mismos cinco que dibuja la página
+ * a tamaño real, así que la recomendación siempre cae en uno de esos discos.
+ */
+const MOLIENDAS = [
+  { micras: 1000, nombre: "Gruesa", para: "Prensa francesa · cold brew" },
+  { micras: 800, nombre: "Media gruesa", para: "Chemex" },
+  { micras: 600, nombre: "Media", para: "V60 · goteo" },
+  { micras: 400, nombre: "Media fina", para: "Moka · aeropress" },
+  { micras: 250, nombre: "Fina", para: "Espresso" },
+];
+
 /** "2:45" ⇄ 165 segundos. El panel se escribe en minutos, no en segundos. */
 function aSegundos(texto: string): number | null {
   const limpio = texto.trim();
@@ -406,6 +418,7 @@ function Formulario({
     cafe_g: receta?.cafe_g ? String(receta.cafe_g) : "",
     agua_g: receta?.agua_g ? String(receta.agua_g) : "",
     duracion: aTexto(receta?.duracion_seg ?? null),
+    molienda_micras: receta?.molienda_micras ? String(receta.molienda_micras) : "",
     producto_id: receta?.producto_id ? String(receta.producto_id) : "",
     activa: receta?.activa ?? true,
   });
@@ -442,6 +455,10 @@ function Formulario({
       if (d.cafe_g) cuerpo.append("cafe_g", d.cafe_g);
       if (d.agua_g) cuerpo.append("agua_g", d.agua_g);
       cuerpo.append("activa", d.activa ? "1" : "0");
+
+      // Vacío se manda explícito para poder QUITAR la recomendación: sin el
+      // campo, el backend entiende "no me lo mandaron" y deja la de antes.
+      cuerpo.append("molienda_micras", d.molienda_micras);
 
       const seg = aSegundos(d.duracion);
       if (seg) cuerpo.append("duracion_seg", String(seg));
@@ -583,6 +600,44 @@ function Formulario({
             </select>
           </Campo>
         </div>
+
+        <Campo
+          etiqueta="Molienda recomendada"
+          nota="Sale marcada en la receta, sobre la escala a tamaño real. Quien la lee puede tocar las otras para comparar."
+        >
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+            {[{ micras: 0, nombre: "Sin recomendar", para: "" }, ...MOLIENDAS].map((m) => {
+              const valor = m.micras === 0 ? "" : String(m.micras);
+              const activa = d.molienda_micras === valor;
+
+              return (
+                <button
+                  key={m.micras}
+                  type="button"
+                  onClick={() => set("molienda_micras", valor)}
+                  aria-pressed={activa}
+                  title={m.para}
+                  style={{
+                    padding: "7px 14px",
+                    borderRadius: 999,
+                    border: `1px solid ${activa ? COLOR.tinta : COLOR.linea}`,
+                    background: activa ? COLOR.tinta : "transparent",
+                    color: activa ? "#FFF" : COLOR.suave,
+                    fontSize: 12.5,
+                    cursor: "pointer",
+                  }}
+                >
+                  {m.nombre}
+                  {m.micras > 0 && (
+                    <span style={{ marginLeft: 6, fontFamily: "var(--font-mono)", fontSize: 10, opacity: 0.75 }}>
+                      {m.micras} µm
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </Campo>
 
         <Lista
           etiqueta="Ingredientes"

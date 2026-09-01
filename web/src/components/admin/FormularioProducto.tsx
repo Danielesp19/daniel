@@ -238,13 +238,33 @@ export default function FormularioProducto({
             <input style={campo} value={datos.nombre} onChange={(e) => set("nombre", e.target.value)} required />
           </Campo>
 
-          <Campo etiqueta="Sección">
+          {/* Las subcategorías van agrupadas bajo su sección: en una lista
+              plana, «Básculas» y «Artefactos» se leen como dos secciones
+              hermanas y se termina poniendo el producto en la equivocada. Es
+              también la forma de MOVER un producto a un estante sin borrarlo y
+              volverlo a crear. */}
+          <Campo etiqueta="Dónde va">
             <select style={campo} value={datos.categoria_id} onChange={(e) => set("categoria_id", Number(e.target.value))}>
-              {categorias.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}
-                </option>
-              ))}
+              {categorias
+                .filter((c) => c.padre_id === null)
+                .map((seccion) => {
+                  const estantes = categorias.filter((c) => c.padre_id === seccion.id);
+
+                  return estantes.length === 0 ? (
+                    <option key={seccion.id} value={seccion.id}>
+                      {seccion.nombre}
+                    </option>
+                  ) : (
+                    <optgroup key={seccion.id} label={seccion.nombre}>
+                      <option value={seccion.id}>{seccion.nombre} (sin subcategoría)</option>
+                      {estantes.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          {sub.nombre}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
             </select>
           </Campo>
 

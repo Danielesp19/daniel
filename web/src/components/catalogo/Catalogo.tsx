@@ -1,6 +1,6 @@
 "use client";
 
-import type { Categoria } from "@/lib/catalogo";
+import type { Categoria, ModoVitrina, Producto, Subcategoria } from "@/lib/catalogo";
 import { useRevelado } from "@/hooks/useRevelar";
 import BandaServicio from "./BandaServicio";
 import Carrusel from "./Carrusel";
@@ -54,7 +54,7 @@ export default function Catalogo({ categorias }: { categorias: Categoria[] }) {
 function Seccion({ categoria, tono }: { categoria: Categoria; tono: string }) {
   const { ref, props } = useRevelado<HTMLElement>();
 
-  if (!categoria.productos.length) return null;
+  if (!categoria.productos.length && !categoria.subcategorias.length) return null;
 
   const modo = categoria.modo_vitrina;
 
@@ -88,34 +88,86 @@ function Seccion({ categoria, tono }: { categoria: Categoria; tono: string }) {
           </div>
         )}
 
-        {resto.length > 0 &&
-          (modo === "carrusel" ? (
-            <Carrusel productos={resto} />
-          ) : modo === "bandas" ? (
-            <div className="bandas">
-              {resto.map((p, i) => (
-                <BandaServicio key={p.id} producto={p} numero={i + 1} />
-              ))}
-            </div>
-          ) : modo === "horizontal" ? (
-            <div className="grilla grilla-videos">
-              {resto.map((p, i) => (
-                <Envoltura key={p.id} indice={i}>
-                  <TarjetaVideo producto={p} numero={i + 1} />
-                </Envoltura>
-              ))}
-            </div>
-          ) : (
-            <div className={`grilla ${modo === "dos" ? "grilla-dos" : "grilla-productos"}`}>
-              {resto.map((p, i) => (
-                <Envoltura key={p.id} indice={i}>
-                  <TarjetaProducto producto={p} />
-                </Envoltura>
-              ))}
-            </div>
-          ))}
+        {/* Lo que cuelga directo de la sección va primero y sin subtítulo: son
+            los productos que no pertenecen a ningún estante —los kits, por
+            ejemplo— y ponerles un título los volvería un estante más. */}
+        {resto.length > 0 && <Vitrina productos={resto} modo={modo} />}
+
+        {/* Y después, un estante por subcategoría. Cada uno con su nombre, que
+            es lo que deja distinguir una báscula de un molino sin abrir nada. */}
+        {categoria.subcategorias.map((sub) => (
+          <Estante key={sub.id} subcategoria={sub} modo={modo} />
+        ))}
       </div>
     </section>
+  );
+}
+
+/**
+ * Un estante dentro de la sección: su nombre y sus productos.
+ *
+ * Se dibuja con el MISMO modo de vitrina de la sección. Dejar que cada estante
+ * eligiera el suyo terminaría en una sección con una grilla, un carrusel y unas
+ * bandas una debajo de otra, que se lee como tres secciones distintas mal
+ * pegadas.
+ */
+function Estante({ subcategoria, modo }: { subcategoria: Subcategoria; modo: ModoVitrina }) {
+  if (!subcategoria.productos.length) return null;
+
+  return (
+    <div className="estante">
+      <div className="estante-cabeza revelar">
+        <h3 className="estante-nombre">{subcategoria.nombre}</h3>
+        <span className="rotulo estante-cuenta">
+          {String(subcategoria.productos.length).padStart(2, "0")}
+        </span>
+      </div>
+
+      {subcategoria.descripcion && <p className="estante-bajada revelar">{subcategoria.descripcion}</p>}
+
+      <Vitrina productos={subcategoria.productos} modo={modo} />
+    </div>
+  );
+}
+
+/** Los productos acomodados según el modo de la sección. */
+function Vitrina({ productos, modo }: { productos: Producto[]; modo: ModoVitrina }) {
+  // Un carrusel de dos tarjetas no se corre a ningún lado: quedan las flechas
+  // apagadas, la barra de avance llena y medio riel vacío al lado. Con pocas
+  // se cae a la grilla, que con dos tarjetas se ve como lo que es. Pasa seguido
+  // desde que hay subcategorías: un estante suele tener dos o tres cosas.
+  if (modo === "carrusel" && productos.length >= 3) return <Carrusel productos={productos} />;
+
+  if (modo === "bandas") {
+    return (
+      <div className="bandas">
+        {productos.map((p, i) => (
+          <BandaServicio key={p.id} producto={p} numero={i + 1} />
+        ))}
+      </div>
+    );
+  }
+
+  if (modo === "horizontal") {
+    return (
+      <div className="grilla grilla-videos">
+        {productos.map((p, i) => (
+          <Envoltura key={p.id} indice={i}>
+            <TarjetaVideo producto={p} numero={i + 1} />
+          </Envoltura>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`grilla ${modo === "dos" ? "grilla-dos" : "grilla-productos"}`}>
+      {productos.map((p, i) => (
+        <Envoltura key={p.id} indice={i}>
+          <TarjetaProducto producto={p} />
+        </Envoltura>
+      ))}
+    </div>
   );
 }
 

@@ -4,6 +4,10 @@ export type ModoVitrina = "carrusel" | "dos" | "bandas" | "grid" | "vertical" | 
 /**
  * Un punto de venta. Cuando viaja dentro de un producto trae además cuántas
  * unidades de ESE producto hay en ELLA.
+ *
+ * Sin teléfono propio: todo el contacto pasa por la línea de Daniel. Las sedes
+ * son información de dónde hay y cómo llegar, no tres números distintos a los
+ * que escribirle.
  */
 export interface Sede {
   id: number;
@@ -12,9 +16,6 @@ export interface Sede {
   direccion: string;
   ciudad: string;
   barrio: string | null;
-  telefono: string | null;
-  /** Ya viene sin espacios ni signos, listo para el enlace de wa.me. */
-  whatsapp: string | null;
   horario: string | null;
   stock: number;
   agotado: boolean;
@@ -73,6 +74,23 @@ export interface Categoria {
   slug: string;
   descripcion: string | null;
   modo_vitrina: ModoVitrina;
+  /** Los que cuelgan directo de la sección, sin subcategoría. */
+  productos: Producto[];
+  /** Los estantes de adentro. Vacío en una sección sin subcategorías. */
+  subcategorias: Subcategoria[];
+}
+
+/**
+ * Un estante dentro de una sección: «Básculas» dentro de «Artefactos».
+ *
+ * No tiene modo de vitrina propio — se dibuja con el de su sección. Dos modos
+ * distintos dentro de la misma sección se leerían como dos secciones.
+ */
+export interface Subcategoria {
+  id: number;
+  nombre: string;
+  slug: string;
+  descripcion: string | null;
   productos: Producto[];
 }
 
@@ -99,6 +117,10 @@ export interface Receta {
   agua_g: number | null;
   /** agua ÷ café. 16.67 se lee "1:16,7". null si falta alguno de los dos. */
   ratio: number | null;
+  /** Micras de la molienda recomendada. null = la receta no dice. */
+  molienda_micras: number | null;
+  /** El mismo punto ya nombrado: "Media gruesa". */
+  molienda: string | null;
   /** Lo que necesita el temporizador. null = receta sin reloj. */
   duracion_seg: number | null;
   /** La misma duración ya escrita: "2:45", "14 h". */
@@ -196,7 +218,17 @@ function normalizarProducto(p: Producto): Producto {
 
 export const getCatalogo = () =>
   pedir<Categoria[]>("/catalogo", { next: { revalidate: 60 } } as RequestInit).then((cats) =>
-    cats.map((c) => ({ ...c, productos: c.productos.map(normalizarProducto) })),
+    cats.map((c) => ({
+      ...c,
+      productos: c.productos.map(normalizarProducto),
+      // Blindaje contra una respuesta vieja del CDN: mientras vence el caché
+      // puede llegar catálogo sin este campo, y la página lo recorre sin
+      // preguntar.
+      subcategorias: (c.subcategorias ?? []).map((sub) => ({
+        ...sub,
+        productos: sub.productos.map(normalizarProducto),
+      })),
+    })),
   );
 
 export const getHero = () =>

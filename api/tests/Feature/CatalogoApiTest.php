@@ -56,6 +56,15 @@ class CatalogoApiTest extends TestCase
         return $producto->fresh();
     }
 
+    private const TOKEN = 'token-de-prueba';
+
+    private function panel()
+    {
+        config(['tienda.admin_token' => self::TOKEN]);
+
+        return $this->withToken(self::TOKEN);
+    }
+
     public function test_el_catalogo_devuelve_categorias_con_sus_productos(): void
     {
         $categoria = $this->categoria();
@@ -194,5 +203,90 @@ class CatalogoApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('antes', 5)
             ->assertJsonPath('despues', 17);
+    }
+
+    // ── Subcategorías ────────────────────────────────────────────────────────
+
+    public function test_una_subcategoria_viaja_dentro_de_su_seccion(): void
+    {
+        $artefactos = Categoria::create(['nombre' => 'Artefactos', 'orden' => 0]);
+        $basculas = Categoria::create(['nombre' => 'Básculas', 'padre_id' => $artefactos->id, 'orden' => 0]);
+
+        $artefactos->productos()->create(['nombre' => 'Kit para empezar', 'precio_cop' => 1140000]);
+        $basculas->productos()->create(['nombre' => 'Báscula con cronómetro', 'precio_cop' => 175000]);
+
+        $r = $this->getJson('/api/catalogo')->assertOk();
+
+        // Una sola sección: la subcategoría NO sale como hermana de su padre.
+        $r->assertJsonCount(1)
+            ->assertJsonPath('0.nombre', 'Artefactos')
+            ->assertJsonCount(1, '0.productos')
+            ->assertJsonPath('0.productos.0.nombre', 'Kit para empezar')
+            ->assertJsonCount(1, '0.subcategorias')
+            ->assertJsonPath('0.subcategorias.0.nombre', 'Básculas')
+            ->assertJsonPath('0.subcategorias.0.productos.0.nombre', 'Báscula con cronómetro');
+    }
+
+    public function test_una_seccion_sin_productos_propios_sale_si_su_subcategoria_tiene(): void
+    {
+        $artefactos = Categoria::create(['nombre' => 'Artefactos', 'orden' => 0]);
+        $molinos = Categoria::create(['nombre' => 'Molinos', 'padre_id' => $artefactos->id]);
+        $molinos->productos()->create(['nombre' => 'Molino C40', 'precio_cop' => 890000]);
+
+        // Vacía de productos propios, pero con un estante lleno adentro: sacarla
+        // del catálogo escondería el molino.
+        $this->getJson('/api/catalogo')
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.nombre', 'Artefactos')
+            ->assertJsonCount(0, '0.productos');
+    }
+
+    public function test_la_subcategoria_vacia_no_deja_un_titulo_suelto(): void
+    {
+        $artefactos = Categoria::create(['nombre' => 'Artefactos', 'orden' => 0]);
+        $artefactos->productos()->create(['nombre' => 'Kit', 'precio_cop' => 100000]);
+        Categoria::create(['nombre' => 'Jarras', 'padre_id' => $artefactos->id]);
+
+        $this->getJson('/api/catalogo')
+            ->assertOk()
+            ->assertJsonCount(0, '0.subcategorias');
+    }
+
+    public function test_la_jerarquia_es_de_un_solo_nivel(): void
+    {
+        $artefactos = Categoria::create(['nombre' => 'Artefactos']);
+        $basculas = Categoria::create(['nombre' => 'Básculas', 'padre_id' => $artefactos->id]);
+
+        // Colgar de una subcategoría sería un tercer nivel: se rechaza con una
+        // explicación, no con un 422 pelado.
+        $this->panel()
+            ->postJson('/api/admin/categorias', ['nombre' => 'De cocina', 'padre_id' => $basculas->id])
+            ->assertStatus(422)
+            ->assertJsonPath('error', '«Básculas» ya es una subcategoría. Las subcategorías solo cuelgan de una sección.');
+    }
+
+    public function test_no_se_borra_una_seccion_con_subcategorias_adentro(): void
+    {
+        $artefactos = Categoria::create(['nombre' => 'Artefactos']);
+        Categoria::create(['nombre' => 'Molinos', 'padre_id' => $artefactos->id]);
+
+        $this->panel()
+            ->deleteJson("/api/admin/categorias/{$artefactos->id}")
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas('categorias', ['id' => $artefactos->id]);
+    }
+
+    public function test_la_sede_no_publica_telefono(): void
+    {
+        Sede::create(['nombre' => 'Sede Centro', 'direccion' => 'Calle 5 #4-32', 'ciudad' => 'Pitalito', 'telefono' => '(608) 871 0234']);
+
+        // El contacto es uno solo, el de Daniel: tres números distintos hacían
+        // que el pedido llegara al lugar equivocado.
+        $r = $this->getJson('/api/catalogo/sedes')->assertOk();
+
+        $this->assertArrayNotHasKey('telefono', $r->json('0'));
+        $this->assertArrayNotHasKey('whatsapp', $r->json('0'));
     }
 }

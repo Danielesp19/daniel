@@ -15,6 +15,8 @@ export type ModoVitrina = "carrusel" | "dos" | "bandas" | "grid" | "vertical" | 
 
 export interface AdminCategoria {
   id: number;
+  /** null = es una sección. Con valor, cuelga de esa sección. */
+  padre_id: number | null;
   nombre: string;
   slug: string;
   descripcion: string | null;
@@ -70,8 +72,6 @@ export interface AdminSede {
   direccion: string;
   ciudad: string;
   barrio: string | null;
-  telefono: string | null;
-  whatsapp: string | null;
   horario: string | null;
   principal: boolean;
   activa: boolean;
@@ -114,6 +114,9 @@ export interface AdminReceta {
   /** Alimentan la calculadora de ratios de la página. */
   cafe_g: number | null;
   agua_g: number | null;
+  /** Micras de la molienda recomendada. null = la receta no dice. */
+  molienda_micras: number | null;
+  molienda: string | null;
   ratio: number | null;
   duracion_seg: number | null;
   duracion: string | null;

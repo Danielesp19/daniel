@@ -307,7 +307,7 @@ function TarjetaReceta({ receta, onAbrir }: { receta: Receta; onAbrir: () => voi
 
         <div className="receta-tarjeta-pie">
           <span className="cifra receta-tarjeta-dato">
-            {[receta.duracion, receta.ratio ? `1:${conComa(receta.ratio)}` : null]
+            {[receta.duracion, receta.ratio ? `1:${conComa(receta.ratio)}` : null, receta.molienda]
               .filter(Boolean)
               .join(" · ")}
           </span>
@@ -367,6 +367,7 @@ function HojaReceta({
   if (receta.cafe_g) datos.push(["Café", `${receta.cafe_g} g`]);
   if (receta.agua_g) datos.push([rotuloRendimiento(receta.metodo), `${receta.agua_g} g`]);
   if (receta.ratio) datos.push(["Ratio", `1:${conComa(receta.ratio)}`]);
+  if (receta.molienda) datos.push(["Molienda", receta.molienda]);
   if (receta.duracion) datos.push(["Tiempo", receta.duracion]);
 
   return createPortal(
@@ -401,6 +402,10 @@ function HojaReceta({
               ))}
             </dl>
           )}
+
+          {/* La molienda va antes de los pasos: es la primera decisión de la
+              preparación, y equivocarse ahí no lo arregla ningún vertido. */}
+          <Molienda recomendada={receta.molienda_micras} />
 
           {receta.ingredientes.length > 0 && (
             <ul className="receta-ingredientes">
@@ -564,7 +569,6 @@ export default function Recetas({
           </div>
         ))}
 
-        <Molienda />
       </div>
 
       <HojaReceta

@@ -210,21 +210,102 @@ body {
 
 .boton:disabled { opacity: .4; cursor: not-allowed; }
 
-/* Enlace de "ver más": subrayado firme, en mono. */
+/* "Ver más": la única acción de una tarjeta, y tiene que verse como tal.
+   En contorno sobre el fondo de la tarjeta se leía como un borde más entre los
+   varios que ya tiene la grilla. Con un relleno tenue deja de ser un hueco y se
+   lee como botón, y la flecha dice que abre algo — sin llegar al negro sólido,
+   que es el peso que se reserva para "Agregar al pedido". */
+.boton-vermas {
+  gap: 7px;
+  background: var(--color-banda);
+}
+.boton-vermas::after {
+  content: "→";
+  font-size: 12px;
+  transition: transform .18s var(--salida);
+}
+.boton-vermas:hover::after { transform: translateX(3px); }
+.seccion-oscura .boton-vermas { background: rgba(255, 255, 255, 0.1); }
+
+/* "Ver más": la acción principal de una tarjeta.
+   Era un subrayado fino de 10 px y se perdía contra el precio, que va en mono
+   del mismo tamaño — quien miraba la tarjeta no tenía claro dónde tocar. Ahora
+   es una pastilla con contorno que se rellena al pasar por encima: pesa lo
+   suficiente para leerse como botón sin gritar como el negro sólido del
+   "Agregar", que es el paso siguiente y tiene que seguir mandando. */
 .vermas {
   align-self: flex-start;
-  padding: 0;
-  border: none;
-  border-bottom: 1px solid currentColor;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--color-linea);
+  border-radius: 999px;
   background: transparent;
-  color: inherit;
+  color: var(--color-tinta);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   cursor: pointer;
   white-space: nowrap;
+  transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s var(--salida);
 }
+/* La flecha se separa un pelo al pasar por encima: dice "esto abre algo". */
+.vermas::after {
+  content: "→";
+  font-size: 11px;
+  transition: transform .18s var(--salida);
+}
+.vermas:hover { background: var(--color-tinta); border-color: var(--color-tinta); color: #FFF; }
+.vermas:hover::after { transform: translateX(2px); }
+
+.seccion-oscura .vermas { border-color: rgba(255, 255, 255, 0.35); color: #FFF; }
+.seccion-oscura .vermas:hover { background: #FFF; border-color: #FFF; color: var(--color-tinta); }
+
+/* Dentro de la hoja de la receta no es la acción de una tarjeta sino un enlace
+   de apoyo ("volver a la receta"): ahí se queda discreto. */
+.calculadora-volver { padding: 5px 11px; font-size: 9px; }
+.calculadora-volver::after { content: none; }
+
+/* ─── Estantes (subcategorías) ──────────────────────────────────────────────
+   «Básculas» dentro de «Artefactos». El título pesa menos que el de la sección
+   y más que el nombre de un producto: es el escalón del medio, y si los tres
+   pesaran parecido la página perdería el hilo de qué contiene qué. */
+.estante { margin-top: clamp(28px, 4.5vw, 52px); }
+
+.estante-cabeza {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.estante-nombre {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(18px, 2.4vw, 23px);
+  font-weight: 400;
+  line-height: 1;
+}
+/* La línea corre desde el título hasta el borde: separa un estante del que
+   sigue sin meter otro bloque de aire. */
+.estante-cabeza::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-linea);
+}
+.seccion-oscura .estante-cabeza::after { background: var(--linea-o); }
+.estante-cuenta { order: 1; font-size: 9px; color: var(--color-rotulo); }
+
+.estante-bajada {
+  margin: -6px 0 14px;
+  max-width: 46ch;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--color-suave);
+}
+.seccion-oscura .estante-bajada { color: var(--suave-o); }
 
 /* ─── Tarjeta ───────────────────────────────────────────────────────────────
    Recta, con un borde de un pelo que se oscurece al pasar el mouse. */
@@ -459,117 +540,188 @@ body {
 .enlace-red:hover svg { color: var(--color-tinta); }
 
 /* ─── Referencia de molienda ────────────────────────────────────────────────
-   Los tamaños de grano dibujados al tamaño real de la pantalla, para comparar
-   contra el café ya molido. El milímetro real solo se consigue si el usuario
-   calibra con una regla; el componente explica por qué. */
+   Vive DENTRO de la receta abierta. Cinco discos redondos con café molido
+   dibujado a tamaño real: se toca uno y abajo se ve en grande.
+
+   Redondos y no cuadrados porque lo que se compara es la nube de granos, no el
+   recuadro: el círculo no le pone esquinas a algo que no las tiene, y a este
+   tamaño se lee como una muestra de café y no como una casilla. */
 .molienda {
-  margin-top: clamp(26px, 4vw, 44px);
-  padding-top: clamp(22px, 3vw, 32px);
-  border-top: 1px solid var(--color-linea);
+  margin-top: 22px;
+  padding: 14px;
+  border: 1px solid var(--color-linea);
+  border-radius: 12px;
+  background: var(--color-fondo);
 }
 
-.molienda-cabeza {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: clamp(16px, 2.4vw, 24px);
+.molienda-cabeza { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.molienda-cabeza .rotulo { margin: 0; }
+
+.molienda-calibrar-boton {
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: var(--color-suave);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color .18s ease;
 }
-.molienda-titulo { font-size: clamp(19px, 2.4vw, 24px); margin-top: 8px; }
-.molienda-bajada {
-  margin: 8px 0 0;
-  max-width: 52ch;
-  font-size: 13.5px;
-  line-height: 1.6;
+.molienda-calibrar-boton:hover { color: var(--color-tinta); }
+
+/* ── La muestra: un disco con granos dibujados a escala ── */
+.molienda-disco {
+  position: relative;
+  display: block;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #FFFDF8, #F2EBDD 70%, #E6DCC8);
+  box-shadow: inset 0 0 0 1px rgba(44, 26, 13, .1);
+  overflow: hidden;
+}
+.molienda-disco-grande {
+  width: clamp(96px, 26vw, 128px);
+  height: clamp(96px, 26vw, 128px);
+  flex-shrink: 0;
+}
+
+/* Cada grano con esquinas distintas y su propio giro: así se ve partido, que
+   es como se ve el café de verdad, y no como una bolita fabricada. */
+.molienda-grano {
+  position: absolute;
+  /* Cuatro esquinas distintas: el grano se ve partido, que es como sale del
+     molino, y no como una bolita fabricada. La opacidad la pone cada uno. */
+  border-radius: 42% 58% 53% 47% / 55% 44% 56% 45%;
+}
+
+/* ── Los cinco puntos ── */
+.molienda-opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.molienda-opcion {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 74px;
+  padding: 8px 4px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, transform .18s var(--salida);
+}
+.molienda-opcion:hover { transform: translateY(-2px); }
+.molienda-opcion-activa { border-color: var(--color-tinta); background: var(--color-papel); }
+
+.molienda-opcion-nombre {
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
   color: var(--color-suave);
 }
+.molienda-opcion-activa .molienda-opcion-nombre { color: var(--color-tinta); }
 
-.molienda-calibrar {
+/* El sello marca la molienda que puso Daniel en ESTA receta: se distingue de
+   la que el lector está mirando, que es la que tiene el borde. */
+.molienda-sello {
+  position: absolute;
+  top: 4px;
+  right: 8px;
   display: grid;
-  gap: 14px;
-  justify-items: start;
-  margin-bottom: clamp(18px, 2.6vw, 26px);
-  padding: clamp(14px, 2vw, 20px);
-  border: 1px solid var(--color-linea);
-  background: var(--color-papel);
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--color-tinta);
+  color: #FFF;
+  font-size: 8px;
+  line-height: 1;
 }
-.molienda-instruccion { margin: 0; max-width: 54ch; font-size: 13.5px; line-height: 1.6; }
-.molienda-calibrar input[type="range"] { width: min(100%, 340px); accent-color: var(--color-tinta); cursor: pointer; }
 
-/* La barra de calibración: alto fijo, ancho en milímetros de verdad. */
+/* ── El detalle de la elegida ── */
+.molienda-detalle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-linea);
+}
+.molienda-detalle-texto { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.molienda-detalle-nombre {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+  font-family: var(--font-serif);
+  font-size: 16px;
+}
+.molienda-etiqueta {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-rotulo);
+}
+
+.molienda-micras { font-size: 11px; color: var(--color-suave); }
+.molienda-para { font-size: 12px; color: var(--color-suave); }
+.molienda-nota { margin: 6px 0 0; font-size: 10.5px; line-height: 1.5; color: var(--color-rotulo); }
+
+/* ── Calibración ── */
+.molienda-calibrar {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px dashed var(--color-linea);
+  border-radius: 10px;
+}
+.molienda-instruccion { margin: 0 0 10px; font-size: 12px; line-height: 1.55; color: var(--color-suave); }
+.molienda-instruccion strong { color: var(--color-tinta); font-weight: 500; }
+
 .molienda-regla {
   position: relative;
-  height: 34px;
+  height: 22px;
+  max-width: 100%;
+  margin-bottom: 10px;
   border: 1px solid var(--color-tinta);
-  background: repeating-linear-gradient(
-    90deg,
-    transparent 0,
-    transparent calc(20% - 1px),
-    rgba(10, 10, 10, 0.12) calc(20% - 1px),
-    rgba(10, 10, 10, 0.12) 20%
-  );
+  background: var(--color-papel);
 }
-.molienda-regla > span { position: absolute; top: 0; width: 1px; height: 10px; background: var(--color-tinta); }
+.molienda-regla span { position: absolute; top: 0; width: 1px; height: 7px; background: var(--color-tinta); }
 .molienda-regla-texto {
   position: absolute;
   top: 50% !important;
   left: 50%;
-  transform: translate(-50%, -50%);
   width: auto !important;
   height: auto !important;
-  background: none !important;
+  transform: translate(-50%, -50%);
+  background: transparent !important;
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: 9px;
+  letter-spacing: 0.14em;
   color: var(--color-suave);
 }
+.molienda-calibrar input[type="range"] { width: 100%; margin-bottom: 8px; }
 
-.molienda-muestras {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
-  gap: clamp(10px, 1.6vw, 16px);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.molienda-muestra {
-  display: grid;
-  gap: 5px;
-  justify-items: start;
-  padding: 12px;
-  border: 1px solid var(--color-linea);
-  background: var(--color-papel);
-}
-
-/* La muestra: un cuadro claro con los granos dibujados a escala. */
-.molienda-caja {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  margin-bottom: 6px;
-  overflow: hidden;
-  background: var(--color-banda);
-  border: 1px solid var(--color-linea);
-}
-.molienda-grano {
-  position: absolute;
-  border-radius: 50%;
-  background: #4A3524;
-  transform: translate(-50%, -50%);
-}
-
-.molienda-nombre { font-size: 13.5px; font-weight: 500; }
-.molienda-micras { font-size: 11px; color: var(--color-tinta); }
-.molienda-para { font-size: 11.5px; line-height: 1.45; color: var(--color-suave); }
-
-.molienda-nota {
-  margin: clamp(14px, 2vw, 18px) 0 0;
-  max-width: 62ch;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--color-rotulo);
+@media (max-width: 420px) {
+  /* En pantalla angosta los cinco discos no caben en una fila: se corren de
+     lado en vez de partirse en dos líneas desiguales. */
+  .molienda-opciones { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .molienda-opcion { flex-shrink: 0; }
+  .molienda-detalle { flex-direction: column; align-items: flex-start; }
 }
 
 /* ─── Bandas de servicio ────────────────────────────────────────────────────
@@ -789,33 +941,47 @@ body {
 }
 
 /* ─── Disponibilidad por sede ───────────────────────────────────────────────
-   La lista de puntos de venta con lo que queda en cada uno, dentro de la ficha
-   desplegada del producto.
+   Dentro de la hoja del producto: dónde hay y cuántas quedan.
 
-   Se lee en columna y no en tabla: la tarjeta más angosta de la grilla mide
-   175 px y dos columnas de datos ahí no caben sin partir las direcciones. El
-   número queda a la derecha, alineado con tabulares, porque es lo que la gente
-   viene a comparar de una sede a otra.
+   Lo que se viene a mirar es UN número, así que el número es lo que pesa: va
+   grande, a la derecha y en su propia ficha, y la dirección queda debajo del
+   nombre en gris para cuando ya se decidió a cuál sede ir. Antes el stock era
+   un 11 px al lado de la dirección y había que buscarlo.
 
    Los tonos siguen la misma regla que el resto: los grises claros no se leen
    sobre negro y se reemplazan por blancos con alfa. `.sedes-oscuro` es para el
    panel del destacado, que pinta su propio fondo oscuro aunque la sección que
    lo contiene sea clara. */
-.sedes { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--color-linea); }
+.sedes { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--color-linea); }
 .seccion-oscura .sedes { border-top-color: var(--linea-o); }
 .sedes-oscuro { border-top-color: rgba(255, 255, 255, 0.18); }
 
-.sedes-titulo { display: block; font-size: 8.5px; letter-spacing: 0.18em; margin: 0 0 2px; }
+.sedes-cabeza {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.sedes-titulo { display: block; font-size: 8.5px; letter-spacing: 0.18em; margin: 0; }
 .sedes-oscuro .sedes-titulo { color: var(--rotulo-o); }
+
+.sedes-resumen { font-size: 11px; color: var(--color-suave); }
+.seccion-oscura .sedes-resumen { color: var(--suave-o); }
+.sedes-oscuro .sedes-resumen { color: rgba(255, 255, 255, 0.62); }
+
+.sedes-ciudad + .sedes-ciudad { margin-top: 16px; }
+.sedes-ciudad-nombre { display: block; font-size: 8.5px; margin-bottom: 4px; }
+.sedes-oscuro .sedes-ciudad-nombre { color: var(--rotulo-o); }
 
 .sedes-lista { list-style: none; margin: 0; padding: 0; }
 
 .sede {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding-block: 9px;
+  gap: 12px;
+  padding-block: 10px;
   border-bottom: 1px solid var(--color-linea);
 }
 .sede:last-child { border-bottom: 0; padding-bottom: 0; }
@@ -824,11 +990,11 @@ body {
 
 /* La sede sin unidades se apaga pero NO se esconde: saber dónde no hay evita
    el viaje en vano, que es justo lo que este bloque viene a resolver. */
-.sede-agotada { opacity: 0.5; }
+.sede-agotada { opacity: 0.55; }
 
 .sede-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
-.sede-nombre { font-size: 12.5px; font-weight: 500; line-height: 1.3; }
+.sede-nombre { font-size: 13px; font-weight: 500; line-height: 1.3; }
 
 .sede-dato {
   font-size: 11px;
@@ -841,24 +1007,38 @@ body {
 .seccion-oscura .sede-dato { color: var(--suave-o); }
 .sedes-oscuro .sede-dato { color: rgba(255, 255, 255, 0.62); }
 
-.sede-contacto { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 1px; }
-
-.sede-enlace {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-thickness: 1px;
-  transition: color .2s ease;
-}
-.sede-enlace:hover { color: var(--color-tinta); }
-.seccion-oscura .sede-enlace:hover,
-.sedes-oscuro .sede-enlace:hover { color: #FFF; }
-
+/* La ficha del número: es el ancla visual de toda la fila. */
 .sede-stock {
   flex-shrink: 0;
-  font-size: 11px;
-  padding-top: 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 62px;
+  padding: 7px 10px;
+  border: 1px solid var(--color-linea);
+  border-radius: 10px;
+  background: var(--color-fondo);
+  text-align: center;
 }
+.seccion-oscura .sede-stock,
+.sedes-oscuro .sede-stock { border-color: rgba(255, 255, 255, 0.16); background: rgba(255, 255, 255, 0.06); }
+
+.sede-stock-cifra { font-size: 21px; line-height: 1; }
+.sede-stock-unidad,
+.sede-stock-agotado {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-rotulo);
+}
+.sedes-oscuro .sede-stock-unidad,
+.sedes-oscuro .sede-stock-agotado { color: rgba(255, 255, 255, 0.6); }
+/* La agotada no lleva número: la ficha se queda con la palabra sola, más baja,
+   para que la fila con stock resalte al lado. */
+.sede-agotada .sede-stock { padding-block: 11px; }
 
 /* ─── Cortina de entrada: el tulipán de arte latte ──────────────────────────
    Entra la taza, entra la jarra y el chorro va revelando capa por capa un

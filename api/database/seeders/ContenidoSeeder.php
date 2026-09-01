@@ -39,6 +39,7 @@ class ContenidoSeeder extends Seeder
                 'detalle' => '15 g café · 250 ml agua a 94 °C',
                 'cafe_g' => 15,
                 'agua_g' => 250,
+                'molienda_micras' => 600,
                 'duracion_seg' => 165,
                 'ingredientes' => ['15 g de café', '250 ml de agua a 94 °C', 'Filtro de papel V60'],
                 'pasos' => [
@@ -56,6 +57,7 @@ class ContenidoSeeder extends Seeder
                 'detalle' => '30 g café · 500 ml agua a 93 °C',
                 'cafe_g' => 30,
                 'agua_g' => 500,
+                'molienda_micras' => 800,
                 'duracion_seg' => 240,
                 'ingredientes' => ['30 g de café', '500 ml de agua a 93 °C', 'Filtro Chemex'],
                 'pasos' => [
@@ -73,6 +75,7 @@ class ContenidoSeeder extends Seeder
                 'detalle' => '30 g café · 500 ml agua a 92 °C',
                 'cafe_g' => 30,
                 'agua_g' => 500,
+                'molienda_micras' => 1000,
                 'duracion_seg' => 240,
                 'ingredientes' => ['30 g de café', '500 ml de agua a 92 °C'],
                 'pasos' => [
@@ -89,6 +92,7 @@ class ContenidoSeeder extends Seeder
                 'detalle' => '100 g café · 1 L agua fría · 14 horas',
                 'cafe_g' => 100,
                 'agua_g' => 1000,
+                'molienda_micras' => 1000,
                 'duracion_seg' => 50400,
                 'ingredientes' => ['100 g de café', '1 L de agua fría', 'Filtro de papel para colar'],
                 'pasos' => [
@@ -105,6 +109,7 @@ class ContenidoSeeder extends Seeder
                 'detalle' => '18 g dentro · 36 g en taza',
                 'cafe_g' => 18,
                 'agua_g' => 36,
+                'molienda_micras' => 250,
                 'duracion_seg' => 28,
                 'ingredientes' => ['18 g de café', 'Canasta doble'],
                 'pasos' => [
@@ -121,6 +126,7 @@ class ContenidoSeeder extends Seeder
                 'detalle' => '16 g café · agua caliente al nivel de la válvula',
                 'cafe_g' => 16,
                 'agua_g' => 150,
+                'molienda_micras' => 400,
                 'duracion_seg' => 210,
                 'ingredientes' => ['16 g de café', 'Agua caliente hasta la válvula'],
                 'pasos' => [
@@ -137,6 +143,7 @@ class ContenidoSeeder extends Seeder
                 'detalle' => '36 g espresso · 180 ml leche entera fría',
                 'cafe_g' => 36,
                 'agua_g' => 180,
+                'molienda_micras' => 250,
                 'duracion_seg' => 60,
                 'ingredientes' => ['36 g de espresso', '180 ml de leche entera fría'],
                 'pasos' => [

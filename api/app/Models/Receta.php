@@ -26,11 +26,33 @@ class Receta extends Model
      */
     public const METODOS = ['Filtrado', 'Inmersión', 'Espresso', 'Con leche'];
 
+    /**
+     * Los puntos de molienda que ofrece el panel, en micras.
+     *
+     * Son los mismos cinco de la referencia de la página: así la receta abierta
+     * puede señalar el suyo dentro de la escala en vez de mostrar un número
+     * suelto que no dice nada sin con qué compararlo. Mil micras son un
+     * milímetro.
+     */
+    public const MOLIENDAS = [
+        1000 => 'Gruesa',
+        800 => 'Media gruesa',
+        600 => 'Media',
+        400 => 'Media fina',
+        250 => 'Fina',
+    ];
+
+    /** El nombre del punto de molienda recomendado, si tiene uno. */
+    public function moliendaNombre(): ?string
+    {
+        return self::MOLIENDAS[$this->molienda_micras] ?? null;
+    }
+
     protected $table = 'recetas';
 
     protected $fillable = [
         'nombre', 'slug', 'metodo', 'resumen', 'detalle', 'video_youtube',
-        'cafe_g', 'agua_g', 'duracion_seg',
+        'cafe_g', 'agua_g', 'molienda_micras', 'duracion_seg',
         'ingredientes', 'producto_id',
         'imagen', 'activa', 'orden',
     ];
@@ -40,6 +62,7 @@ class Receta extends Model
     protected $casts = [
         'cafe_g' => 'integer',
         'agua_g' => 'integer',
+        'molienda_micras' => 'integer',
         'duracion_seg' => 'integer',
         'ingredientes' => 'array',
         'activa' => 'boolean',

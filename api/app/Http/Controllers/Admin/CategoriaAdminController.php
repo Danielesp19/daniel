@@ -18,6 +18,9 @@ class CategoriaAdminController extends Controller
 {
     public function index()
     {
+        // Todas —secciones y subcategorías— en un solo arreglo plano, cada una
+        // con su `padre_id`. El panel arma el árbol: mandarlo anidado obligaría
+        // a un formato distinto para el mismo objeto según dónde cuelgue.
         return response()->json(
             Categoria::withCount('productos')->orderBy('orden')->get()
                 ->map(fn (Categoria $c) => $this->formato($c))
@@ -28,9 +31,14 @@ class CategoriaAdminController extends Controller
     {
         $datos = $request->validate($this->reglas());
 
-        // Al final de la lista: una sección nueva no debería aparecer de
-        // primeras sin que nadie lo haya pedido.
-        $datos['orden'] ??= (int) Categoria::max('orden') + 1;
+        if ($error = $this->errorDePadre(new Categoria, $datos['padre_id'] ?? null)) {
+            return $error;
+        }
+
+        // Al final de SU lista: una sección nueva no debería aparecer de
+        // primeras sin que nadie lo haya pedido, y el orden de una subcategoría
+        // se cuenta entre sus hermanas, no contra las secciones.
+        $datos['orden'] ??= (int) Categoria::where('padre_id', $datos['padre_id'] ?? null)->max('orden') + 1;
 
         $categoria = Categoria::create($datos);
 
@@ -39,9 +47,40 @@ class CategoriaAdminController extends Controller
 
     public function update(Request $request, Categoria $categoria)
     {
-        $categoria->update($request->validate($this->reglas($categoria)));
+        $datos = $request->validate($this->reglas($categoria));
+
+        if (array_key_exists('padre_id', $datos)
+            && ($error = $this->errorDePadre($categoria, $datos['padre_id']))) {
+            return $error;
+        }
+
+        $categoria->update($datos);
 
         return response()->json($this->formato($categoria->loadCount('productos')));
+    }
+
+    /**
+     * La jerarquía es de un solo nivel, y eso se explica acá con palabras en
+     * vez de con un 422 pelado: quien lo intenta desde el panel tiene que
+     * entender por qué no lo dejó.
+     */
+    private function errorDePadre(Categoria $categoria, ?int $padreId)
+    {
+        if ($padreId === null) {
+            return null;
+        }
+
+        $padre = Categoria::find($padreId);
+
+        if (! $categoria->puedeColgarDe($padre)) {
+            return response()->json([
+                'error' => $padre && ! $padre->esSeccion()
+                    ? "«{$padre->nombre}» ya es una subcategoría. Las subcategorías solo cuelgan de una sección."
+                    : 'Esta sección tiene subcategorías adentro, así que no puede volverse subcategoría de otra.',
+            ], 422);
+        }
+
+        return null;
     }
 
     /**
@@ -52,6 +91,14 @@ class CategoriaAdminController extends Controller
      */
     public function destroy(Categoria $categoria)
     {
+        // Una sección con subcategorías tampoco se borra de una: sus productos
+        // están adentro de ellas y desaparecerían sin que nadie los viera.
+        if ($categoria->subcategorias()->exists()) {
+            return response()->json([
+                'error' => "«{$categoria->nombre}» tiene subcategorías adentro. Bórralas o muévelas primero.",
+            ], 422);
+        }
+
         $cuantos = $categoria->productos()->count();
 
         if ($cuantos > 0) {
@@ -90,6 +137,7 @@ class CategoriaAdminController extends Controller
     private function reglas(?Categoria $categoria = null): array
     {
         return [
+            'padre_id' => ['sometimes', 'nullable', Rule::exists('categorias', 'id')],
             'nombre' => ($categoria ? 'sometimes' : 'required').'|string|max:255',
             'slug' => [
                 'sometimes', 'nullable', 'string', 'max:255',
@@ -106,6 +154,7 @@ class CategoriaAdminController extends Controller
     {
         return [
             'id' => $c->id,
+            'padre_id' => $c->padre_id,
             'nombre' => $c->nombre,
             'slug' => $c->slug,
             'descripcion' => $c->descripcion,

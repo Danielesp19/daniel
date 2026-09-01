@@ -135,6 +135,11 @@ class CatalogoSeeder extends Seeder
         // Artefactos: equipo, no café. No tienen ficha de origen ni tueste,
         // así que la tarjeta se dibuja sin regla y sin puntaje — es el caso que
         // obliga a que esos bloques sean opcionales y no decorativos.
+        //
+        // Va con subcategorías porque una lista plana revuelve cosas que no se
+        // comparan entre sí: quien busca báscula no está decidiendo entre esa y
+        // una jarra de leche. Los kits se quedan colgando directo de la sección
+        // —arriba de todo, sin subtítulo— porque son la puerta de entrada.
         $this->sembrar($artefactos, [
             [
                 'nombre' => 'Kit para empezar', 'precio_cop' => 1140000, 'gramos' => 0, 'stock' => 3,
@@ -142,28 +147,52 @@ class CatalogoSeeder extends Seeder
                 'destacado' => true,
             ],
             [
+                'nombre' => 'Kit V60 completo', 'precio_cop' => 210000, 'gramos' => 0, 'stock' => 9,
+                'descripcion' => 'Cono de vidrio, jarra, filtros y la receta escrita. Todo lo que hace falta para el primer filtrado en casa.',
+            ],
+        ]);
+
+        $this->sembrar($this->subcategoria($artefactos, 'Molinos', 0), [
+            [
                 'nombre' => 'Molino manual C40', 'precio_cop' => 890000, 'gramos' => 0, 'stock' => 4,
                 'descripcion' => 'Fresas cónicas de acero y clics marcados: la misma molienda hoy y en seis meses. Es el que llevo a competencia.',
             ],
             [
-                'nombre' => 'Prensa de espresso portátil', 'precio_cop' => 420000, 'gramos' => 0, 'stock' => 6,
-                'descripcion' => 'Espresso de verdad sin conectar nada: se presiona a mano y sostiene nueve bares. La que uso cuando viajo.',
+                'nombre' => 'Molino de banco para casa', 'precio_cop' => 640000, 'gramos' => 0, 'stock' => 3,
+                'descripcion' => 'Eléctrico, con tolva y ajuste continuo. Para quien prepara todos los días y no quiere moler a mano.',
             ],
-            [
-                'nombre' => 'Kit V60 completo', 'precio_cop' => 210000, 'gramos' => 0, 'stock' => 9,
-                'descripcion' => 'Cono de vidrio, jarra, filtros y la receta escrita. Todo lo que hace falta para el primer filtrado en casa.',
-            ],
+        ]);
+
+        $this->sembrar($this->subcategoria($artefactos, 'Básculas', 1), [
             [
                 'nombre' => 'Báscula con cronómetro', 'precio_cop' => 175000, 'gramos' => 0, 'stock' => 7,
                 'descripcion' => 'Décimas de gramo y tiempo en la misma pantalla. Sin báscula no hay receta que se pueda repetir.',
             ],
             [
-                'nombre' => 'Jarra de leche 600 ml', 'precio_cop' => 95000, 'gramos' => 0, 'stock' => 12,
-                'descripcion' => 'Pico afilado para figuras finas. Es la medida con la que enseño arte latte y con la que compito.',
+                'nombre' => 'Báscula de bolsillo', 'precio_cop' => 78000, 'gramos' => 0, 'stock' => 10,
+                'descripcion' => 'Hasta 500 g en décimas, del tamaño de la mano. La que se lleva al viaje o a la finca.',
+            ],
+        ]);
+
+        $this->sembrar($this->subcategoria($artefactos, 'Métodos de preparación', 2), [
+            [
+                'nombre' => 'Prensa de espresso portátil', 'precio_cop' => 420000, 'gramos' => 0, 'stock' => 6,
+                'descripcion' => 'Espresso de verdad sin conectar nada: se presiona a mano y sostiene nueve bares. La que uso cuando viajo.',
             ],
             [
                 'nombre' => 'Prensa francesa 800 ml', 'precio_cop' => 130000, 'gramos' => 0, 'stock' => 0,
                 'descripcion' => 'Filtro metálico de malla doble. La más fácil de hacer bien en casa y la más difícil de arruinar.',
+            ],
+        ]);
+
+        $this->sembrar($this->subcategoria($artefactos, 'Jarras', 3), [
+            [
+                'nombre' => 'Jarra de leche 600 ml', 'precio_cop' => 95000, 'gramos' => 0, 'stock' => 12,
+                'descripcion' => 'Pico afilado para figuras finas. Es la medida con la que enseño arte latte y con la que compito.',
+            ],
+            [
+                'nombre' => 'Jarra de leche 350 ml', 'precio_cop' => 78000, 'gramos' => 0, 'stock' => 8,
+                'descripcion' => 'La chica, para un solo cappuccino. Con menos leche adentro la figura sale más controlada.',
             ],
         ]);
 
@@ -233,7 +262,6 @@ class CatalogoSeeder extends Seeder
             'direccion' => 'Calle 8 # 5-42',
             'ciudad' => 'Neiva',
             'barrio' => 'Centro',
-            'telefono' => '(608) 871 0234',
             'whatsapp' => '573222248487',
             'horario' => 'Lun a Sáb 7:00 a.m. – 8:00 p.m. · Dom 9:00 a.m. – 2:00 p.m.',
             'principal' => true,
@@ -245,7 +273,6 @@ class CatalogoSeeder extends Seeder
             'direccion' => 'Carrera 7 # 34-18',
             'ciudad' => 'Neiva',
             'barrio' => 'Las Ceibas',
-            'telefono' => '(608) 871 5590',
             'whatsapp' => '573222248488',
             'horario' => 'Lun a Sáb 8:00 a.m. – 7:00 p.m.',
             'orden' => 1,
@@ -256,7 +283,6 @@ class CatalogoSeeder extends Seeder
             'direccion' => 'Carrera 13 # 55-30',
             'ciudad' => 'Bogotá',
             'barrio' => 'Chapinero',
-            'telefono' => '(601) 745 8820',
             'whatsapp' => '573222248489',
             'horario' => 'Mar a Dom 9:00 a.m. – 8:00 p.m.',
             'orden' => 2,
@@ -288,6 +314,17 @@ class CatalogoSeeder extends Seeder
                 $this->repartir($producto, $total, $sedes);
             }
         }
+    }
+
+    /** Un estante dentro de una sección: hereda su modo de vitrina. */
+    private function subcategoria(Categoria $seccion, string $nombre, int $orden): Categoria
+    {
+        return Categoria::create([
+            'padre_id' => $seccion->id,
+            'nombre' => $nombre,
+            'orden' => $orden,
+            'modo_vitrina' => $seccion->modo_vitrina,
+        ]);
     }
 
     /**

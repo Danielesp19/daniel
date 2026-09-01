@@ -75,7 +75,7 @@ export default function TarjetaProducto({ producto }: { producto: Producto }) {
               adentro es donde se ve en qué sede se acabó y en cuál no. */}
           <button
             type="button"
-            className="boton boton-ancho boton-linea"
+            className="boton boton-ancho boton-linea boton-vermas"
             style={{ marginTop: 10 }}
             aria-haspopup="dialog"
             onClick={() => setAbierta(true)}

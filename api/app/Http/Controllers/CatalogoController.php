@@ -16,8 +16,18 @@ class CatalogoController extends Controller
     /** Catálogo completo: categorías activas con sus productos visibles. */
     public function index()
     {
+        // Solo las secciones: una subcategoría no es una sección del catálogo,
+        // viaja adentro de la suya. Se piden los productos de las dos —los que
+        // cuelgan directo de la sección y los de cada subcategoría— en la misma
+        // consulta.
+        $conProductos = ['productosVisibles.imagenes', 'productosVisibles.sedes', 'productosVisibles.componentes'];
+
         $categorias = Categoria::where('activa', true)
-            ->with(['productosVisibles.imagenes', 'productosVisibles.sedes', 'productosVisibles.componentes'])
+            ->secciones()
+            ->with(array_merge($conProductos, array_map(
+                fn (string $r) => 'subcategoriasVisibles.'.$r,
+                $conProductos
+            )))
             ->orderBy('orden')
             ->get();
 
@@ -27,10 +37,10 @@ class CatalogoController extends Controller
         $sedes = Sede::visibles();
 
         $catalogo = $categorias
-            // Una categoría sin productos es ruido: no aparece ni en el
-            // catálogo ni en la barra de categorías (que se arma de esta
-            // misma lista en el frontend).
-            ->filter(fn (Categoria $c) => $c->productosVisibles->isNotEmpty())
+            // Una sección vacía es ruido: no aparece ni en el catálogo ni en la
+            // barra de categorías (que se arma de esta misma lista en el
+            // frontend). Vacía es sin productos propios Y sin subcategoría que
+            // tenga alguno.
             ->map(fn (Categoria $c) => [
                 'id' => $c->id,
                 'nombre' => $c->nombre,
@@ -38,7 +48,22 @@ class CatalogoController extends Controller
                 'descripcion' => $c->descripcion,
                 'modo_vitrina' => $c->modo_vitrina,
                 'productos' => $c->productosVisibles->map(fn ($p) => $this->formato($p, sedes: $sedes))->values(),
+
+                // Cada subcategoría es un estante con título dentro de la
+                // sección. Las que quedaron sin productos no viajan: un título
+                // suelto sin nada debajo se lee como que algo falló.
+                'subcategorias' => $c->subcategoriasVisibles
+                    ->filter(fn (Categoria $sub) => $sub->productosVisibles->isNotEmpty())
+                    ->map(fn (Categoria $sub) => [
+                        'id' => $sub->id,
+                        'nombre' => $sub->nombre,
+                        'slug' => $sub->slug,
+                        'descripcion' => $sub->descripcion,
+                        'productos' => $sub->productosVisibles->map(fn ($p) => $this->formato($p, sedes: $sedes))->values(),
+                    ])
+                    ->values(),
             ])
+            ->filter(fn (array $c) => $c['productos']->isNotEmpty() || $c['subcategorias']->isNotEmpty())
             ->values()
             ->all();
 
@@ -146,6 +171,10 @@ class CatalogoController extends Controller
                 'cafe_g' => $r->cafe_g,
                 'agua_g' => $r->agua_g,
                 'ratio' => $r->ratio(),
+                // La molienda va en micras Y con nombre: el número es lo que se
+                // dibuja a tamaño real, el nombre es lo que se lee.
+                'molienda_micras' => $r->molienda_micras,
+                'molienda' => $r->moliendaNombre(),
                 'duracion_seg' => $r->duracion_seg,
                 'duracion' => $r->duracionLegible(),
                 'ingredientes' => $r->ingredientes ?? [],
@@ -264,6 +293,11 @@ class CatalogoController extends Controller
     /**
      * Una sede como la ve el público. Cuando viaja dentro de un producto lleva
      * además cuántas bolsas de ESE producto hay en ELLA.
+     *
+     * SIN teléfono ni WhatsApp propios: todo el contacto pasa por la línea de
+     * Daniel, y dar tres números distintos solo lograba que el pedido llegara
+     * al lugar equivocado. Las columnas siguen en la base por si algún día una
+     * sede necesita el suyo; simplemente no se publican.
      */
     private function formatoSede(Sede $s, ?int $stock = null): array
     {
@@ -274,11 +308,6 @@ class CatalogoController extends Controller
             'direccion' => $s->direccion,
             'ciudad' => $s->ciudad,
             'barrio' => $s->barrio,
-            'telefono' => $s->telefono,
-            // Sin espacios ni signos: es lo que necesita el enlace wa.me que
-            // arma el frontend, y dejarlo listo aquí evita repetir la limpieza
-            // en cada sitio que lo pinte.
-            'whatsapp' => $s->whatsapp ? preg_replace('/\D+/', '', $s->whatsapp) : null,
             'horario' => $s->horario,
         ];
 

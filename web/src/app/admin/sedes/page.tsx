@@ -77,7 +77,7 @@ export default function SedesAdmin() {
     <>
       <Cabecera
         titulo="Sedes"
-        bajada="El inventario se lleva por sede. Estos datos salen publicados en la ficha de cada producto."
+        bajada="El inventario se lleva por sede. La dirección y el horario salen publicados en la ficha de cada producto; el contacto siempre pasa por tu WhatsApp, no por un número de la sede."
       >
         <Boton tono="solido" onClick={() => setCreando(true)}>
           + Sede
@@ -120,12 +120,6 @@ export default function SedesAdmin() {
                   <>
                     <br />
                     {s.horario}
-                  </>
-                )}
-                {(s.telefono || s.whatsapp) && (
-                  <>
-                    <br />
-                    {[s.telefono, s.whatsapp && `WhatsApp ${s.whatsapp}`].filter(Boolean).join(" · ")}
                   </>
                 )}
               </p>
@@ -185,8 +179,6 @@ function FormularioSede({
     direccion: sede?.direccion ?? "",
     ciudad: sede?.ciudad ?? "",
     barrio: sede?.barrio ?? "",
-    telefono: sede?.telefono ?? "",
-    whatsapp: sede?.whatsapp ?? "",
     horario: sede?.horario ?? "",
     principal: sede?.principal ?? false,
     activa: sede?.activa ?? true,
@@ -243,15 +235,6 @@ function FormularioSede({
           </Campo>
           <Campo etiqueta="Barrio">
             <input style={campo} value={d.barrio} onChange={(e) => set("barrio", e.target.value)} placeholder="Centro" />
-          </Campo>
-        </div>
-
-        <div style={dos}>
-          <Campo etiqueta="Teléfono">
-            <input style={campo} value={d.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder="(608) 871 0234" />
-          </Campo>
-          <Campo etiqueta="WhatsApp" nota="Con indicativo: 573001234567">
-            <input style={campo} value={d.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} />
           </Campo>
         </div>
 

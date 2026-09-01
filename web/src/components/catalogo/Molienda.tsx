@@ -3,12 +3,18 @@
 import { useEffect, useState } from "react";
 
 /**
- * Referencia de molienda a tamaño real.
+ * Referencia de molienda a tamaño real, dentro de la receta.
  *
  * El error más común preparando café en casa es la molienda, y no hay forma de
  * describirla con palabras: "medio" no significa lo mismo en dos molinos. Esto
  * la muestra al tamaño que tiene de verdad, para poner los granos al lado de la
  * pantalla y comparar.
+ *
+ * Va DENTRO de la receta y no como un bloque suelto al final de la sección: la
+ * molienda no es una duda general, es la primera decisión de esa preparación
+ * concreta. La receta llega con la suya marcada —la que puso Daniel al
+ * escribirla— y quien la lee puede tocar las demás para ver en qué se
+ * diferencian.
  *
  * EL PROBLEMA: un navegador no sabe cuánto mide físicamente su propia pantalla.
  * El píxel CSS es una unidad relativa y la relación con el milímetro cambia
@@ -30,6 +36,9 @@ const LLAVE = "altura:px-por-mm";
 /**
  * Los cinco puntos de molienda, en micrones. Mil micrones son un milímetro:
  * es la equivalencia que pidió el cliente que quedara explícita.
+ *
+ * Son los mismos cinco que ofrece el panel al escribir una receta, así que la
+ * recomendación siempre cae en uno de estos discos.
  */
 const MOLIENDAS = [
   { micras: 1000, nombre: "Gruesa", para: "Prensa francesa · cold brew" },
@@ -40,22 +49,100 @@ const MOLIENDAS = [
 ] as const;
 
 /**
- * Posiciones de los granos dentro de cada muestra, en porcentaje.
+ * Los granos de cada muestra: posición, tamaño relativo, giro y tono.
  *
- * Fijas y no aleatorias: con `Math.random()` la muestra se reacomoda en cada
+ * Se calculan UNA vez con un generador de números pseudoaleatorios de semilla
+ * fija, no con `Math.random()`: con random la muestra se reacomoda en cada
  * repintado —y el servidor y el navegador dibujarían cosas distintas, que le
- * rompe la hidratación a React—. Están desordenadas a mano para que parezca
- * café molido y no una cuadrícula.
+ * rompe la hidratación a React—. Con semilla fija sale siempre el mismo
+ * desorden, que es justo lo que se quiere: que parezca café molido y no una
+ * cuadrícula.
+ *
+ * Cada grano trae su propia variación de tamaño porque una molienda real NO es
+ * pareja: hasta el mejor molino deja finos y trozos grandes, y una nube de
+ * puntos idénticos se ve como un patrón, no como café.
  */
-const GRANOS = [
-  [12, 22], [34, 14], [58, 26], [78, 18], [22, 46], [46, 38], [68, 52], [88, 42],
-  [16, 68], [38, 74], [60, 66], [82, 78], [28, 88], [52, 90], [72, 34], [8, 44],
-];
+function generador(semilla: number) {
+  let estado = semilla;
 
-export default function Molienda() {
+  return () => {
+    estado |= 0;
+    estado = (estado + 0x6d2b79f5) | 0;
+    let t = Math.imul(estado ^ (estado >>> 15), 1 | estado);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const GRANOS = (() => {
+  const azar = generador(20260901);
+
+  return Array.from({ length: 320 }, () => ({
+    x: azar() * 100,
+    y: azar() * 100,
+    // De 0,55 a 1,45 del calibre: el reparto de tamaños que deja cualquier
+    // molino, con finos alrededor del grano grande.
+    tamano: 0.55 + azar() * 0.9,
+    giro: azar() * 180,
+    tono: Math.floor(azar() * 3),
+    // Los granos del fondo se ven más apagados, como en un lecho de café.
+    opacidad: 0.72 + azar() * 0.28,
+  }));
+})();
+
+/** Los tres tonos del café molido, del más tostado al más claro. */
+const TONOS = ["#33200F", "#4B2F1A", "#6B4526"] as const;
+
+/**
+ * Una muestra de café molido dibujada a tamaño real.
+ *
+ * Los granos no son círculos: llevan un `border-radius` de cuatro esquinas
+ * distintas y un giro propio, que es lo que los hace ver partidos y no
+ * fabricados. Cuanto más fina la molienda, más granos caben —y eso también es
+ * cierto en la taza—.
+ */
+function Muestra({ micras, escala, grande = false }: { micras: number; escala: number; grande?: boolean }) {
+  // Micrones → milímetros → píxeles de esta pantalla.
+  const diametro = (micras / 1000) * escala;
+
+  // Una molienda fina se ve como polvo denso y una gruesa como piedritas
+  // sueltas: a igual cantidad de café, cuanto más fino más partículas. La
+  // cuenta sube con el inverso del calibre, que es como se comporta de verdad.
+  const cuantos = grande
+    ? Math.min(GRANOS.length, Math.round(30 + (1000 / micras) * 85))
+    : Math.min(GRANOS.length, Math.round(14 + (1000 / micras) * 22));
+
+  return (
+    <span className={`molienda-disco${grande ? " molienda-disco-grande" : ""}`} aria-hidden="true">
+      {GRANOS.slice(0, cuantos).map((g, i) => (
+        <span
+          key={i}
+          className="molienda-grano"
+          style={{
+            left: `${g.x}%`,
+            top: `${g.y}%`,
+            width: `${diametro * g.tamano}px`,
+            height: `${diametro * g.tamano * 0.84}px`,
+            transform: `translate(-50%, -50%) rotate(${g.giro}deg)`,
+            background: TONOS[g.tono],
+            opacity: g.opacidad,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+export default function Molienda({ recomendada = null }: { recomendada?: number | null }) {
   const [pxPorMm, setPxPorMm] = useState(PX_POR_MM_ESTANDAR);
   const [calibrando, setCalibrando] = useState(false);
   const [listo, setListo] = useState(false);
+
+  // Arranca en la molienda de la receta. Sin recomendación, en la media, que es
+  // el punto del que se sale para los dos lados.
+  const [elegida, setElegida] = useState<number>(
+    recomendada ?? MOLIENDAS[2].micras,
+  );
 
   useEffect(() => {
     // La calibración es de esta pantalla, así que vive en el navegador y no en
@@ -83,22 +170,16 @@ export default function Molienda() {
   // Hasta que el efecto lea el almacenamiento se dibuja con el estándar; sin
   // esto el primer pintado del servidor y el del navegador no coinciden.
   const escala = listo ? pxPorMm : PX_POR_MM_ESTANDAR;
+  const actual = MOLIENDAS.find((m) => m.micras === elegida) ?? MOLIENDAS[2];
 
   return (
-    <section className="molienda revelar">
-      <header className="molienda-cabeza">
-        <div>
-          <span className="rotulo">Tamaño real</span>
-          <h3 className="nombre molienda-titulo">Referencia de molienda</h3>
-          <p className="molienda-bajada">
-            Mil micrones son un milímetro. Pon tus granos molidos al lado de la pantalla y compara.
-          </p>
-        </div>
-
-        <button type="button" className="vermas" onClick={() => setCalibrando((v) => !v)}>
+    <section className="molienda">
+      <div className="molienda-cabeza">
+        <span className="rotulo">Molienda</span>
+        <button type="button" className="molienda-calibrar-boton" onClick={() => setCalibrando((v) => !v)}>
           {calibrando ? "Listo" : "Calibrar pantalla"}
         </button>
-      </header>
+      </div>
 
       {calibrando && (
         <div className="molienda-calibrar">
@@ -126,46 +207,57 @@ export default function Molienda() {
             aria-label="Calibrar el tamaño de la pantalla"
           />
 
-          <button type="button" className="vermas" onClick={() => guardar(PX_POR_MM_ESTANDAR)}>
+          <button type="button" className="molienda-calibrar-boton" onClick={() => guardar(PX_POR_MM_ESTANDAR)}>
             Volver al valor por defecto
           </button>
         </div>
       )}
 
-      <ul className="molienda-muestras">
+      {/* Los cinco puntos, redondos y del tamaño de un botón para el dedo. El
+          de la receta va marcado; tocar otro cambia la muestra grande. */}
+      <ul className="molienda-opciones">
         {MOLIENDAS.map((m) => {
-          // Micrones → milímetros → píxeles de esta pantalla.
-          const diametro = (m.micras / 1000) * escala;
+          const activa = m.micras === elegida;
+          const esLaDeLaReceta = m.micras === recomendada;
 
           return (
-            <li key={m.micras} className="molienda-muestra">
-              <span className="molienda-caja" aria-hidden="true">
-                {GRANOS.map(([x, y], i) => (
-                  <span
-                    key={i}
-                    className="molienda-grano"
-                    style={{
-                      left: `${x}%`,
-                      top: `${y}%`,
-                      width: `${diametro}px`,
-                      height: `${diametro}px`,
-                    }}
-                  />
-                ))}
-              </span>
-
-              <span className="molienda-nombre">{m.nombre}</span>
-              <span className="cifra molienda-micras">{m.micras} µm</span>
-              <span className="molienda-para">{m.para}</span>
+            <li key={m.micras}>
+              <button
+                type="button"
+                className={`molienda-opcion${activa ? " molienda-opcion-activa" : ""}`}
+                aria-pressed={activa}
+                onClick={() => setElegida(m.micras)}
+                title={esLaDeLaReceta ? `${m.nombre} — la de esta receta` : m.nombre}
+              >
+                <Muestra micras={m.micras} escala={escala} />
+                <span className="molienda-opcion-nombre">{m.nombre}</span>
+                {esLaDeLaReceta && (
+                  <span className="molienda-sello" aria-label="La molienda de esta receta">
+                    ✓
+                  </span>
+                )}
+              </button>
             </li>
           );
         })}
       </ul>
 
-      <p className="molienda-nota">
-        Sin calibrar, los tamaños son aproximados: cada pantalla tiene una densidad distinta y el
-        navegador no sabe cuál es la tuya. La calibración se guarda en este dispositivo.
-      </p>
+      <div className="molienda-detalle">
+        <Muestra micras={actual.micras} escala={escala} grande />
+
+        <div className="molienda-detalle-texto">
+          <span className="molienda-detalle-nombre">
+            {actual.nombre}
+            {actual.micras === recomendada && <em className="molienda-etiqueta">la de esta receta</em>}
+          </span>
+          <span className="cifra molienda-micras">{actual.micras} µm</span>
+          <span className="molienda-para">{actual.para}</span>
+          <p className="molienda-nota">
+            A tamaño real. Si no coincide con tu café, calibra la pantalla: cada una tiene una
+            densidad distinta y el navegador no sabe cuál es la tuya.
+          </p>
+        </div>
+      </div>
     </section>
   );
 }
