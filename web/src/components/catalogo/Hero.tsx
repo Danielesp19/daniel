@@ -12,14 +12,20 @@ import { MARCA } from "@/lib/marca";
  * cabeceras de caché largas. El póster es lo que se ve mientras el video baja
  * —y lo único que se ve si el visitante pidió menos movimiento—.
  *
- * Dos formatos, WebM primero: pesa 1,2 MB contra 1,4 MB del MP4 y lo entienden
+ * Dos formatos, WebM primero: pesa 4,6 MB contra 5,5 MB del MP4 y lo entienden
  * Chrome, Firefox y Edge. El MP4 queda de respaldo para Safari, que hasta hace
  * poco no leía VP9. El navegador se queda con el primero que sepa reproducir.
  *
- * El material es vertical (2:3): es el vertido en picado, grabado con celular.
- * Se recortaron los bordes negros de la fuente, se dejó el primer vertido —de
- * la jarra acercándose hasta la rosetta terminada— y se quitó el audio, que en
- * un fondo que arranca solo no se puede reproducir de todos modos.
+ * El material es vertical (944x1424, su tamaño nativo): es el vertido en picado
+ * grabado con celular, los dos vertidos completos. De la fuente se recortaron
+ * los bordes negros —que son del editor, no de la escena, y en el celular
+ * habrían salido como franjas dentro del cuadro— y se quitó el audio, que en un
+ * fondo que arranca solo no se puede reproducir de todos modos.
+ *
+ * PESO. Medio minuto a tamaño nativo no cabe en el kilobyte y medio de un
+ * fondo cualquiera: son 5,5 MB, el techo que fijó el cliente. Se banca porque
+ * el video NO bloquea el pintado —el póster se ve desde el primer cuadro— y
+ * porque `next.config.ts` le pone caché de un día, así que se baja una vez.
  */
 const VIDEO_WEBM = "/videos/hero.webm";
 const VIDEO_MP4 = "/videos/hero.mp4";
@@ -28,13 +34,14 @@ const POSTER_FONDO = "/videos/hero.jpg";
 /**
  * Cuántas veces se repite antes de quedarse quieto.
  *
- * El video no va en bucle infinito: después de un par de pasadas ya se vio, y
- * dejarlo dando vueltas mantiene al navegador decodificando y compositando una
- * capa a pantalla completa mientras el visitante lee el catálogo —en un celular
- * eso es batería—. Al terminar se queda congelado en el último cuadro, que es
- * la rosetta lista: un buen sitio donde quedarse.
+ * Una sola: son treinta segundos con los dos vertidos enteros, y para cuando
+ * termina ya nadie está mirando la portada. Dejarlo dando vueltas mantiene al
+ * navegador decodificando y compositando una capa a pantalla completa mientras
+ * el visitante lee el catálogo —en un celular eso es batería—. Al terminar se
+ * queda congelado en el último cuadro, que es la figura lista: un buen sitio
+ * donde quedarse.
  */
-const PASADAS = 2;
+const PASADAS = 1;
 
 /**
  * Portada: el video a sangre, el texto abajo y dos botones.
@@ -75,9 +82,6 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
     let terminado = false;
 
     video.muted = true;
-    // Un poco más lento que el original: el vertido se lee mejor y el archivo
-    // dura más sin pesar un cuadro más.
-    video.playbackRate = 0.85;
 
     const alTerminar = () => {
       pasadas += 1;
