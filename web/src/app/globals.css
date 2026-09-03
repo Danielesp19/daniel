@@ -436,6 +436,50 @@ body {
   pointer-events: none;
 }
 
+/* El video de la portada.
+   ------------------------------------------------------------------------
+   El material es vertical, grabado con celular. En un celular calza a sangre
+   y no hay nada que resolver; en una pantalla ancha, "cover" lo recortaría a
+   una tira central —se pierde la jarra o se pierde la taza— y "contain" solo
+   lo dejaría flotando en un vacío. Por eso en pantallas anchas el video se
+   muestra completo y detrás va el mismo cuadro ampliado y desenfocado, que es
+   como se presenta un vertical en cine. El desenfoque es el póster, no un
+   segundo video: mismo encuadre y ni un decodificador más.
+
+   La entrada es un fundido y un acercamiento muy lento —el mismo recurso del
+   sitio de la meca—: sin él, un plano fijo se lee como una foto y no como
+   video. Al terminar las pasadas, `hero-video-quieto` congela también el
+   acercamiento: si no, el navegador sigue compositando una capa a pantalla
+   completa mientras se lee el catálogo. */
+.hero-video {
+  animation: heroEntra 1.6s ease both, heroAcerca 34s ease-in-out infinite alternate;
+}
+.hero-video-quieto { animation-play-state: running, paused; }
+
+@keyframes heroEntra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes heroAcerca { from { transform: scale(1.04); } to { transform: scale(1.12); } }
+
+.hero-fondo {
+  position: absolute;
+  inset: 0;
+  display: none;
+  background-position: center;
+  background-size: cover;
+  /* Ampliado además del desenfoque: el filtro difumina los bordes y sin la
+     escala se vería un halo claro contra el marco. */
+  transform: scale(1.15);
+  filter: blur(38px) brightness(.5) saturate(1.1);
+  pointer-events: none;
+}
+
+/* El corte es por FORMA de la ventana y no por ancho: lo que decide es si el
+   marco es más ancho que alto, que es justo cuando el video vertical deja de
+   calzar. Un celular acostado entra acá, y hace bien. */
+@media (min-aspect-ratio: 1/1) {
+  .hero-fondo { display: block; }
+  .hero-video { object-fit: contain; }
+}
+
 .punto-scroll { animation: scrollPunto 2.2s ease-in-out 1.4s infinite; }
 
 /* Revelado por scroll: un fundido corto hacia arriba. */
@@ -2015,6 +2059,7 @@ body {
      fondo del contenedor. Un video en bucle detrás del titular es
      exactamente el movimiento que pidieron no ver. */
   .hero-video { display: none; }
+  .hero-fondo { display: none; }
 
   /* El punto del aviso late en bucle y el reflejo de las tarjetas cruza al
      pasar el mouse: los dos son movimiento que nadie pidió. */

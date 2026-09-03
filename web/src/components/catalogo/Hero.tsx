@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import type { Hero as HeroDatos } from "@/lib/catalogo";
 import { MARCA } from "@/lib/marca";
 
@@ -11,13 +12,29 @@ import { MARCA } from "@/lib/marca";
  * cabeceras de caché largas. El póster es lo que se ve mientras el video baja
  * —y lo único que se ve si el visitante pidió menos movimiento—.
  *
- * Dos formatos, WebM primero: pesa 600 KB contra 991 KB del MP4 y lo entienden
+ * Dos formatos, WebM primero: pesa 1,2 MB contra 1,4 MB del MP4 y lo entienden
  * Chrome, Firefox y Edge. El MP4 queda de respaldo para Safari, que hasta hace
  * poco no leía VP9. El navegador se queda con el primero que sepa reproducir.
+ *
+ * El material es vertical (2:3): es el vertido en picado, grabado con celular.
+ * Se recortaron los bordes negros de la fuente, se dejó el primer vertido —de
+ * la jarra acercándose hasta la rosetta terminada— y se quitó el audio, que en
+ * un fondo que arranca solo no se puede reproducir de todos modos.
  */
 const VIDEO_WEBM = "/videos/hero.webm";
 const VIDEO_MP4 = "/videos/hero.mp4";
 const POSTER_FONDO = "/videos/hero.jpg";
+
+/**
+ * Cuántas veces se repite antes de quedarse quieto.
+ *
+ * El video no va en bucle infinito: después de un par de pasadas ya se vio, y
+ * dejarlo dando vueltas mantiene al navegador decodificando y compositando una
+ * capa a pantalla completa mientras el visitante lee el catálogo —en un celular
+ * eso es batería—. Al terminar se queda congelado en el último cuadro, que es
+ * la rosetta lista: un buen sitio donde quedarse.
+ */
+const PASADAS = 2;
 
 /**
  * Portada: el video a sangre, el texto abajo y dos botones.
@@ -36,6 +53,68 @@ const POSTER_FONDO = "/videos/hero.jpg";
  * al lado de su biografía son lo que respalda lo que dice.
  */
 export default function Hero({ hero }: { hero: HeroDatos | null }) {
+  const seccionRef = useRef<HTMLElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  /**
+   * El fondo: se reproduce un par de veces, se queda quieto y se pausa cuando
+   * el hero sale de pantalla.
+   *
+   * Va con `autoPlay` Y con `play()` a mano: iOS ignora `preload` por ahorro de
+   * datos y sin el atributo ni empieza a bajar el archivo, pero hay casos —modo
+   * de bajo consumo— en los que el autoplay silenciado también se bloquea y
+   * entonces solo un gesto del visitante lo desbloquea. Por eso al primer toque
+   * en la página se reintenta una vez.
+   */
+  useEffect(() => {
+    const seccion = seccionRef.current;
+    const video = videoRef.current;
+    if (!seccion || !video) return;
+
+    let pasadas = 0;
+    let terminado = false;
+
+    video.muted = true;
+    // Un poco más lento que el original: el vertido se lee mejor y el archivo
+    // dura más sin pesar un cuadro más.
+    video.playbackRate = 0.85;
+
+    const alTerminar = () => {
+      pasadas += 1;
+      if (pasadas < PASADAS) {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      } else {
+        terminado = true;
+        video.classList.add("hero-video-quieto");
+      }
+    };
+    video.addEventListener("ended", alTerminar);
+
+    const observador = new IntersectionObserver(
+      ([entrada]) => {
+        if (entrada.isIntersecting) {
+          if (!terminado) video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: 0.05 },
+    );
+    observador.observe(seccion);
+
+    const reintentar = () => {
+      if (!terminado && video.paused) video.play().catch(() => {});
+    };
+    document.addEventListener("touchend", reintentar, { once: true, passive: true });
+
+    return () => {
+      video.removeEventListener("ended", alTerminar);
+      document.removeEventListener("touchend", reintentar);
+      observador.disconnect();
+    };
+  }, []);
+
   const etiqueta = hero?.etiqueta ?? `${MARCA.oficio} · ${MARCA.ciudad}`;
   const subtitulo = hero?.subtitulo ?? MARCA.descripcion;
 
@@ -49,6 +128,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
 
   return (
     <section
+      ref={seccionRef}
       id="hero"
       style={{
         position: "relative",
@@ -70,14 +150,20 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
         background: `var(--color-tinta) url(${POSTER_FONDO}) center/cover no-repeat`,
       }}
     >
+      {/* El fondo desenfocado, solo en pantallas anchas: el video es vertical y
+          a lo ancho quedaría o recortado a una tira o flotando sobre un vacío
+          negro. Es el póster, no un segundo video: mismo encuadre, sin un
+          decodificador más corriendo. */}
+      <div className="hero-fondo" aria-hidden="true" style={{ backgroundImage: `url(${POSTER_FONDO})` }} />
+
       <video
+        ref={videoRef}
         className="hero-media hero-video"
         poster={POSTER_FONDO}
         // Sin `muted` el navegador bloquea la reproducción automática, y el
         // archivo no trae pista de audio de todos modos.
         autoPlay
         muted
-        loop
         playsInline
         preload="auto"
         aria-hidden="true"

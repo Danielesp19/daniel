@@ -36,3 +36,8 @@ Thumbs.db
 # desde ahí. .claude/skills son enlaces simbólicos a .agents/skills.
 .agents/skills/
 .claude/
+
+# El material original del hero: 65 MB de grabación en crudo que no van al
+# repo. Lo que se publica es la versión ya recortada y comprimida, en
+# web/public/videos/.
+/web/Video Project.mp4
