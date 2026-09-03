@@ -244,10 +244,26 @@ export const getRecetas = () =>
     rs.map((r) => ({
       ...r,
       imagen_url: urlArchivo(r.imagen_url),
-      pasos: (r.pasos ?? []).map((paso) => ({ ...paso, imagen_url: urlArchivo(paso.imagen_url) })),
+      pasos: (r.pasos ?? []).map(normalizarPaso),
       artefactos: (r.artefactos ?? []).map((a) => ({ ...a, imagen_url: urlArchivo(a.imagen_url) })),
     })),
   );
+
+/**
+ * Un paso de receta, venga como venga.
+ *
+ * Antes los pasos eran una lista de textos y ahora son objetos con foto y
+ * reloj. El backend puede ir por detrás del sitio —se despliegan por separado,
+ * y entre un despliegue y el otro hay una ventana— y en esa ventana llegaban
+ * cadenas donde el componente esperaba objetos: la receta se abría con los
+ * pasos numerados y en blanco. Acá se acepta la forma vieja y se traduce.
+ */
+function normalizarPaso(paso: PasoReceta | string, i: number): PasoReceta {
+  if (typeof paso === "string") {
+    return { id: i, texto: paso, imagen_url: null, segundos: null, etiqueta: null };
+  }
+  return { ...paso, imagen_url: urlArchivo(paso.imagen_url) };
+}
 
 export const getPreguntas = () =>
   pedir<Pregunta[]>("/catalogo/preguntas", { next: { revalidate: 60 } } as RequestInit);
