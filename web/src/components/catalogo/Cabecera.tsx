@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { enlaceWhatsApp, MARCA } from "@/lib/marca";
-import IconoRed from "./IconoRed";
+import { MARCA } from "@/lib/marca";
 
 /** Una entrada del menú. */
 interface Seccion {
@@ -50,8 +49,15 @@ function Taza() {
 }
 
 /**
- * Cabecera: la taza, el nombre, TODAS las secciones y el botón de WhatsApp.
- * Encima de todo, una barra que avanza con el scroll.
+ * Cabecera: la taza, el nombre y TODAS las secciones. Encima de todo, una
+ * barra que avanza con el scroll.
+ *
+ * SIN botón de pedido. Llevaba uno de WhatsApp y se lo comía todo: en celular
+ * dejaba al riel de secciones con sitio para una ficha y media, y en escritorio
+ * competía con el "Ver el catálogo" de la portada, que está tres centímetros
+ * más abajo. El pedido no se pierde —vive en cada producto, en el carrito, en
+ * los servicios y en el pie—, y ahí llega con el contexto de qué se está
+ * pidiendo en vez de abrir un chat en blanco.
  *
  * Las secciones van como fichas en un riel que se desliza —la misma barra de la
  * carta de la meca—: la marca se queda fija a la izquierda, fuera del riel,
@@ -180,22 +186,6 @@ export default function Cabecera({ categorias = [] }: { categorias?: { slug: str
             </a>
           ))}
         </div>
-
-        <a
-          href={enlaceWhatsApp(`Hola ${MARCA.nombre}, quiero hacer un pedido.`)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="boton boton-solido cabecera-pedido"
-          aria-label="Pedir por WhatsApp"
-        >
-          {/* En pantalla angosta se queda el icono solo: con el texto, el botón
-              se llevaba dos tercios de la barra y al riel de secciones no le
-              quedaba dónde deslizarse. */}
-          <span className="cabecera-pedido-icono" aria-hidden="true">
-            <IconoRed red="whatsapp" tamano={17} />
-          </span>
-          <span className="cabecera-pedido-texto">Pedir por WhatsApp</span>
-        </a>
       </nav>
     </>
   );

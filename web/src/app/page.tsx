@@ -14,6 +14,7 @@ import {
 import { MARCA } from "@/lib/marca";
 import { CarritoProvider } from "@/components/carrito/CarritoProvider";
 import BarraCarrito from "@/components/carrito/BarraCarrito";
+import BotonWhatsApp from "@/components/catalogo/BotonWhatsApp";
 import Intro from "@/components/catalogo/Intro";
 import Cabecera from "@/components/catalogo/Cabecera";
 import Hero from "@/components/catalogo/Hero";
@@ -61,6 +62,7 @@ export default async function Inicio() {
         <PieSitio />
       </main>
 
+      <BotonWhatsApp />
       <BarraCarrito />
     </CarritoProvider>
   );

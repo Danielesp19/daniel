@@ -1465,24 +1465,64 @@ body {
   to   { transform: scale(1); }
 }
 
-.cabecera-pedido {
-  flex-shrink: 0;
-  min-height: 40px;
-  padding: 9px 18px;
-  font-size: 12px;
-  letter-spacing: 0.03em;
-}
-.cabecera-pedido-icono { display: none; }
-
-/* En pantalla angosta el nombre y el texto del botón ceden su lugar a las
-   fichas: la taza sigue siendo el camino de vuelta al inicio y el icono sigue
-   siendo el pedido, que es para lo que están. */
+/* En pantalla angosta el nombre cede su lugar a las fichas: la taza sola sigue
+   siendo el camino de vuelta al inicio, que es para lo que está. */
 @media (max-width: 720px) {
   .cabecera { gap: 8px; }
   .marca-nombre { display: none; }
-  .cabecera-pedido { padding: 9px 12px; }
-  .cabecera-pedido-icono { display: block; }
-  .cabecera-pedido-texto { display: none; }
+}
+
+/* ─── Botón flotante de WhatsApp ────────────────────────────────────────────
+   El mismo de la carta de la meca: un disco con el logo, un aro que late y una
+   entrada desde abajo. Solo el icono — vive encima del contenido toda la visita
+   y con etiqueta se comería una esquina de la lectura.
+
+   Va en el verde de WhatsApp y no en el negro del sitio, por la misma razón por
+   la que el de la meca va en su oliva y no en su marrón: el botón flota sobre
+   TODO —el destacado negro, las bandas de servicios, el papel— y en negro
+   desaparecía sobre las secciones oscuras. Un color propio se lee sobre
+   cualquier fondo, y encima es el color con el que la gente reconoce WhatsApp
+   sin leer nada. */
+.wasap {
+  position: fixed;
+  right: 16px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #25D366;
+  color: #FFF;
+  box-shadow: 0 16px 34px -12px rgba(10, 10, 10, .55), 0 0 0 1px rgba(255, 255, 255, .18);
+  animation: wasapEntra .5s cubic-bezier(.2, 1.3, .4, 1) .6s both;
+  transition: transform .2s var(--salida);
+}
+.wasap svg { width: 26px; height: 26px; display: block; }
+.wasap:hover { transform: scale(1.06); }
+.wasap:active { transform: scale(.94); }
+
+@keyframes wasapEntra {
+  from { opacity: 0; transform: translateY(80px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* El aro que late: es lo que hace que el botón se note sin tener que ponerle
+   texto ni color de alerta. */
+.wasap-aro {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(37, 211, 102, .65);
+  pointer-events: none;
+  animation: wasapLate 2.2s ease-out infinite;
+}
+@keyframes wasapLate {
+  0%   { opacity: .55; transform: scale(1); }
+  70%  { opacity: 0; transform: scale(1.45); }
+  100% { opacity: 0; transform: scale(1.45); }
 }
 
 /* ─── Aviso ─────────────────────────────────────────────────────────────────
@@ -2097,8 +2137,10 @@ body {
   .hero-fondo { display: none; }
 
   /* El punto del aviso late en bucle y el reflejo de las tarjetas cruza al
-     pasar el mouse: los dos son movimiento que nadie pidió. */
-  .aviso-punto, .aviso-destello { animation: none; }
+     pasar el mouse: los dos son movimiento que nadie pidió. Y el aro del botón
+     de WhatsApp late sin parar, que es lo mismo. */
+  .aviso-punto, .aviso-destello, .wasap-aro { animation: none; }
+  .wasap-aro { opacity: .4; }
   /* El vapor de la taza sube en bucle y el nombre se corre al pasar el mouse:
      los dos se quedan quietos. */
   .marca:hover .marca-nombre { transform: none; }
