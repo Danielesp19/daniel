@@ -82,6 +82,12 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
     let terminado = false;
 
     video.muted = true;
+    // A la mitad de la velocidad real. Es un fondo, no un tutorial: a velocidad
+    // natural el vertido pasa como un gesto rápido, y a la mitad se alcanza a
+    // ver cómo la leche va abriendo la figura, que es lo que vende la portada.
+    // Los treinta segundos de material se vuelven un minuto largo, y por eso
+    // basta una sola pasada.
+    video.playbackRate = 0.5;
 
     const alTerminar = () => {
       pasadas += 1;

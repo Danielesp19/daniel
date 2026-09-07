@@ -1350,8 +1350,9 @@ body {
 
 
 /* ─── Cabecera ──────────────────────────────────────────────────────────────
-   La barra pegada arriba, con la línea de progreso encima y los enlaces de
-   sección con su subrayado. */
+   La barra pegada arriba: la marca fija a la izquierda, las secciones en un
+   riel que se desliza y el botón de WhatsApp al final. Encima, la línea de
+   progreso de la página. */
 .progreso {
   position: fixed;
   top: 0;
@@ -1386,29 +1387,20 @@ body {
 /* Al bajar, una sombra de un pelo la despega del contenido. */
 .cabecera-scroll { box-shadow: 0 6px 24px rgba(10, 10, 10, 0.06); }
 
-.marca { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+/* La marca no entra al riel: si entrara, el desplazamiento horizontal se la
+   llevaría y se perdería el camino de vuelta al inicio. */
+.marca { display: inline-flex; align-items: center; gap: 9px; flex-shrink: 0; text-decoration: none; color: inherit; }
 
-/* El grano: un círculo con su hendidura, que gira al pasar el mouse. */
-.marca-grano {
-  position: relative;
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: var(--color-tinta);
-  overflow: hidden;
-  transition: transform .3s var(--salida);
+.marca-taza { display: block; width: 21px; height: 21px; color: var(--color-tinta); }
+.marca-taza svg { display: block; width: 100%; height: 100%; }
+
+/* El vapor solo se mueve al pasar el mouse: quieto no distrae de la barra. */
+.marca-vapor { opacity: 0; transition: opacity .3s ease; }
+.marca:hover .marca-vapor { opacity: .75; animation: marcaVapor 2.4s ease-in-out infinite; }
+@keyframes marcaVapor {
+  0%, 100% { transform: translateY(0); opacity: .3; }
+  50%      { transform: translateY(-1.2px); opacity: .8; }
 }
-.marca-grano > span {
-  position: absolute;
-  top: 50%;
-  left: 2px;
-  right: 2px;
-  height: 1px;
-  background: #FFF;
-  transform: translateY(-50%) rotate(28deg);
-}
-.marca:hover .marca-grano { transform: rotate(180deg); }
 
 .marca-nombre {
   font-family: var(--font-serif);
@@ -1418,37 +1410,80 @@ body {
 }
 .marca:hover .marca-nombre { transform: translateX(2px); }
 
-/* Solo en escritorio: en celular estos cinco enlaces se llevan la barra
-   entera, y ahí el recorrido sigue siendo el dedo. */
-.cabecera-enlaces { display: none; align-items: center; gap: 26px; margin-right: 8px; }
-@media (min-width: 1000px) { .cabecera-enlaces { display: flex; } }
+.cabecera-raya {
+  flex-shrink: 0;
+  width: 1px;
+  height: 22px;
+  background: var(--color-linea);
+  margin-left: 4px;
+}
 
-.enlace-seccion {
-  position: relative;
-  display: inline-block;
-  padding: 4px 0;
-  font-size: 13.5px;
+/* El riel de secciones. Se desliza en horizontal y se come el espacio que
+   sobra; la barra de desplazamiento se esconde porque las fichas ya dicen que
+   hay más hacia el lado. */
+.cabecera-enlaces {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 4px 2px;
+  scrollbar-width: none;
+  /* Los dos ejes: sin esto, arrastrar sobre la barra en el celular bloquea el
+     scroll vertical de la página. */
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+}
+.cabecera-enlaces::-webkit-scrollbar { display: none; }
+
+.ficha-seccion {
+  flex-shrink: 0;
+  padding: 7px 15px;
+  border: 1px solid var(--color-linea);
+  border-radius: 999px;
+  font-size: 12.5px;
+  line-height: 1;
+  white-space: nowrap;
   text-decoration: none;
   color: var(--color-suave);
-  transition: color .3s ease;
+  transition: color .25s ease, border-color .25s ease, background .25s ease;
 }
-.enlace-seccion:hover, .enlace-activo { color: var(--color-tinta); }
+.ficha-seccion:hover { border-color: var(--color-tinta); color: var(--color-tinta); }
 
-/* El subrayado crece desde la izquierda: al pasar el mouse y, fijo, en la
-   sección que se está mirando. */
-.enlace-linea {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
+/* La sección que se está leyendo va llena: es la única de la fila que se lee
+   como "estás acá" y no como "puedes ir". */
+.ficha-activa {
   background: var(--color-tinta);
-  transform: scaleX(0);
-  transform-origin: 0 50%;
-  transition: transform .4s var(--salida);
+  border-color: var(--color-tinta);
+  color: #FFF;
+  animation: fichaEntraBarra .35s var(--salida);
 }
-.enlace-seccion:hover .enlace-linea,
-.enlace-activo .enlace-linea { transform: scaleX(1); }
+.ficha-activa:hover { color: #FFF; }
+@keyframes fichaEntraBarra {
+  from { transform: scale(.92); }
+  to   { transform: scale(1); }
+}
+
+.cabecera-pedido {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 9px 18px;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+.cabecera-pedido-icono { display: none; }
+
+/* En pantalla angosta el nombre y el texto del botón ceden su lugar a las
+   fichas: la taza sigue siendo el camino de vuelta al inicio y el icono sigue
+   siendo el pedido, que es para lo que están. */
+@media (max-width: 720px) {
+  .cabecera { gap: 8px; }
+  .marca-nombre { display: none; }
+  .cabecera-pedido { padding: 9px 12px; }
+  .cabecera-pedido-icono { display: block; }
+  .cabecera-pedido-texto { display: none; }
+}
 
 /* ─── Aviso ─────────────────────────────────────────────────────────────────
    Una tarjeta oscura dentro del contenedor, después de la portada. No es una
@@ -2064,8 +2099,10 @@ body {
   /* El punto del aviso late en bucle y el reflejo de las tarjetas cruza al
      pasar el mouse: los dos son movimiento que nadie pidió. */
   .aviso-punto, .aviso-destello { animation: none; }
-  /* El grano gira y el nombre se corre al pasar el mouse: se quedan quietos. */
-  .marca:hover .marca-grano, .marca:hover .marca-nombre { transform: none; }
+  /* El vapor de la taza sube en bucle y el nombre se corre al pasar el mouse:
+     los dos se quedan quietos. */
+  .marca:hover .marca-nombre { transform: none; }
+  .marca:hover .marca-vapor { animation: none; }
   .aviso-punto { opacity: 1; }
   .tarjeta .tesela::after { display: none; }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { enlaceWhatsApp, MARCA } from "@/lib/marca";
+import IconoRed from "./IconoRed";
 
 /** Una entrada del menú. */
 interface Seccion {
@@ -19,14 +20,48 @@ const FIJAS: Seccion[] = [
 ];
 
 /**
- * Cabecera: el grano, el nombre, los enlaces de sección y el botón de
- * WhatsApp. Encima de todo, una barra que avanza con el scroll.
+ * La taza de la marca, vista de frente: plato, cuerpo, asa y el vapor saliendo.
  *
- * Antes no llevaba menú, y con tres secciones tenía sentido: el recorrido era
- * bajar. Con recetas y preguntas al final la página se volvió larga, y bajar a
- * pulso hasta el temporizador es una tarea. Los enlaces solo salen en
- * escritorio; en celular la barra la ocuparían entera y el recorrido sigue
- * siendo el dedo.
+ * Reemplaza al grano de café que había. Un grano es la materia prima; lo que
+ * vende Daniel es la taza servida —el arte latte—, y a 20 px la silueta de una
+ * taza se reconoce de inmediato mientras que el grano se leía como un punto.
+ *
+ * El vapor sube en bucle muy despacio y solo al pasar el mouse: quieto, el
+ * icono no distrae de la barra; al tocarlo, la taza "está caliente".
+ */
+function Taza() {
+  return (
+    <span className="marca-taza" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        {/* El vapor va primero para que quede por detrás de la taza. */}
+        <g className="marca-vapor">
+          <path d="M9.5 5.6c-.9-1 .3-1.7-.5-2.8" />
+          <path d="M13 5.6c-.9-1 .3-1.7-.5-2.8" />
+        </g>
+        {/* Cuerpo: cónico, como una taza de capuchino. */}
+        <path d="M4.4 9h13l-1 6.2a3.4 3.4 0 0 1-3.35 2.8h-4.3A3.4 3.4 0 0 1 5.4 15.2Z" />
+        {/* Asa */}
+        <path d="M17.2 10.6h1.4a2.2 2.2 0 0 1 0 4.4h-1.8" />
+        {/* Plato */}
+        <path d="M3.2 20.4h15.6" />
+      </svg>
+    </span>
+  );
+}
+
+/**
+ * Cabecera: la taza, el nombre, TODAS las secciones y el botón de WhatsApp.
+ * Encima de todo, una barra que avanza con el scroll.
+ *
+ * Las secciones van como fichas en un riel que se desliza —la misma barra de la
+ * carta de la meca—: la marca se queda fija a la izquierda, fuera del riel,
+ * para que el desplazamiento horizontal no se la lleve, y la ficha de la
+ * sección que se está leyendo se pinta llena y se trae al centro sola.
+ *
+ * Antes los enlaces solo salían en escritorio, con el argumento de que en
+ * celular el recorrido es el dedo. Con la página como quedó —tres secciones de
+ * catálogo, recetas y preguntas— bajar a pulso hasta el temporizador es una
+ * tarea, y justo en celular. En un riel caben todas sin ocupar la barra entera.
  *
  * La barra de progreso no es decoración: en una sola página larga es lo único
  * que dice cuánto falta.
@@ -49,6 +84,8 @@ export default function Cabecera({ categorias = [] }: { categorias?: { slug: str
   const [avance, setAvance] = useState(0);
   const [activa, setActiva] = useState<string | null>(null);
   const barra = useRef<HTMLDivElement>(null);
+  const riel = useRef<HTMLDivElement>(null);
+  const fichaActiva = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     // El avance se escribe directo en el DOM y no en el estado: el scroll
@@ -98,6 +135,20 @@ export default function Cabecera({ categorias = [] }: { categorias?: { slug: str
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claveSecciones]);
 
+  // La ficha de la sección que se está leyendo se trae al centro del riel.
+  // Sin esto, en el celular uno baja hasta Preguntas y la barra sigue marcando
+  // una ficha que quedó tres pantallas a la izquierda, fuera de la vista.
+  useEffect(() => {
+    const ficha = fichaActiva.current;
+    const carril = riel.current;
+    if (!ficha || !carril) return;
+
+    carril.scrollTo({
+      left: ficha.offsetLeft - carril.clientWidth / 2 + ficha.offsetWidth / 2,
+      behavior: "smooth",
+    });
+  }, [activa]);
+
   return (
     <>
       {/* Va fuera de la cabecera y fija arriba: si viviera dentro, el fondo
@@ -108,19 +159,24 @@ export default function Cabecera({ categorias = [] }: { categorias?: { slug: str
 
       <nav className={`cabecera${avance > 0.01 ? " cabecera-scroll" : ""}`}>
         <a href="#hero" className="marca">
-          <span className="marca-grano" aria-hidden="true">
-            <span />
-          </span>
+          <Taza />
           <span className="marca-nombre">{MARCA.nombre}</span>
         </a>
 
-        <span style={{ flex: 1 }} />
+        {/* La raya marca dónde termina la marca y empiezan las secciones, que
+            son las que se deslizan. */}
+        <span className="cabecera-raya" aria-hidden="true" />
 
-        <div className="cabecera-enlaces">
+        <div ref={riel} className="cabecera-enlaces">
           {secciones.map((s) => (
-            <a key={s.id} href={`#${s.id}`} className={`enlace-seccion${activa === s.id ? " enlace-activo" : ""}`}>
+            <a
+              key={s.id}
+              href={`#${s.id}`}
+              ref={activa === s.id ? fichaActiva : null}
+              className={`ficha-seccion${activa === s.id ? " ficha-activa" : ""}`}
+              aria-current={activa === s.id ? "true" : undefined}
+            >
               {s.etiqueta}
-              <span className="enlace-linea" aria-hidden="true" />
             </a>
           ))}
         </div>
@@ -129,10 +185,16 @@ export default function Cabecera({ categorias = [] }: { categorias?: { slug: str
           href={enlaceWhatsApp(`Hola ${MARCA.nombre}, quiero hacer un pedido.`)}
           target="_blank"
           rel="noopener noreferrer"
-          className="boton boton-solido"
-          style={{ minHeight: 40, padding: "9px 18px", fontSize: 12, letterSpacing: "0.03em" }}
+          className="boton boton-solido cabecera-pedido"
+          aria-label="Pedir por WhatsApp"
         >
-          Pedir por WhatsApp
+          {/* En pantalla angosta se queda el icono solo: con el texto, el botón
+              se llevaba dos tercios de la barra y al riel de secciones no le
+              quedaba dónde deslizarse. */}
+          <span className="cabecera-pedido-icono" aria-hidden="true">
+            <IconoRed red="whatsapp" tamano={17} />
+          </span>
+          <span className="cabecera-pedido-texto">Pedir por WhatsApp</span>
         </a>
       </nav>
     </>
