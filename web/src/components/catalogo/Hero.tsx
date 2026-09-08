@@ -208,10 +208,29 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
 
         </div>
 
-        {/* El medallón, sin anillos: el borde del video se desvanece contra el
-            fondo en vez de recortarse contra él. Ver `.hero-video` en
-            globals.css. */}
+        {/* El medallón. Alrededor no van anillos —no gustaron— sino una órbita
+            de texto que gira muy despacio: dice a qué se dedica sin ocupar una
+            línea más de la portada, y al ser tipografía y no geometría no se
+            lee como un adorno pegado encima. */}
         <div className="hero-medallon">
+          <svg className="hero-orbita" viewBox="0 0 200 200" aria-hidden="true">
+            <defs>
+              <path
+                id="hero-orbita-guia"
+                fill="none"
+                d="M 100,100 m -84,0 a 84,84 0 1,1 168,0 a 84,84 0 1,1 -168,0"
+              />
+            </defs>
+            <text>
+              {/* El mismo epígrafe del panel, dando la vuelta: una sola fuente
+                  para el mismo dato. Se repite dos veces para cerrar el
+                  círculo sin dejar un hueco. */}
+              <textPath href="#hero-orbita-guia" startOffset="0">
+                {`${etiqueta} · ${etiqueta} · `}
+              </textPath>
+            </text>
+          </svg>
+
           <video
             ref={videoRef}
             className="hero-video"

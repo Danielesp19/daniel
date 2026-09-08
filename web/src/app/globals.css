@@ -551,6 +551,31 @@ body {
   color: #FFF;
 }
 
+/* La órbita: el epígrafe dando la vuelta al medallón, muy despacio.
+   Reemplaza a los tres anillos concéntricos. Gira una vez cada 48 segundos —a
+   esa velocidad no se sigue con la vista, solo se nota que la portada está
+   viva— y va en el mono de los rótulos, para que se lea como parte del sistema
+   y no como un sello pegado. */
+.hero-orbita {
+  position: absolute;
+  inset: -13%;
+  width: 126%;
+  height: 126%;
+  overflow: visible;
+  pointer-events: none;
+  animation: heroOrbita 48s linear infinite;
+}
+.hero-orbita text {
+  font-family: var(--font-mono);
+  font-size: 6.4px;
+  letter-spacing: 0.28em;
+  /* En mayúsculas como el resto de los rótulos del sitio: el epígrafe llega
+     del panel en minúscula y ahí lo aplica la clase, acá hay que decirlo. */
+  text-transform: uppercase;
+  fill: rgba(255, 255, 255, .42);
+}
+@keyframes heroOrbita { to { transform: rotate(360deg); } }
+
 /* El pie de la portada: la línea y las redes, casi contra el borde de abajo. */
 .hero-pie {
   position: absolute;
@@ -567,7 +592,11 @@ body {
 
 .hero-texto { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
 
-.hero-epigrafe { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+/* En celular el epígrafe no se repite: la órbita lo lleva dando la vuelta al
+   medallón, justo encima, y dos veces la misma línea seguida sobra. En
+   escritorio sí van los dos, pero en extremos opuestos de la portada. */
+.hero-epigrafe { display: none; align-items: center; gap: 10px; margin-bottom: 14px; }
+@media (min-width: 900px) { .hero-epigrafe { display: flex; } }
 /* La rayita solo acompaña bien a un epígrafe de una línea. En celular el texto
    se parte en dos y la raya queda colgando de la primera, así que ahí no va. */
 .hero-raya { display: none; width: 26px; height: 1px; background: rgba(255,255,255,.45); }
@@ -620,7 +649,7 @@ body {
   /* El lado sale de lo que sobra: alto de la portada menos lo que ocupa el
      texto. Con una medida fija, en una ventana baja el titular subía y se le
      montaba encima. */
-  width: clamp(150px, min(38vh, 62vw), 380px);
+  width: clamp(150px, min(42vh, 70vw), 440px);
   aspect-ratio: 1;
   order: -1;
 }
@@ -641,6 +670,10 @@ body {
      línea que mirar. */
   mask-image: radial-gradient(circle at 50% 50%, #000 58%, rgba(0, 0, 0, .55) 78%, transparent 97%);
   box-shadow: none;
+  /* Bajado de luz a propósito: la portada es oscura y el video entraba como
+     una lámpara. Apagado se integra, y la figura de leche —que es lo blanco—
+     sigue leyéndose igual de bien. */
+  filter: brightness(.68) contrast(1.06) saturate(.95);
   animation: heroEntra 1.6s ease both, heroAcerca 34s ease-in-out infinite alternate;
 }
 .hero-video-quieto { animation-play-state: running, paused; }
@@ -673,7 +706,7 @@ body {
     gap: clamp(40px, 5vw, 72px);
   }
   .hero-texto { align-items: flex-start; text-align: left; width: auto; max-width: 620px; }
-  .hero-medallon { order: 0; width: clamp(240px, min(40vh, 30vw), 380px); }
+  .hero-medallon { order: 0; width: clamp(240px, min(44vh, 33vw), 440px); }
   /* A lo ancho el pie se alinea con el texto, no al centro: el centro de la
      portada lo ocupa el medallón. */
   .hero-pie { align-items: flex-start; }
@@ -2346,11 +2379,13 @@ body {
      quedaría congelada tapando la página. */
   .cortina { display: none; }
 
-  /* El video de la portada se esconde y queda su primer cuadro, que es el
-     fondo del contenedor. Un video en bucle detrás del titular es
-     exactamente el movimiento que pidieron no ver. */
-  .hero-video { display: none; }
-  .hero-fondo { display: none; }
+  /* En la portada, el video en bucle y la órbita que da vueltas son
+     exactamente el movimiento que pidieron no ver. El video se queda en su
+     primer cuadro —quieto, no escondido: es la pieza central de la portada— y
+     la órbita se detiene donde está. */
+  .hero-video { animation: none; }
+  .hero-fondo { animation: none; }
+  .hero-orbita { animation: none; }
 
   /* El punto del aviso late en bucle y el reflejo de las tarjetas cruza al
      pasar el mouse: los dos son movimiento que nadie pidió. Y el aro del botón
