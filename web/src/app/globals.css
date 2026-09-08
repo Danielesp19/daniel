@@ -477,7 +477,15 @@ body {
    calzar. Un celular acostado entra acá, y hace bien. */
 @media (min-aspect-ratio: 1/1) {
   .hero-fondo { display: block; }
-  .hero-video { object-fit: contain; }
+  .hero-video {
+    object-fit: contain;
+    /* Más chico que el alto completo, y subido. A sangre de arriba abajo, la
+       taza quedaba enorme y el titular caía justo encima de la figura; con el
+       video encuadrado como una pieza y el texto por debajo, sobre el fondo
+       desenfocado, se leen los dos. El padding recorta la caja donde entra el
+       video, que es contra lo que mide `contain`. */
+    padding: 2% 0 32%;
+  }
 }
 
 .punto-scroll { animation: scrollPunto 2.2s ease-in-out 1.4s infinite; }
