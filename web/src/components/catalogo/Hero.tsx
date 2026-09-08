@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Hero as HeroDatos } from "@/lib/catalogo";
-import { MARCA } from "@/lib/marca";
+import { enlaceWhatsApp, MARCA } from "@/lib/marca";
 import IconoRed, { type Red } from "./IconoRed";
 
 /**
@@ -161,6 +161,29 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
       <div className="hero-luces" aria-hidden="true" />
       <div className="hero-velo" aria-hidden="true" />
 
+      {/* La barra de la portada. NO es el menú del sitio —ese entra al bajar
+          del hero—: es la firma y el único botón que el diseño quiere a la
+          vista desde el primer segundo. Va en blanco sobre la escena oscura,
+          que es lo que la despega del fondo. */}
+      <div className="hero-barra">
+        <a href="#hero" className="hero-marca">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M17 8h1a4 4 0 0 1 0 8h-1" />
+            <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z" />
+          </svg>
+          <span>{MARCA.nombre}</span>
+        </a>
+
+        <a
+          href={enlaceWhatsApp(`Hola ${MARCA.nombre}, quiero hacer un pedido.`)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hero-pedido"
+        >
+          Pedir por WhatsApp
+        </a>
+      </div>
+
       <div className="hero-cuerpo">
         <div className="hero-texto">
           <div className="hero-epigrafe">
@@ -183,22 +206,6 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
             </a>
           </div>
 
-          <span className="hero-filete" aria-hidden="true" />
-
-          <div className="hero-redes">
-            {REDES.map(({ red, url }) => (
-              <a
-                key={red}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hero-red"
-                aria-label={red}
-              >
-                <IconoRed red={red} tamano={17} />
-              </a>
-            ))}
-          </div>
         </div>
 
         {/* El medallón. Los anillos y el halo van en elementos aparte y no en
@@ -224,6 +231,26 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
             <source src={VIDEO_WEBM} type="video/webm" />
             <source src={VIDEO_MP4} type="video/mp4" />
           </video>
+        </div>
+      </div>
+
+      {/* Las redes van pegadas abajo, no debajo de los botones: ahí cierran la
+          portada en vez de competir con la llamada principal. */}
+      <div className="hero-pie">
+        <span className="hero-filete" aria-hidden="true" />
+        <div className="hero-redes">
+          {REDES.map(({ red, url }) => (
+            <a
+              key={red}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hero-red"
+              aria-label={red}
+            >
+              <IconoRed red={red} tamano={17} />
+            </a>
+          ))}
         </div>
       </div>
 

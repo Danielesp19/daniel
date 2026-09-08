@@ -461,7 +461,9 @@ body {
   /* En gris y muy bajo: si entra en color compite con el medallón, que es la
      única mancha de café que tiene que verse. */
   filter: blur(40px) grayscale(1) contrast(1.05);
-  opacity: .3;
+  /* Muy bajo: la escena solo tiene que dar el tono, y a más opacidad compite
+     con el medallón, que es la única mancha de café que debe verse. */
+  opacity: .16;
   /* Ampliado, porque el desenfoque difumina los bordes y sin la escala se ve
      un halo claro contra el marco. */
   transform: scale(1.35);
@@ -481,12 +483,61 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 26%, rgba(0,0,0,.55) 100%);
+  background: linear-gradient(180deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,.12) 30%, rgba(0,0,0,.72) 100%);
 }
 
 /* Escritorio: texto a la izquierda, medallón a la derecha. Celular: medallón
    arriba, texto debajo. Es el orden en que se lee cada formato — en pantalla
    ancha la mirada entra por la izquierda, en una de mano entra por arriba. */
+.hero-barra {
+  position: absolute;
+  top: clamp(14px, 2vh, 18px);
+  left: clamp(14px, 2vw, 18px);
+  right: clamp(14px, 2vw, 18px);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: clamp(56px, 7vh, 72px);
+  padding: 0 8px 0 clamp(14px, 1.6vw, 22px);
+  background: #FFF;
+  border-radius: clamp(18px, 2vw, 20px);
+  box-shadow: 0 18px 40px -22px rgba(0, 0, 0, .75);
+}
+
+.hero-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: #000;
+  text-decoration: none;
+}
+.hero-marca svg { flex-shrink: 0; width: clamp(22px, 2vw, 28px); height: clamp(22px, 2vw, 28px); }
+.hero-marca span {
+  font-family: var(--font-serif);
+  font-size: clamp(17px, 1.7vw, 22px);
+  white-space: nowrap;
+}
+
+.hero-pedido {
+  flex-shrink: 0;
+  padding: clamp(11px, 1.4vh, 15px) clamp(16px, 1.8vw, 26px);
+  border-radius: 999px;
+  background: #000;
+  color: #FFF;
+  font-size: clamp(12.5px, 1.2vw, 16px);
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background .18s ease, transform .18s var(--salida);
+}
+.hero-pedido:hover { background: #1F1F1F; transform: translateY(-1px); }
+
+/* El cuerpo arranca por debajo de la barra y termina por encima del pie: los
+   dos reservan su sitio con padding, así el bloque central nunca se les monta
+   aunque la ventana sea baja. */
 .hero-cuerpo {
   position: relative;
   height: 100%;
@@ -495,8 +546,22 @@ body {
   align-items: center;
   justify-content: center;
   gap: clamp(22px, 4vh, 40px);
-  padding: 0 clamp(22px, 6vw, 64px) clamp(40px, 7vh, 64px);
+  padding: clamp(86px, 12vh, 116px) clamp(22px, 6vw, 64px) clamp(104px, 15vh, 128px);
   color: #FFF;
+}
+
+/* El pie de la portada: la línea y las redes, casi contra el borde de abajo. */
+.hero-pie {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(34px, 5vh, 52px);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 0 clamp(22px, 6vw, 64px);
 }
 
 .hero-texto { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
@@ -528,10 +593,9 @@ body {
 .hero-boton-linea:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.7); }
 
 .hero-filete {
-  width: min(100%, 320px);
+  width: min(100%, 560px);
   height: 1px;
-  margin: clamp(18px, 3vh, 26px) 0 clamp(14px, 2.4vh, 20px);
-  background: linear-gradient(90deg, rgba(255,255,255,.28), rgba(255,255,255,0) 78%);
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.28) 50%, rgba(255,255,255,0));
 }
 
 .hero-redes { display: flex; gap: 10px; }
@@ -590,7 +654,10 @@ body {
 .hero-anillo-2 { inset: -11%; border: 1px solid rgba(255,255,255,.12); }
 .hero-anillo-3 { inset: -18%; border: 1px solid rgba(255,255,255,.05); }
 
+/* La rayita de "sigue bajando" solo cabe donde el pie NO está centrado: en
+   celular las redes ocupan justo ese punto y se cruzaban con ella. */
 .hero-scroll {
+  display: none;
   position: absolute;
   left: 50%;
   bottom: 18px;
@@ -612,8 +679,12 @@ body {
     gap: clamp(40px, 5vw, 72px);
   }
   .hero-texto { align-items: flex-start; text-align: left; width: auto; max-width: 620px; }
-  .hero-medallon { order: 0; width: clamp(240px, min(46vh, 32vw), 380px); }
-  .hero-filete { width: 560px; max-width: 100%; }
+  .hero-medallon { order: 0; width: clamp(240px, min(40vh, 30vw), 380px); }
+  /* A lo ancho el pie se alinea con el texto, no al centro: el centro de la
+     portada lo ocupa el medallón. */
+  .hero-pie { align-items: flex-start; }
+  .hero-scroll { display: block; }
+  .hero-filete { background: linear-gradient(90deg, rgba(255,255,255,.28), rgba(255,255,255,0) 78%); }
 }
 
 .punto-scroll { animation: scrollPunto 2.2s ease-in-out 1.4s infinite; }
