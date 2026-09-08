@@ -12,22 +12,20 @@ import { MARCA } from "@/lib/marca";
  * cabeceras de caché largas. El póster es lo que se ve mientras el video baja
  * —y lo único que se ve si el visitante pidió menos movimiento—.
  *
- * Dos formatos, WebM primero: pesa 1 MB contra 1,8 MB del MP4 y lo entienden
+ * Dos formatos, WebM primero: pesa 1,2 MB contra 1,5 MB del MP4 y lo entienden
  * Chrome, Firefox y Edge. El MP4 queda de respaldo para Safari, que hasta hace
  * poco no leía VP9. El navegador se queda con el primero que sepa reproducir.
  *
- * QUÉ SE VE. Solo los dos remates: la rosetta cerrándose y la taza levantada, y
- * la segunda figura terminada y mostrada. De los treinta segundos de grabación,
- * el resto es la preparación —acomodar la jarra, los primeros chorros— que en
- * un fondo no dice nada. Ocho segundos de las dos figuras dicen en qué es bueno
- * Daniel mejor que medio minuto completo.
+ * QUÉ SE VE. El montaje que armó Daniel: media docena de figuras terminadas
+ * —rosettas, cisnes, el dragón— con sus vertidos, una detrás de otra. Ya viene
+ * editado como carrete, así que acá no se corta nada: va entero y a velocidad
+ * real.
  *
- * El material es vertical (944x1424, su tamaño nativo), grabado en picado con
- * celular. De la fuente se recortaron los bordes negros —que son del editor, no
- * de la escena, y en el celular habrían salido como franjas dentro del cuadro—
- * y se quitó el audio, que en un fondo que arranca solo no se puede reproducir
- * de todos modos. El segundo trozo va volteado en horizontal: venía de la
- * cámara frontal y el logo de la camiseta se leía al revés.
+ * El material es de 560x720 y sale de un lienzo cuadrado de 720: la escena
+ * venía con franjas negras a los lados, puestas por el editor, y en el celular
+ * habrían salido como bandas dentro del cuadro. Se recortaron y se quitó el
+ * audio, que en un fondo que arranca solo no se puede reproducir de todos
+ * modos.
  */
 const VIDEO_WEBM = "/videos/hero.webm";
 const VIDEO_MP4 = "/videos/hero.mp4";
@@ -36,14 +34,14 @@ const POSTER_FONDO = "/videos/hero.jpg";
 /**
  * Cuántas veces se repite antes de quedarse quieto.
  *
- * Tres: el clip dura ocho segundos, así que son veinticuatro de movimiento —el
- * tiempo que alguien pasa mirando una portada— y después se queda quieto.
- * Dejarlo dando vueltas mantiene al navegador decodificando y compositando una
- * capa a pantalla completa mientras el visitante lee el catálogo, y en un
- * celular eso es batería. Congela en el último cuadro, que es la segunda figura
- * en alto: un buen sitio donde quedarse.
+ * Dos: el carrete dura veintiséis segundos, así que son casi dos minutos de
+ * movimiento y para entonces nadie sigue mirando la portada. Dejarlo dando
+ * vueltas mantiene al navegador decodificando y compositando una capa a
+ * pantalla completa mientras el visitante lee el catálogo, y en un celular eso
+ * es batería. Congela en el último cuadro, que es una figura terminada en alto:
+ * un buen sitio donde quedarse.
  */
-const PASADAS = 3;
+const PASADAS = 2;
 
 /**
  * Portada: el video a sangre, el texto abajo y dos botones.
