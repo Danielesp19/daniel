@@ -474,9 +474,10 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    radial-gradient(120% 90% at 78% 46%, rgba(255,255,255,.16), transparent 58%),
-    radial-gradient(100% 80% at 8% 8%, rgba(255,255,255,.07), transparent 55%);
+  /* Apenas un levante en la esquina de arriba a la izquierda. La luz que había
+     detrás del medallón se quitó: encendía justo el trozo de fondo contra el
+     que tiene que recortarse el video, y lo dejaba lechoso. */
+  background: radial-gradient(100% 80% at 8% 6%, rgba(255,255,255,.05), transparent 55%);
 }
 
 .hero-velo {
@@ -633,26 +634,19 @@ body {
   /* La fuente ya viene cuadrada, así que `cover` llena el círculo sin recortar
      nada de la escena. */
   object-fit: cover;
-  box-shadow: 0 40px 80px -40px rgba(0,0,0,.95);
+  /* El borde se desvanece en vez de cortarse. Los tres anillos que llevaba
+     alrededor no gustaron —se leían como un adorno pegado encima—, y quitarlos
+     dejaba un disco recortado con tijera contra el fondo. Con la máscara, la
+     escena se apaga hacia afuera y el video parece salir del negro: no hay
+     línea que mirar. */
+  mask-image: radial-gradient(circle at 50% 50%, #000 58%, rgba(0, 0, 0, .55) 78%, transparent 97%);
+  box-shadow: none;
   animation: heroEntra 1.6s ease both, heroAcerca 34s ease-in-out infinite alternate;
 }
 .hero-video-quieto { animation-play-state: running, paused; }
 
 @keyframes heroEntra { from { opacity: 0; } to { opacity: 1; } }
 @keyframes heroAcerca { from { transform: scale(1); } to { transform: scale(1.06); } }
-
-/* Los anillos y el halo van por FUERA del círculo, en elementos aparte: un
-   `border` sobre el video le comería píxeles a la imagen. */
-.hero-halo {
-  position: absolute;
-  inset: -18%;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(255,255,255,.14), transparent 68%);
-}
-.hero-anillo { position: absolute; border-radius: 999px; }
-.hero-anillo-1 { inset: -4.5%; border: 1px solid rgba(255,255,255,.28); }
-.hero-anillo-2 { inset: -11%; border: 1px solid rgba(255,255,255,.12); }
-.hero-anillo-3 { inset: -18%; border: 1px solid rgba(255,255,255,.05); }
 
 /* La rayita de "sigue bajando" solo cabe donde el pie NO está centrado: en
    celular las redes ocupan justo ese punto y se cruzaban con ella. */

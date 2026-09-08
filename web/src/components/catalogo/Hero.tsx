@@ -208,15 +208,10 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
 
         </div>
 
-        {/* El medallón. Los anillos y el halo van en elementos aparte y no en
-            bordes del video: un `border` sobre el video le comería píxeles a la
-            imagen, y estos tienen que quedar POR FUERA del círculo. */}
+        {/* El medallón, sin anillos: el borde del video se desvanece contra el
+            fondo en vez de recortarse contra él. Ver `.hero-video` en
+            globals.css. */}
         <div className="hero-medallon">
-          <span className="hero-halo" aria-hidden="true" />
-          <span className="hero-anillo hero-anillo-1" aria-hidden="true" />
-          <span className="hero-anillo hero-anillo-2" aria-hidden="true" />
-          <span className="hero-anillo hero-anillo-3" aria-hidden="true" />
-
           <video
             ref={videoRef}
             className="hero-video"
