@@ -462,7 +462,6 @@ body {
 .hero-fondo {
   position: absolute;
   inset: 0;
-  display: none;
   background-position: center;
   background-size: cover;
   /* Ampliado además del desenfoque: el filtro difumina los bordes y sin la
@@ -472,20 +471,38 @@ body {
   pointer-events: none;
 }
 
-/* El corte es por FORMA de la ventana y no por ancho: lo que decide es si el
-   marco es más ancho que alto, que es justo cuando el video vertical deja de
-   calzar. Un celular acostado entra acá, y hace bien. */
-@media (min-aspect-ratio: 1/1) {
-  .hero-fondo { display: block; }
-  .hero-video {
-    object-fit: contain;
-    /* Más chico que el alto completo, y subido. A sangre de arriba abajo, la
-       taza quedaba enorme y el titular caía justo encima de la figura; con el
-       video encuadrado como una pieza y el texto por debajo, sobre el fondo
-       desenfocado, se leen los dos. El padding recorta la caja donde entra el
-       video, que es contra lo que mide `contain`. */
-    padding: 2% 0 32%;
-  }
+/* El video se muestra ENTERO y en chico, encuadrado arriba, con el fondo
+   desenfocado alrededor — como el de la carta de la meca. A sangre ocupaba todo
+   y la taza salía enorme; peor, el titular caía justo encima de la figura y los
+   dos peleaban por el mismo sitio.
+
+   El tamaño se controla con el padding, que es la caja contra la que mide
+   `object-fit: contain`: recortarla por abajo encoge la imagen y la sube, sin
+   tocar la posición del texto ni meter un contenedor de por medio. */
+/* El video no se estira: es un cuadrado chico, arriba y centrado, con el fondo
+   desenfocado alrededor. El alto manda —`vh`— porque lo que tiene que caber en
+   el hero es él y el texto debajo; el `vw` lo protege en pantallas angostas y
+   el tope en píxeles evita que en un monitor grande vuelva a crecer hasta
+   comerse la portada.
+
+   Va posicionado con `inset` + `margin-inline: auto` y no con un `transform`
+   de centrado, porque el transform ya lo usa la animación de acercamiento y se
+   pisarían. */
+.hero-video {
+  inset: clamp(14px, 3.5vh, 40px) 0 auto 0;
+  margin-inline: auto;
+  /* El lado del cuadrado sale de lo que SOBRA: alto del hero menos el bloque de
+     texto, que va anclado abajo. Con una medida fija el texto se le montaba
+     encima en cuanto la ventana era más baja —el titular sube y el video no se
+     entera—; así el video cede sitio solo. El `max` le pone un piso para que en
+     una pantalla muy baja no desaparezca. */
+  width: max(150px, min(72vw, 380px, calc(100svh - var(--barra) - 500px)));
+  height: auto;
+  aspect-ratio: 1;
+  /* La fuente ya viene cuadrada, así que `cover` llena sin recortar nada. */
+  object-fit: cover;
+  border-radius: 18px;
+  box-shadow: 0 30px 70px -18px rgba(0, 0, 0, .75);
 }
 
 .punto-scroll { animation: scrollPunto 2.2s ease-in-out 1.4s infinite; }

@@ -12,7 +12,7 @@ import { MARCA } from "@/lib/marca";
  * cabeceras de caché largas. El póster es lo que se ve mientras el video baja
  * —y lo único que se ve si el visitante pidió menos movimiento—.
  *
- * Dos formatos, WebM primero: pesa 1,2 MB contra 1,5 MB del MP4 y lo entienden
+ * Dos formatos, WebM primero: pesa 1,7 MB contra 2,4 MB del MP4 y lo entienden
  * Chrome, Firefox y Edge. El MP4 queda de respaldo para Safari, que hasta hace
  * poco no leía VP9. El navegador se queda con el primero que sepa reproducir.
  *
@@ -21,11 +21,16 @@ import { MARCA } from "@/lib/marca";
  * editado como carrete, así que acá no se corta nada: va entero y a velocidad
  * real.
  *
- * El material es de 560x720 y sale de un lienzo cuadrado de 720: la escena
- * venía con franjas negras a los lados, puestas por el editor, y en el celular
- * habrían salido como bandas dentro del cuadro. Se recortaron y se quitó el
- * audio, que en un fondo que arranca solo no se puede reproducir de todos
- * modos.
+ * El material queda en 500x500 y sale de un lienzo cuadrado de 720. Se recortó
+ * dos veces: los lados, porque la escena venía con franjas negras puestas por
+ * el editor, y la franja de abajo, donde estaban el piso, los tenis y las
+ * calcomanías de camello que traía pegadas el montaje. Lo que sobrevive es la
+ * taza en las manos, que es lo único que tiene que verse en un cuadro chico.
+ * También se quitó el audio, que en un fondo que arranca solo no se puede
+ * reproducir de todos modos.
+ *
+ * La calidad subió (CRF 18 en vez de 24): a este tamaño se notaban los bloques
+ * en la crema, que es justo donde no se pueden notar.
  */
 const VIDEO_WEBM = "/videos/hero.webm";
 const VIDEO_MP4 = "/videos/hero.mp4";
