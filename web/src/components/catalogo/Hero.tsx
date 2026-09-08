@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { Hero as HeroDatos } from "@/lib/catalogo";
 import { MARCA } from "@/lib/marca";
+import IconoRed, { type Red } from "./IconoRed";
 
 /**
  * El video de portada y su primer cuadro.
@@ -48,28 +49,43 @@ const POSTER_FONDO = "/videos/hero.jpg";
  */
 const PASADAS = 2;
 
+/** Las redes que se muestran bajo el titular, en el orden del diseño. */
+const REDES: { red: Red; url: string }[] = [
+  { red: "facebook", url: MARCA.facebook },
+  { red: "instagram", url: MARCA.instagram },
+  { red: "tiktok", url: MARCA.tiktok },
+];
+
 /**
- * Portada: el video a sangre, el texto abajo y dos botones.
+ * Portada: el medallón con el video y, al lado, quién es y qué ofrece.
  *
- * El contenido va apoyado en el borde inferior y no centrado: el velo carga el
- * peso justo ahí, así que el texto queda sobre la parte más oscura y la mitad
- * de arriba —donde está la escena— se ve limpia.
+ * Es el diseño que mandó Daniel ("Hero mejora y video pequeño"). El video deja
+ * de ser un fondo a sangre y pasa a ser una pieza: un círculo chico con tres
+ * anillos y un halo detrás, que es lo que lo vuelve el centro de la composición
+ * sin tener que agrandarlo. El fondo lo pone el mismo video —un cuadro suyo,
+ * desenfocado, en blanco y negro y al 30 % de opacidad—, así que la portada
+ * toma su color de la escena sin pedirle nitidez al archivo.
  *
- * Los textos entran escalonados y despacio —cada uno espera a que el anterior
- * termine de asentarse—. Estuvieron el doble de rápidos y el cliente no
- * alcanzaba a leer su propia presentación antes de que la siguiente línea ya
- * estuviera encima.
+ * EN CÍRCULO, y no en cuadrado, por una razón práctica además de estética: un
+ * círculo recorta la esquina de la escena donde estaban el piso y las
+ * calcomanías del montaje, y deja justo la taza en las manos.
  *
- * Los podios ya no van aquí debajo: pasaron a la presentación del barista,
- * como medallas. En una cinta pegada al hero se leían como una nota al pie;
- * al lado de su biografía son lo que respalda lo que dice.
+ * En escritorio el texto va a la izquierda y el medallón a la derecha; en
+ * celular el medallón va arriba y el texto debajo. Es el mismo orden en el que
+ * se lee cada formato: en pantalla ancha la mirada entra por la izquierda, en
+ * una de mano entra por arriba.
+ *
+ * NO lleva el párrafo de presentación que tenía —lo pidió quitar el cliente— ni
+ * las cifras del diseño (+400 baristas, 1.700 msnm): esos números no los tengo
+ * confirmados y una portada no es sitio para inventarlos. Los logros reales ya
+ * están en la sección del barista, como medallas.
  */
 export default function Hero({ hero }: { hero: HeroDatos | null }) {
   const seccionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   /**
-   * El fondo: se reproduce un par de veces, se queda quieto y se pausa cuando
+   * El video: se reproduce un par de veces, se queda quieto y se pausa cuando
    * el hero sale de pantalla.
    *
    * Va con `autoPlay` Y con `play()` a mano: iOS ignora `preload` por ahorro de
@@ -87,10 +103,6 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
     let terminado = false;
 
     video.muted = true;
-    // A velocidad real. Estuvo a la mitad y se veía falso: el material son 30
-    // cuadros por segundo grabados a pulso, y al ralentizarlo el navegador no
-    // inventa cuadros intermedios —repite los que hay—, así que el movimiento
-    // de la mano sale a tirones. Justo lo que delata que algo está trucado.
 
     const alTerminar = () => {
       pasadas += 1;
@@ -129,7 +141,6 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
   }, []);
 
   const etiqueta = hero?.etiqueta ?? `${MARCA.oficio} · ${MARCA.ciudad}`;
-  const subtitulo = hero?.subtitulo ?? MARCA.descripcion;
 
   // El titular se parte en dos: lo que va en redonda y lo que va en itálica.
   // Es el recurso que sostiene el diseño entero. Si el título viene del panel
@@ -140,161 +151,84 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
   const cursiva = corte > 0 ? titulo.slice(corte + 1).trim() : null;
 
   return (
-    <section
-      ref={seccionRef}
-      id="hero"
-      style={{
-        position: "relative",
-        // Pantalla completa, menos la cabecera fija: el hero es lo primero que
-        // se ve y el cliente lo quiere ocupando todo. Se descuenta `--barra`
-        // para que la barra no quede montada sobre el titular.
-        //
-        // "svh" y no "dvh": dvh se recalcula en vivo cuando el navegador móvil
-        // esconde y muestra la barra de direcciones al scrollear, y en una
-        // sección de pantalla completa eso se ve como que el hero cambia de
-        // tamaño solo mientras uno baja.
-        height: "calc(100svh - var(--barra))",
-        minHeight: 540,
-        overflow: "hidden",
-        // El póster va de fondo del contenedor y no solo como `poster` del
-        // video: así se ve algo desde el primer cuadro pintado, y es lo que
-        // queda cuando el visitante pidió menos movimiento y el video se
-        // esconde por CSS.
-        background: `var(--color-tinta) url(${POSTER_FONDO}) center/cover no-repeat`,
-      }}
-    >
-      {/* El fondo desenfocado, solo en pantallas anchas: el video es vertical y
-          a lo ancho quedaría o recortado a una tira o flotando sobre un vacío
-          negro. Es el póster, no un segundo video: mismo encuadre, sin un
-          decodificador más corriendo. */}
+    <section ref={seccionRef} id="hero" className="hero">
+      {/* El fondo es un cuadro del propio video: desenfocado, en gris y muy
+          bajo de opacidad. Es el póster y no un segundo video —mismo encuadre,
+          ni un decodificador más—. */}
       <div className="hero-fondo" aria-hidden="true" style={{ backgroundImage: `url(${POSTER_FONDO})` }} />
+      {/* Dos luces y un velo: las luces levantan el centro y la esquina de
+          arriba, el velo asienta el texto contra el borde inferior. */}
+      <div className="hero-luces" aria-hidden="true" />
+      <div className="hero-velo" aria-hidden="true" />
 
-      <video
-        ref={videoRef}
-        className="hero-media hero-video"
-        poster={POSTER_FONDO}
-        // Sin `muted` el navegador bloquea la reproducción automática, y el
-        // archivo no trae pista de audio de todos modos.
-        autoPlay
-        muted
-        playsInline
-        preload="auto"
-        aria-hidden="true"
-        tabIndex={-1}
-      >
-        <source src={VIDEO_WEBM} type="video/webm" />
-        <source src={VIDEO_MP4} type="video/mp4" />
-      </video>
+      <div className="hero-cuerpo">
+        <div className="hero-texto">
+          <div className="hero-epigrafe">
+            <span className="hero-raya" aria-hidden="true" />
+            <span className="epigrafe">{etiqueta}</span>
+          </div>
 
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.28) 42%, rgba(10,10,10,0.86) 100%)",
-        }}
-      />
+          <h1 className="titular hero-titulo">
+            {recto} {cursiva && <em>{cursiva}</em>}
+          </h1>
 
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          textAlign: "center",
-          padding: "0 clamp(20px, 6vw, 40px) clamp(64px, 10vw, 96px)",
-          color: "#FFF",
-        }}
-      >
-        <span
-          className="epigrafe"
-          style={{
-            color: "rgba(255,255,255,0.8)",
-            animation: "entrar 1.1s cubic-bezier(.2,.7,.2,1) .25s both",
-          }}
-        >
-          {etiqueta}
-        </span>
+          {/* Uno encima del otro y no lado a lado: en fila los dos pesaban
+              igual y no se sabía cuál era el camino principal. */}
+          <div className="hero-botones">
+            <a href={hero?.cta_url ?? "#catalogo"} className="boton boton-grande boton-solido-claro">
+              {hero?.cta_texto ?? "Ver la tienda"}
+            </a>
+            <a href="#cat-servicios" className="boton boton-grande hero-boton-linea">
+              Cursos y asesorías
+            </a>
+          </div>
 
-        <h1
-          className="titular"
-          style={{
-            fontSize: "clamp(46px, 11vw, 88px)",
-            lineHeight: 0.98,
-            maxWidth: "12ch",
-            marginTop: 18,
-            animation: "entrar 1.2s cubic-bezier(.2,.7,.2,1) .55s both",
-          }}
-        >
-          {recto} {cursiva && <em>{cursiva}</em>}
-        </h1>
+          <span className="hero-filete" aria-hidden="true" />
 
-        <p
-          style={{
-            maxWidth: "42ch",
-            margin: "16px 0 0",
-            fontSize: 15,
-            lineHeight: 1.6,
-            color: "rgba(255,255,255,0.82)",
-            animation: "entrar 1.2s cubic-bezier(.2,.7,.2,1) .95s both",
-          }}
-        >
-          {subtitulo}
-        </p>
+          <div className="hero-redes">
+            {REDES.map(({ red, url }) => (
+              <a
+                key={red}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hero-red"
+                aria-label={red}
+              >
+                <IconoRed red={red} tamano={17} />
+              </a>
+            ))}
+          </div>
+        </div>
 
-        <div
-          style={{
-            pointerEvents: "auto",
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            gap: 10,
-            width: "100%",
-            maxWidth: 420,
-            marginTop: 28,
-            animation: "entrar 1.2s cubic-bezier(.2,.7,.2,1) 1.3s both",
-          }}
-        >
-          <a
-            href={hero?.cta_url ?? "#catalogo"}
-            className="boton boton-grande boton-solido-claro"
-            style={{ flex: "1 1 160px" }}
+        {/* El medallón. Los anillos y el halo van en elementos aparte y no en
+            bordes del video: un `border` sobre el video le comería píxeles a la
+            imagen, y estos tienen que quedar POR FUERA del círculo. */}
+        <div className="hero-medallon">
+          <span className="hero-halo" aria-hidden="true" />
+          <span className="hero-anillo hero-anillo-1" aria-hidden="true" />
+          <span className="hero-anillo hero-anillo-2" aria-hidden="true" />
+          <span className="hero-anillo hero-anillo-3" aria-hidden="true" />
+
+          <video
+            ref={videoRef}
+            className="hero-video"
+            poster={POSTER_FONDO}
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+            tabIndex={-1}
           >
-            {hero?.cta_texto ?? "Ver la tienda"}
-          </a>
-          <a
-            href="#cat-servicios"
-            className="boton boton-grande"
-            style={{ flex: "1 1 160px", border: "1px solid rgba(255,255,255,0.5)", color: "#FFF" }}
-          >
-            Cursos y asesorías
-          </a>
+            <source src={VIDEO_WEBM} type="video/webm" />
+            <source src={VIDEO_MP4} type="video/mp4" />
+          </video>
         </div>
       </div>
 
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          left: "50%",
-          bottom: 18,
-          transform: "translateX(-50%)",
-          width: 1,
-          height: 34,
-          background: "rgba(255,255,255,0.35)",
-          pointerEvents: "none",
-          animation: "aparecer 1s ease 1.1s both",
-        }}
-      >
-        <span
-          className="punto-scroll"
-          style={{ position: "absolute", top: 0, left: -1, width: 3, height: 9, background: "#FFF" }}
-        />
+      <div className="hero-scroll" aria-hidden="true">
+        <span className="punto-scroll" />
       </div>
     </section>
   );

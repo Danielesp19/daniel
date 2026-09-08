@@ -69,6 +69,11 @@ function Taza() {
  * catálogo, recetas y preguntas— bajar a pulso hasta el temporizador es una
  * tarea, y justo en celular. En un riel caben todas sin ocupar la barra entera.
  *
+ * NO SE VE SOBRE LA PORTADA. El hero ocupa la pantalla entera y se presenta
+ * solo —con el medallón, el titular y sus dos botones—; la barra entra
+ * deslizándose en cuanto se baja de él. Antes estaba fija desde el primer
+ * píxel y le comía a la portada una franja blanca justo donde empieza.
+ *
  * La barra de progreso no es decoración: en una sola página larga es lo único
  * que dice cuánto falta.
  */
@@ -88,6 +93,8 @@ export default function Cabecera({ categorias = [] }: { categorias?: { slug: str
   const claveSecciones = secciones.map((s) => s.id).join(",");
 
   const [avance, setAvance] = useState(0);
+  // La barra no existe sobre la portada: aparece al bajar de ella.
+  const [pasoElHero, setPasoElHero] = useState(false);
   const [activa, setActiva] = useState<string | null>(null);
   const barra = useRef<HTMLDivElement>(null);
   const riel = useRef<HTMLDivElement>(null);
@@ -107,6 +114,12 @@ export default function Cabecera({ categorias = [] }: { categorias?: { slug: str
         const cuanto = alto > 0 ? Math.min(1, window.scrollY / alto) : 0;
         if (barra.current) barra.current.style.transform = `scaleX(${cuanto})`;
         setAvance(cuanto);
+
+        // Se mide contra el borde de abajo de la portada y no contra un número
+        // de píxeles: el hero mide una pantalla completa, y una pantalla no
+        // mide lo mismo en un celular que en un monitor.
+        const portada = document.getElementById("hero");
+        setPasoElHero(portada ? portada.getBoundingClientRect().bottom <= 4 : true);
       });
     };
 
@@ -163,7 +176,13 @@ export default function Cabecera({ categorias = [] }: { categorias?: { slug: str
         <div ref={barra} className="progreso-avance" />
       </div>
 
-      <nav className={`cabecera${avance > 0.01 ? " cabecera-scroll" : ""}`}>
+      <nav
+        className={`cabecera${avance > 0.01 ? " cabecera-scroll" : ""}${pasoElHero ? " cabecera-dentro" : ""}`}
+        // Mientras está escondida no debe recibir el tabulador ni el lector de
+        // pantalla: es una barra que todavía no existe para quien navega.
+        aria-hidden={!pasoElHero}
+        inert={!pasoElHero}
+      >
         <a href="#hero" className="marca">
           <Taza />
           <span className="marca-nombre">{MARCA.nombre}</span>
