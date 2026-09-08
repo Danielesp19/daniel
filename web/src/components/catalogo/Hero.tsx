@@ -49,6 +49,19 @@ const POSTER_FONDO = "/videos/hero.jpg";
  */
 const PASADAS = 2;
 
+/**
+ * Las tres cifras del diseño.
+ *
+ * OJO: salen del mockup, no de una fuente confirmada. El cliente las aprobó
+ * "con los números del diseño" mientras consigue los suyos, así que cuando
+ * lleguen los reales se cambian ACÁ y en ningún otro lado.
+ */
+const CIFRAS = [
+  { dato: "+400", nota: "baristas formados" },
+  { dato: "100", nota: "productos diferentes" },
+  { dato: "Todo", tenue: " el país", nota: "envíos nacionales" },
+];
+
 /** Las redes que se muestran bajo el titular, en el orden del diseño. */
 const REDES: { red: Red; url: string }[] = [
   { red: "facebook", url: MARCA.facebook },
@@ -141,6 +154,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
   }, []);
 
   const etiqueta = hero?.etiqueta ?? `${MARCA.oficio} · ${MARCA.ciudad}`;
+  const subtitulo = hero?.subtitulo ?? MARCA.descripcion;
 
   // El titular se parte en dos: lo que va en redonda y lo que va en itálica.
   // Es el recurso que sostiene el diseño entero. Si el título viene del panel
@@ -195,6 +209,10 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
             {recto} {cursiva && <em>{cursiva}</em>}
           </h1>
 
+          {/* Solo en escritorio: en celular la portada se queda con el titular
+              y los botones, que es lo que cabe sin apretar. */}
+          {subtitulo && <p className="hero-bajada">{subtitulo}</p>}
+
           {/* Uno encima del otro y no lado a lado: en fila los dos pesaban
               igual y no se sabía cuál era el camino principal. */}
           <div className="hero-botones">
@@ -206,6 +224,36 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
             </a>
           </div>
 
+          {/* Las cifras y las redes cierran la columna, como en el diseño. En
+              celular no van acá: las redes bajan al pie de la portada y las
+              cifras no salen —tres columnas de números en 390 px se leen como
+              una tabla apretada—. */}
+          <div className="hero-cifras">
+            {CIFRAS.map((c) => (
+              <div key={c.nota}>
+                <div className="hero-cifra">
+                  {c.dato}
+                  {c.tenue && <span>{c.tenue}</span>}
+                </div>
+                <div className="hero-cifra-nota">{c.nota}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hero-redes hero-redes-columna">
+            {REDES.map(({ red, url }) => (
+              <a
+                key={red}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hero-red"
+                aria-label={red}
+              >
+                <IconoRed red={red} tamano={17} />
+              </a>
+            ))}
+          </div>
         </div>
 
         {/* El medallón. Alrededor no van anillos —no gustaron— sino una órbita

@@ -447,6 +447,10 @@ body {
    archivo, que es de 500 px de lado. */
 .hero {
   position: relative;
+  /* En celular sí ocupa la pantalla; en escritorio se queda en una fracción,
+     como el artboard (1440x820). A pantalla completa, con el titular, el
+     párrafo, las cifras y las redes, sobraba aire en medio y el medallón se
+     veía pequeño en un lienzo enorme. */
   height: 100svh;
   min-height: 560px;
   overflow: hidden;
@@ -611,6 +615,39 @@ body {
   max-width: 13ch;
 }
 
+.hero-bajada {
+  display: none;
+  margin: 20px 0 0;
+  max-width: 44ch;
+  font-size: 18px;
+  line-height: 1.6;
+  color: rgba(255,255,255,.78);
+  text-wrap: pretty;
+}
+
+.hero-cifras {
+  display: none;
+  gap: clamp(28px, 3vw, 44px);
+  margin-top: 26px;
+}
+.hero-cifra {
+  font-family: var(--font-serif);
+  font-size: clamp(26px, 2.4vw, 34px);
+  line-height: 1;
+  color: #FFF;
+}
+.hero-cifra span { opacity: .5; }
+.hero-cifra-nota {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.55);
+}
+
+.hero-redes.hero-redes-columna { display: none; margin-top: 26px; }
+
 .hero-botones {
   display: flex;
   flex-direction: column;
@@ -705,11 +742,32 @@ body {
     justify-content: space-between;
     gap: clamp(40px, 5vw, 72px);
   }
+  /* Una fracción de la pantalla y no toda: con el titular, el párrafo, las
+     cifras y las redes ya hay bastante que leer, y a pantalla completa sobraba
+     aire en medio. El tope de 860 es el del artboard con un poco de holgura. */
+  .hero { height: min(100svh, 860px); }
+
   .hero-texto { align-items: flex-start; text-align: left; width: auto; max-width: 620px; }
-  .hero-medallon { order: 0; width: clamp(240px, min(44vh, 33vw), 440px); }
-  /* A lo ancho el pie se alinea con el texto, no al centro: el centro de la
-     portada lo ocupa el medallón. */
-  .hero-pie { align-items: flex-start; }
+  .hero-bajada { display: block; }
+  .hero-cifras { display: flex; }
+  .hero-redes.hero-redes-columna { display: flex; }
+
+  /* Lado a lado: en escritorio hay ancho de sobra y así el par ocupa una sola
+     línea, como en el diseño. */
+  .hero-botones { flex-direction: row; max-width: none; }
+  .hero-botones .boton { flex: 0 0 auto; }
+
+  /* El medallón crece todo lo que le deja la columna de texto. */
+  /* El tope lo pone la órbita, que sobresale un 13 % por lado: con 520 px de
+     medallón el texto se salía por el borde derecho de la ventana. */
+  .hero-medallon { order: 0; width: clamp(300px, min(52vh, 34vw), 460px); }
+
+  /* El pie de abajo desaparece: sus redes suben con las cifras —que es donde
+     las pone el diseño— y sin ellas la línea sola dejaba una franja vacía de
+     dos dedos contra el borde inferior. El cuerpo recupera ese sitio y el
+     bloque queda centrado de verdad. */
+  .hero-pie { display: none; }
+  .hero-cuerpo { padding-bottom: clamp(48px, 7vh, 72px); }
   .hero-scroll { display: block; }
   .hero-filete { background: linear-gradient(90deg, rgba(255,255,255,.28), rgba(255,255,255,0) 78%); }
 }
