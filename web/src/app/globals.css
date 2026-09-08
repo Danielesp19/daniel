@@ -467,7 +467,9 @@ body {
   /* Ampliado además del desenfoque: el filtro difumina los bordes y sin la
      escala se vería un halo claro contra el marco. */
   transform: scale(1.15);
-  filter: blur(38px) brightness(.5) saturate(1.1);
+  /* Bien oscuro: el fondo es el telón del que tiene que despegarse el cuadro
+     del video, y a media luz competía con él. */
+  filter: blur(38px) brightness(.28) saturate(1.05);
   pointer-events: none;
 }
 
@@ -489,14 +491,14 @@ body {
    de centrado, porque el transform ya lo usa la animación de acercamiento y se
    pisarían. */
 .hero-video {
-  inset: clamp(14px, 3.5vh, 40px) 0 auto 0;
+  inset: clamp(28px, 6.5vh, 76px) 0 auto 0;
   margin-inline: auto;
   /* El lado del cuadrado sale de lo que SOBRA: alto del hero menos el bloque de
      texto, que va anclado abajo. Con una medida fija el texto se le montaba
      encima en cuanto la ventana era más baja —el titular sube y el video no se
      entera—; así el video cede sitio solo. El `max` le pone un piso para que en
      una pantalla muy baja no desaparezca. */
-  width: max(150px, min(72vw, 380px, calc(100svh - var(--barra) - 500px)));
+  width: max(150px, min(72vw, 380px, calc(100svh - var(--barra) - 525px)));
   height: auto;
   aspect-ratio: 1;
   /* La fuente ya viene cuadrada, así que `cover` llena sin recortar nada. */
