@@ -185,6 +185,9 @@ function FormularioSede({
   });
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
+  // Copia de lo que había al abrir: si el borrador ya no coincide, cerrar
+  // avisa antes de tirar los cambios.
+  const [inicial] = useState(() => JSON.stringify(d));
 
   const set = (k: keyof typeof d, v: string | boolean) => setD((x) => ({ ...x, [k]: v }));
 
@@ -208,6 +211,7 @@ function FormularioSede({
     <Hoja
       titulo={sede ? sede.nombre : "Sede nueva"}
       onCerrar={onCerrar}
+      sucio={JSON.stringify(d) !== inicial}
       pie={
         <>
           <Boton tono="plano" onClick={onCerrar}>

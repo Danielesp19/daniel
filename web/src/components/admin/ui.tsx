@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 /**
@@ -82,6 +83,248 @@ export function Campo({
         </span>
       )}
     </label>
+  );
+}
+
+/**
+ * Campo de dinero.
+ *
+ * Se escribe con puntos de mil a medida que se teclea —48.000 y no 48000— y
+ * debajo queda el valor en letras. Antes era un `input type=number` pelado y
+ * había que contar los ceros a ojo: en un catálogo donde un molino vale 890.000
+ * y un café 48.000, equivocarse en un cero es equivocarse por diez.
+ *
+ * Hacia fuera SIEMPRE entrega dígitos limpios ("48000"), que es lo que espera
+ * la API; los puntos son solo de presentación.
+ */
+export function CampoDinero({
+  etiqueta,
+  nota,
+  valor,
+  onChange,
+  requerido = false,
+}: {
+  etiqueta: string;
+  nota?: string;
+  /** Solo dígitos, sin puntos. */
+  valor: string;
+  onChange: (v: string) => void;
+  requerido?: boolean;
+}) {
+  const numero = Number(valor || 0);
+  const conPuntos = valor === "" ? "" : numero.toLocaleString("es-CO");
+
+  return (
+    // La nota es la instrucción de cómo escribirlo, así que solo hace falta
+    // mientras está vacío; con un valor puesto, debajo va lo que vale en
+    // letras, que es más útil que repetir la instrucción.
+    <Campo etiqueta={etiqueta} nota={valor === "" ? nota : undefined}>
+      <div style={{ position: "relative" }}>
+        <span
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: 12,
+            top: "50%",
+            transform: "translateY(-50%)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            color: COLOR.suave,
+            pointerEvents: "none",
+          }}
+        >
+          $
+        </span>
+        <input
+          // `inputMode` y no `type=number`: con número el navegador pone sus
+          // flechitas, acepta "e" y "-", y no deja escribir los puntos.
+          inputMode="numeric"
+          value={conPuntos}
+          required={requerido}
+          onChange={(e) => onChange(e.target.value.replace(/\D+/g, ""))}
+          style={{ ...campo, paddingLeft: 26, fontFamily: "var(--font-mono)" }}
+          placeholder="0"
+        />
+      </div>
+      {valor !== "" && numero > 0 && (
+        <span style={{ display: "block", marginTop: 5, fontSize: 12, color: COLOR.suave }}>
+          {enLetras(numero)}
+        </span>
+      )}
+    </Campo>
+  );
+}
+
+/** 890000 → "ochocientos noventa mil pesos". Para leerlo sin contar ceros. */
+function enLetras(n: number): string {
+  if (n >= 1_000_000) {
+    const millones = n / 1_000_000;
+    const texto = Number.isInteger(millones) ? String(millones) : millones.toFixed(1).replace(".", ",");
+    return `${texto} ${millones === 1 ? "millón" : "millones"} de pesos`;
+  }
+  if (n >= 1000) {
+    const miles = n / 1000;
+    const texto = Number.isInteger(miles) ? String(miles) : miles.toFixed(1).replace(".", ",");
+    return `${texto} mil pesos`;
+  }
+  return `${n} pesos`;
+}
+
+/**
+ * Campo de archivo con vista previa y arrastre.
+ *
+ * El `<input type=file>` suelto solo decía "Ningún archivo seleccionado": no se
+ * veía qué había cargado, ni qué se acababa de escoger, y para cambiar una foto
+ * había que acordarse de cuál era. Acá se ve la miniatura de lo que hay, la de
+ * lo que se va a subir, y se puede soltar el archivo encima.
+ */
+export function CampoArchivo({
+  etiqueta,
+  nota,
+  tipo = "image",
+  actual,
+  archivo,
+  onArchivo,
+  onQuitar,
+  multiple = false,
+  onArchivos,
+}: {
+  etiqueta: string;
+  nota?: string;
+  tipo?: "image" | "video";
+  /** La URL de lo que ya está guardado, si hay. */
+  actual?: string | null;
+  archivo?: File | null;
+  onArchivo?: (f: File | null) => void;
+  /** Si se pasa, sale el botón de quitar lo guardado. */
+  onQuitar?: () => void;
+  multiple?: boolean;
+  onArchivos?: (fs: File[]) => void;
+}) {
+  const [encima, setEncima] = useState(false);
+  const entrada = useRef<HTMLInputElement>(null);
+
+  // La vista previa de lo recién escogido se arma con una URL de objeto, que
+  // hay que liberar: si no, cada archivo que se mira deja su copia en memoria.
+  // Se calcula al vuelo y se libera al cambiar, sin pasar por el estado.
+  const previo = useMemo(() => (archivo ? URL.createObjectURL(archivo) : null), [archivo]);
+  useEffect(() => () => { if (previo) URL.revokeObjectURL(previo); }, [previo]);
+
+  const recibir = (lista: FileList | null) => {
+    const fs = Array.from(lista ?? []);
+    if (multiple) onArchivos?.(fs);
+    else onArchivo?.(fs[0] ?? null);
+  };
+
+  const muestra = previo ?? actual ?? null;
+
+  return (
+    <Campo etiqueta={etiqueta} nota={nota}>
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setEncima(true);
+        }}
+        onDragLeave={() => setEncima(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setEncima(false);
+          recibir(e.dataTransfer.files);
+        }}
+        onClick={() => entrada.current?.click()}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: 10,
+          border: `1px dashed ${encima ? COLOR.tinta : COLOR.linea}`,
+          borderRadius: 12,
+          background: encima ? COLOR.fondo : "transparent",
+          cursor: "pointer",
+          transition: "border-color .15s ease, background .15s ease",
+        }}
+      >
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            flexShrink: 0,
+            display: "grid",
+            placeItems: "center",
+            borderRadius: 9,
+            background: COLOR.fondo,
+            border: `1px solid ${COLOR.linea}`,
+            overflow: "hidden",
+            color: COLOR.suave,
+            fontSize: 20,
+          }}
+        >
+          {muestra ? (
+            tipo === "video" ? (
+              <video src={muestra} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={muestra} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            )
+          ) : (
+            <span aria-hidden="true">{tipo === "video" ? "▶" : "+"}</span>
+          )}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: COLOR.suave }}>
+          {archivo ? (
+            <>
+              <strong style={{ color: COLOR.tinta, fontWeight: 600 }}>Se subirá al guardar</strong>
+              <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {archivo.name}
+              </div>
+            </>
+          ) : actual ? (
+            "Arrastra otro archivo para reemplazarlo, o haz clic."
+          ) : (
+            "Arrastra el archivo aquí o haz clic para buscarlo."
+          )}
+        </div>
+
+        {onQuitar && actual && !archivo && (
+          <Boton
+            tono="peligro"
+            chico
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onQuitar();
+            }}
+          >
+            Quitar
+          </Boton>
+        )}
+
+        {archivo && onArchivo && (
+          <Boton
+            tono="plano"
+            chico
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onArchivo(null);
+              if (entrada.current) entrada.current.value = "";
+            }}
+          >
+            Cancelar
+          </Boton>
+        )}
+
+        <input
+          ref={entrada}
+          type="file"
+          accept={tipo === "video" ? "video/*" : "image/*"}
+          multiple={multiple}
+          onChange={(e) => recibir(e.target.files)}
+          style={{ display: "none" }}
+        />
+      </div>
+    </Campo>
   );
 }
 
@@ -269,20 +512,66 @@ export function Flechas({
 }
 
 /** Hoja flotante para formularios largos, con el mismo gesto que la del sitio. */
+/**
+ * La hoja donde se editan las cosas.
+ *
+ * Tres costumbres que se dan por hechas en cualquier formulario y que acá
+ * faltaban: se cierra con Escape, la página de atrás no se desplaza mientras
+ * está abierta, y si hay cambios sin guardar avisa antes de cerrarse. Lo
+ * último no es un lujo: la hoja se cierra al hacer clic FUERA, y perder
+ * veinte minutos de ficha por un clic al lado es de las cosas que hacen que
+ * alguien deje de usar un panel.
+ */
 export function Hoja({
   titulo,
   onCerrar,
   children,
   pie,
+  sucio = false,
 }: {
   titulo: string;
   onCerrar: () => void;
   children: ReactNode;
   pie?: ReactNode;
+  /** Si hay cambios sin guardar, cerrar pregunta primero. */
+  sucio?: boolean;
 }) {
+  // Se guarda en una referencia para que el efecto del Escape no tenga que
+  // rearmarse en cada tecleo del formulario. Se escribe en un efecto y no en
+  // el render: durante el render las refs no se tocan.
+  const guardia = useRef({ sucio, onCerrar });
+  useEffect(() => {
+    guardia.current = { sucio, onCerrar };
+  });
+
+  const cerrar = () => {
+    const { sucio: hayCambios, onCerrar: salir } = guardia.current;
+    if (hayCambios && !confirm("Hay cambios sin guardar. ¿Cerrar de todos modos?")) return;
+    salir();
+  };
+
+  useEffect(() => {
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        const { sucio: hayCambios, onCerrar: salir } = guardia.current;
+        if (hayCambios && !confirm("Hay cambios sin guardar. ¿Cerrar de todos modos?")) return;
+        salir();
+      }
+    };
+    window.addEventListener("keydown", alTeclear);
+
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("keydown", alTeclear);
+      document.body.style.overflow = overflow;
+    };
+  }, []);
+
   return (
     <div
-      onClick={onCerrar}
+      onClick={cerrar}
       style={{
         position: "fixed",
         inset: 0,
@@ -321,8 +610,25 @@ export function Hoja({
             borderBottom: `1px solid ${COLOR.linea}`,
           }}
         >
-          <h2 style={{ margin: 0, fontFamily: "var(--font-serif)", fontSize: 21 }}>{titulo}</h2>
-          <Boton tono="plano" chico onClick={onCerrar} aria-label="Cerrar">
+          <h2 style={{ margin: 0, fontFamily: "var(--font-serif)", fontSize: 21 }}>
+            {titulo}
+            {/* El punto avisa que hay algo sin guardar, sin tener que leer. */}
+            {sucio && (
+              <span
+                title="Cambios sin guardar"
+                style={{
+                  display: "inline-block",
+                  width: 7,
+                  height: 7,
+                  marginLeft: 9,
+                  borderRadius: 999,
+                  background: COLOR.aviso,
+                  verticalAlign: "middle",
+                }}
+              />
+            )}
+          </h2>
+          <Boton tono="plano" chico onClick={cerrar} aria-label="Cerrar (Esc)">
             ✕
           </Boton>
         </div>

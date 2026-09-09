@@ -172,6 +172,9 @@ function Formulario({
   });
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
+  // Copia de lo que había al abrir: si el borrador ya no coincide, cerrar
+  // avisa antes de tirar los cambios.
+  const [inicial] = useState(() => JSON.stringify(d));
 
   async function guardar() {
     setGuardando(true);
@@ -191,6 +194,7 @@ function Formulario({
     <Hoja
       titulo={pregunta ? "Editar pregunta" : "Pregunta nueva"}
       onCerrar={onCerrar}
+      sucio={JSON.stringify(d) !== inicial}
       pie={
         <>
           <Boton tono="plano" onClick={onCerrar}>

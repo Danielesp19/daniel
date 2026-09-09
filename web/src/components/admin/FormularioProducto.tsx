@@ -12,7 +12,19 @@ import {
   type AdminCategoria,
   type AdminSede,
 } from "@/lib/admin-api";
-import { COLOR, campo, rotulo, Campo, Boton, Interruptor, Aviso, Hoja, Etiqueta } from "./ui";
+import {
+  COLOR,
+  campo,
+  rotulo,
+  Campo,
+  CampoArchivo,
+  CampoDinero,
+  Boton,
+  Interruptor,
+  Aviso,
+  Hoja,
+  Etiqueta,
+} from "./ui";
 
 /** Lo que el formulario mantiene en memoria mientras se llena. */
 interface Borrador {
@@ -104,6 +116,11 @@ export default function FormularioProducto({
   const [nota, setNota] = useState("");
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
+
+  // Lo que había al abrir, para saber si hay cambios sin guardar. Se compara
+  // el borrador entero de un tirón en vez de campo por campo: son veinte
+  // campos y cualquiera de ellos cuenta igual.
+  const [inicial] = useState(() => JSON.stringify(borradorDe(producto, categoriaPorDefecto)));
 
   const [sedes, setSedes] = useState<AdminSede[]>([]);
   const [otros, setOtros] = useState<AdminProducto[]>([]);
@@ -219,6 +236,13 @@ export default function FormularioProducto({
     <Hoja
       titulo={editando ? producto.nombre : "Producto nuevo"}
       onCerrar={onCerrar}
+      sucio={
+        JSON.stringify(datos) !== inicial ||
+        Boolean(imagen || video) ||
+        extras.length > 0 ||
+        quitarImagen ||
+        quitarVideo
+      }
       pie={
         <>
           <Boton tono="plano" onClick={onCerrar} type="button">
@@ -268,16 +292,13 @@ export default function FormularioProducto({
             </select>
           </Campo>
 
-          <Campo etiqueta="Precio" nota="En pesos, entero y sin puntos: 48000">
-            <input
-              style={campo}
-              type="number"
-              min={0}
-              value={datos.precio_cop}
-              onChange={(e) => set("precio_cop", e.target.value)}
-              required
-            />
-          </Campo>
+          <CampoDinero
+            etiqueta="Precio"
+            nota="Los puntos se ponen solos."
+            valor={datos.precio_cop}
+            onChange={(v) => set("precio_cop", v)}
+            requerido
+          />
 
           <Campo etiqueta="Peso de la bolsa" nota="En gramos. Deja 0 para equipos y servicios.">
             <input style={campo} type="number" min={0} value={datos.gramos} onChange={(e) => set("gramos", e.target.value)} />
@@ -456,38 +477,25 @@ export default function FormularioProducto({
         <Titulo nota="La foto se convierte a WebP y el video se recomprime al subirlos.">Fotos y video</Titulo>
 
         <div style={seccion}>
-          <Campo etiqueta="Foto principal">
-            {producto?.imagen_url && !quitarImagen && (
-              <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={producto.imagen_url}
-                  alt=""
-                  style={{ width: 62, height: 62, objectFit: "cover", borderRadius: 8, border: `1px solid ${COLOR.linea}` }}
-                />
-                <Boton tono="peligro" chico type="button" onClick={() => setQuitarImagen(true)}>
-                  Quitar
-                </Boton>
-              </div>
-            )}
-            <input type="file" accept="image/*" onChange={(e) => setImagen(e.target.files?.[0] ?? null)} style={{ fontSize: 12.5 }} />
-          </Campo>
+          <CampoArchivo
+            etiqueta="Foto principal"
+            actual={quitarImagen ? null : producto?.imagen_url}
+            archivo={imagen}
+            onArchivo={setImagen}
+            onQuitar={() => setQuitarImagen(true)}
+          />
 
-          <Campo etiqueta="Video">
-            {producto?.video_url && !quitarVideo && (
-              <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
-                <video src={producto.video_url} muted style={{ width: 62, height: 62, objectFit: "cover", borderRadius: 8 }} />
-                <Boton tono="peligro" chico type="button" onClick={() => setQuitarVideo(true)}>
-                  Quitar
-                </Boton>
-              </div>
-            )}
-            <input type="file" accept="video/*" onChange={(e) => setVideo(e.target.files?.[0] ?? null)} style={{ fontSize: 12.5 }} />
-          </Campo>
+          <CampoArchivo
+            etiqueta="Video"
+            tipo="video"
+            actual={quitarVideo ? null : producto?.video_url}
+            archivo={video}
+            onArchivo={setVideo}
+            onQuitar={() => setQuitarVideo(true)}
+          />
         </div>
 
         <div style={{ marginTop: 14 }}>
-          <span style={rotulo}>Fotos adicionales</span>
           {producto && producto.imagenes_extra.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
               {producto.imagenes_extra.map((img) => (
@@ -522,12 +530,15 @@ export default function FormularioProducto({
               ))}
             </div>
           )}
-          <input
-            type="file"
-            accept="image/*"
+          <CampoArchivo
+            etiqueta="Fotos adicionales"
+            nota={
+              extras.length > 0
+                ? `${extras.length} ${extras.length === 1 ? "foto" : "fotos"} por subir`
+                : "Se pueden soltar varias de una vez. En un kit salen juntas en la miniatura."
+            }
             multiple
-            onChange={(e) => setExtras(Array.from(e.target.files ?? []))}
-            style={{ fontSize: 12.5 }}
+            onArchivos={setExtras}
           />
         </div>
 

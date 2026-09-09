@@ -13,7 +13,19 @@ import {
   type AdminReceta,
   type AdminProducto,
 } from "@/lib/admin-api";
-import { COLOR, campo, rotulo, Campo, Boton, Cabecera, Aviso, Flechas, Hoja, Interruptor } from "@/components/admin/ui";
+import {
+  COLOR,
+  campo,
+  rotulo,
+  Campo,
+  CampoArchivo,
+  Boton,
+  Cabecera,
+  Aviso,
+  Flechas,
+  Hoja,
+  Interruptor,
+} from "@/components/admin/ui";
 
 const METODOS = ["Filtrado", "Inmersión", "Espresso", "Con leche"];
 
@@ -354,39 +366,15 @@ function Pasos({ valores, onChange }: { valores: PasoEdicion[]; onChange: (v: Pa
                   onChange={(e) => editar(i, { etiqueta: e.target.value })}
                 />
               </Campo>
-              <Campo etiqueta="Foto del paso">
-                <input
-                  type="file"
-                  accept="image/*"
-                  style={{ fontSize: 12, width: "100%", maxWidth: "100%" }}
-                  onChange={(e) => editar(i, { archivo: e.target.files?.[0] ?? null })}
-                />
-              </Campo>
+              <CampoArchivo
+                etiqueta="Foto del paso"
+                actual={p.imagen_url}
+                archivo={p.archivo}
+                onArchivo={(f) => editar(i, { archivo: f })}
+                onQuitar={() => editar(i, { archivo: null, imagen: null, imagen_url: null })}
+              />
             </div>
 
-            {(p.archivo || p.imagen_url) && (
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {p.imagen_url && !p.archivo && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={p.imagen_url}
-                    alt=""
-                    style={{ width: 54, height: 54, objectFit: "cover", borderRadius: 6 }}
-                  />
-                )}
-                <span style={{ fontSize: 12, color: COLOR.suave }}>
-                  {p.archivo ? `Se subirá ${p.archivo.name}` : "Tiene foto"}
-                </span>
-                <Boton
-                  chico
-                  tono="plano"
-                  type="button"
-                  onClick={() => editar(i, { archivo: null, imagen: null, imagen_url: null })}
-                >
-                  Quitar foto
-                </Boton>
-              </div>
-            )}
           </div>
         ))}
       </div>
@@ -434,6 +422,27 @@ function Formulario({
     })),
   );
   const [artefactos, setArtefactos] = useState<number[]>((receta?.artefactos ?? []).map((a) => a.id));
+  // Lo que había al abrir, para avisar si se cierra con cambios sin guardar.
+  const [inicial] = useState(() =>
+    JSON.stringify({
+      d: {
+        nombre: receta?.nombre ?? "",
+        metodo: receta?.metodo ?? METODOS[0],
+        resumen: receta?.resumen ?? "",
+        detalle: receta?.detalle ?? "",
+        video_youtube: receta?.video_youtube ?? "",
+        cafe_g: receta?.cafe_g ? String(receta.cafe_g) : "",
+        agua_g: receta?.agua_g ? String(receta.agua_g) : "",
+        duracion: aTexto(receta?.duracion_seg ?? null),
+        molienda_micras: receta?.molienda_micras ? String(receta.molienda_micras) : "",
+        producto_id: receta?.producto_id ? String(receta.producto_id) : "",
+        activa: receta?.activa ?? true,
+      },
+      ing: receta?.ingredientes ?? [],
+      pasos: (receta?.pasos ?? []).map((p) => [p.texto, p.segundos, p.temporizador_etiqueta, p.imagen]),
+      art: (receta?.artefactos ?? []).map((a) => a.id),
+    }),
+  );
   const [imagen, setImagen] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -505,6 +514,14 @@ function Formulario({
     <Hoja
       titulo={receta ? receta.nombre : "Receta nueva"}
       onCerrar={onCerrar}
+      sucio={
+        JSON.stringify({
+          d,
+          ing: ingredientes,
+          pasos: pasos.map((p) => [p.texto, aSegundos(p.duracion), p.etiqueta || null, p.imagen]),
+          art: artefactos,
+        }) !== inicial || Boolean(imagen) || pasos.some((p) => p.archivo)
+      }
       pie={
         <>
           <Boton tono="plano" onClick={onCerrar}>
@@ -650,9 +667,13 @@ function Formulario({
 
         <Artefactos productos={productos} elegidos={artefactos} onChange={setArtefactos} />
 
-        <Campo etiqueta="Foto" nota="Opcional. Sin foto y sin video, la tarjeta sale con una taza.">
-          <input type="file" accept="image/*" onChange={(e) => setImagen(e.target.files?.[0] ?? null)} style={{ fontSize: 12.5 }} />
-        </Campo>
+        <CampoArchivo
+          etiqueta="Foto"
+          nota="Opcional. Sin foto y sin video, la tarjeta sale con una taza."
+          actual={receta?.imagen_url}
+          archivo={imagen}
+          onArchivo={setImagen}
+        />
 
         <Interruptor
           etiqueta="Visible en la página"

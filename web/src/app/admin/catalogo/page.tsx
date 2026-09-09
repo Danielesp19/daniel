@@ -486,6 +486,15 @@ function FormularioCategoria({
   const [activa, setActiva] = useState(categoria?.activa ?? true);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [inicial] = useState(() =>
+    JSON.stringify([
+      categoria?.nombre ?? "",
+      categoria?.descripcion ?? "",
+      categoria?.modo_vitrina ?? "grid",
+      String(categoria?.padre_id ?? padreInicial ?? ""),
+      categoria?.activa ?? true,
+    ]),
+  );
 
   // Una subcategoría se dibuja con el modo de su sección, así que el selector
   // de vitrina sobra y solo confundiría: mostraría una opción que no hace nada.
@@ -516,6 +525,7 @@ function FormularioCategoria({
     <Hoja
       titulo={categoria ? categoria.nombre : esSub ? "Subcategoría nueva" : "Sección nueva"}
       onCerrar={onCerrar}
+      sucio={JSON.stringify([nombre, descripcion, modo, padre, activa]) !== inicial}
       pie={
         <>
           <Boton tono="plano" onClick={onCerrar}>
