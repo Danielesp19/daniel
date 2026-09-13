@@ -575,8 +575,13 @@ class Herramientas
             return ['error' => 'No hay ninguna foto reciente en el chat. Pídele que la envíe y vuelve a intentarlo.'];
         }
 
-        $anterior = $producto->imagen;
-        $producto->update(['imagen' => $ruta]);
+        // La foto entra de primera: pasa a ser la portada, que es lo que
+        // espera quien la manda por WhatsApp diciendo "ponle esta".
+        $anterior = $producto->medios()->where('tipo', 'imagen')->orderBy('orden')->first();
+        $producto->medios()->create(['tipo' => 'imagen', 'ruta' => $ruta, 'orden' => -1]);
+        foreach ($producto->medios()->orderBy('orden')->get()->values() as $i => $m) {
+            $m->update(['orden' => $i]);
+        }
 
         // La foto se consume: si no, un "ponle esta misma al otro" seguido de
         // un descuido dejaría la misma imagen en media docena de productos.
@@ -584,8 +589,9 @@ class Herramientas
 
         // La imagen vieja ya no la referencia nadie. Borrarla evita que el
         // disco crezca sin control a punta de fotos reemplazadas.
-        if ($anterior && $anterior !== $ruta) {
-            Storage::disk('public')->delete($anterior);
+        if ($anterior && $anterior->ruta !== $ruta) {
+            Storage::disk('public')->delete($anterior->ruta);
+            $anterior->delete();
         }
 
         return [
@@ -703,7 +709,7 @@ class Herramientas
             'stock_minimo' => $p->controla_stock ? (int) $p->stock_minimo : null,
             'agotado' => $p->agotado(),
             'por_acabarse' => $p->porAcabarse(),
-            'tiene_foto' => (bool) $p->imagen,
+            'tiene_foto' => $p->medios()->where('tipo', 'imagen')->exists(),
             'activo' => (bool) $p->activo,
             'destacado' => (bool) $p->destacado,
             'finca' => $p->finca,

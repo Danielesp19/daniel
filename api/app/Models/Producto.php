@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Support\Sitio;
-use App\Support\VideoPoster;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -21,7 +20,6 @@ class Producto extends Model
         'stock', 'stock_minimo', 'gramos', 'controla_stock', 'es_cafe',
         'finca', 'productor', 'region', 'altitud_msnm', 'variedad', 'proceso',
         'tueste', 'notas', 'puntaje_sca',
-        'imagen', 'video', 'video_poster',
         'activo', 'destacado', 'orden',
     ];
 
@@ -75,17 +73,6 @@ class Producto extends Model
             }
         });
 
-        // El póster es el primer cuadro del video: es lo que se ve mientras el
-        // video baja. Se genera acá, al guardar, para que valga igual si el
-        // video llegó por el panel o por cualquier otra vía.
-        static::saving(function (self $producto) {
-            if (! $producto->isDirty('video')) {
-                return;
-            }
-            $producto->video_poster = $producto->video
-                ? VideoPoster::generate($producto->video)
-                : null;
-        });
     }
 
     public function categoria()
@@ -93,9 +80,42 @@ class Producto extends Model
         return $this->belongsTo(Categoria::class);
     }
 
-    public function imagenes()
+    /**
+     * Las fotos y los videos, en su orden. La primera es la portada.
+     */
+    public function medios()
     {
-        return $this->hasMany(ProductoImagen::class)->orderBy('orden');
+        return $this->hasMany(ProductoMedio::class)->orderBy('orden');
+    }
+
+    /** La colección de medios ya cargada, sin volver a la base si ya está. */
+    public function medioLista()
+    {
+        return $this->relationLoaded('medios') ? $this->medios : $this->medios()->get();
+    }
+
+    /** La portada: el primer medio. Puede ser un video. */
+    public function portada(): ?ProductoMedio
+    {
+        return $this->medioLista()->first();
+    }
+
+    /**
+     * La foto que representa al producto donde no cabe un video: la primera
+     * imagen, y si no hay ninguna, el cuadro de respaldo del primer video.
+     */
+    public function fotoPrincipal(): ?string
+    {
+        $medios = $this->medioLista();
+
+        $imagen = $medios->firstWhere('tipo', 'imagen');
+        if ($imagen) {
+            return $imagen->url();
+        }
+
+        $video = $medios->firstWhere('tipo', 'video');
+
+        return $video?->posterUrl();
     }
 
     /**

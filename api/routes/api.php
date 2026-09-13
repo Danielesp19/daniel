@@ -47,7 +47,6 @@ Route::middleware(['throttle:admin-api', 'admin.token'])->prefix('admin')->group
     Route::patch('productos/{producto}', [ProductoAdminController::class, 'update']);
     Route::delete('productos/{producto}', [ProductoAdminController::class, 'destroy']);
     Route::patch('productos/{producto}/stock', [ProductoAdminController::class, 'stock']);
-    Route::delete('productos/{producto}/imagenes/{imagen}', [ProductoAdminController::class, 'borrarImagen']);
 
     // ── Categorías ──────────────────────────────────────────────────────────
     Route::post('categorias/reordenar', [CategoriaAdminController::class, 'reordenar']);

@@ -60,9 +60,10 @@ export interface AdminProducto {
   activo: boolean;
   destacado: boolean;
   orden: number;
+  /** La foto que representa al producto en las listas del panel. */
   imagen_url: string | null;
-  video_url: string | null;
-  imagenes_extra: { id: number; url: string }[];
+  /** Fotos y videos en su orden. La primera es la portada. */
+  medios: { id: number; tipo: "imagen" | "video"; url: string; poster_url: string | null }[];
   /** Los productos que incluye, si es un kit. */
   componentes: { id: number; nombre: string }[];
 }
@@ -177,8 +178,11 @@ function normalizar(p: AdminProducto): AdminProducto {
   return {
     ...p,
     imagen_url: urlArchivo(p.imagen_url),
-    video_url: urlArchivo(p.video_url),
-    imagenes_extra: (p.imagenes_extra ?? []).map((i) => ({ ...i, url: urlArchivo(i.url)! })),
+    medios: (p.medios ?? []).map((m) => ({
+      ...m,
+      url: urlArchivo(m.url)!,
+      poster_url: urlArchivo(m.poster_url),
+    })),
   };
 }
 
@@ -275,11 +279,6 @@ export const reordenarProductos = (ids: number[]) =>
     body: JSON.stringify({ ids }),
   });
 
-export const borrarImagenExtra = (productoId: number, imagenId: number) =>
-  pedir<null>(`/productos/${productoId}/imagenes/${imagenId}`, {
-    method: "DELETE",
-    headers: cabeceras(),
-  });
 
 /** Movimiento de inventario en una sede. */
 export const moverStock = (

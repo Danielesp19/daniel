@@ -69,12 +69,18 @@ export default function TeselaFoto({
     return () => observador.disconnect();
   }, []);
 
-  if (producto.video_url) {
+  // La PORTADA es el primer medio de la lista, sea foto o video: es el orden
+  // que se decidió en el panel. Si la API todavía no manda `medios` —queda
+  // atrás un despliegue— se cae a la forma vieja, donde el video mandaba.
+  const portada = producto.medios?.[0];
+  const esVideo = portada ? portada.tipo === "video" : Boolean(producto.video_url);
+
+  if (esVideo) {
     return (
       <video
         ref={video}
-        src={producto.video_url}
-        poster={producto.video_poster_url ?? producto.imagen_url ?? undefined}
+        src={portada?.url ?? producto.video_url!}
+        poster={portada?.poster_url ?? producto.video_poster_url ?? producto.imagen_url ?? undefined}
         muted
         loop
         playsInline
@@ -92,7 +98,11 @@ export default function TeselaFoto({
   //
   // Solo los kits. Un café con cuatro fotos quiere su foto principal grande,
   // no cuatro miniaturas; ahí las adicionales son la galería, no el contenido.
-  const fotos = [producto.imagen_url, ...producto.imagenes_extra].filter(Boolean) as string[];
+  const fotos = (
+    producto.medios?.length
+      ? producto.medios.filter((m) => m.tipo === "imagen").map((m) => m.url)
+      : [producto.imagen_url, ...producto.imagenes_extra]
+  ).filter(Boolean) as string[];
   const esKit = producto.componentes.length > 0;
 
   if (esKit && fotos.length >= 2) {
@@ -123,7 +133,8 @@ export default function TeselaFoto({
     );
   }
 
-  const relleno = producto.imagen_url ? null : fotoDeRelleno(producto.id);
+  const principal = fotos[0] ?? producto.imagen_url;
+  const relleno = principal ? null : fotoDeRelleno(producto.id);
 
   return (
     <Image

@@ -19,7 +19,7 @@ class CatalogoController extends Controller
         // viaja adentro de la suya. Se piden los productos de las dos —los que
         // cuelgan directo de la sección y los de cada subcategoría— en la misma
         // consulta.
-        $conProductos = ['productosVisibles.imagenes', 'productosVisibles.sedes', 'productosVisibles.componentes'];
+        $conProductos = ['productosVisibles.medios', 'productosVisibles.sedes', 'productosVisibles.componentes'];
 
         $categorias = Categoria::where('activa', true)
             ->secciones()
@@ -79,7 +79,7 @@ class CatalogoController extends Controller
     public function show(Producto $producto)
     {
         abort_unless($producto->activo, 404);
-        $producto->load(['categoria', 'imagenes', 'sedes', 'componentes']);
+        $producto->load(['categoria', 'medios', 'sedes', 'componentes']);
 
         return response()->json($this->formato($producto, detalle: true));
     }
@@ -208,6 +208,9 @@ class CatalogoController extends Controller
 
     private function formato(Producto $p, bool $detalle = false, ?Collection $sedes = null): array
     {
+        $medios = $p->medioLista();
+        $video = $medios->firstWhere('tipo', 'video');
+
         $datos = [
             'id' => $p->id,
             'nombre' => $p->nombre,
@@ -237,11 +240,23 @@ class CatalogoController extends Controller
             'notas' => $p->notas ?? [],
             'puntaje_sca' => $p->puntaje_sca !== null ? (float) $p->puntaje_sca : null,
 
-            'imagen_url' => $p->imagen ? asset('storage/'.$p->imagen) : null,
-            'video_url' => $p->video ? asset('storage/'.$p->video) : null,
-            'video_poster_url' => $p->video_poster ? asset('storage/'.$p->video_poster) : null,
-            'imagenes_extra' => ($p->relationLoaded('imagenes') ? $p->imagenes : $p->imagenes()->get())
-                ->map(fn ($img) => asset('storage/'.$img->ruta))
+            // Los medios en su orden: la primera fila es la portada, sea foto
+            // o video. Es lo único que hay que leer para pintar una galería.
+            'medios' => $medios->map(fn ($m) => [
+                'id' => $m->id,
+                'tipo' => $m->tipo,
+                'url' => $m->url(),
+                'poster_url' => $m->posterUrl(),
+            ])->values()->all(),
+
+            // Y los mismos datos en la forma de antes, para lo que solo
+            // necesita "una foto" o "el video": la tarjeta del catálogo, el
+            // mosaico del kit, la banda de servicios.
+            'imagen_url' => $p->fotoPrincipal(),
+            'video_url' => $video?->url(),
+            'video_poster_url' => $video?->posterUrl(),
+            'imagenes_extra' => $medios->where('tipo', 'imagen')->skip(1)
+                ->map(fn ($m) => $m->url())
                 ->values()
                 ->all(),
 

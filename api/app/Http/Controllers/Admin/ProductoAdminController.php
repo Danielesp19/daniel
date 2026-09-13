@@ -97,7 +97,7 @@ class ProductoAdminController extends Controller
         $this->guardarMedios($request, $producto);
         $this->guardarComponentes($request, $producto);
 
-        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'imagenes', 'componentes'])), 201);
+        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'medios', 'componentes'])), 201);
     }
 
     public function update(Request $request, Producto $producto)
@@ -108,7 +108,7 @@ class ProductoAdminController extends Controller
         $this->guardarMedios($request, $producto);
         $this->guardarComponentes($request, $producto);
 
-        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'imagenes', 'componentes'])));
+        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'medios', 'componentes'])));
     }
 
     /**
@@ -117,14 +117,11 @@ class ProductoAdminController extends Controller
      */
     public function destroy(Producto $producto)
     {
-        foreach ([$producto->imagen, $producto->video, $producto->video_poster] as $ruta) {
-            if ($ruta) {
-                Storage::disk('public')->delete($ruta);
+        foreach ($producto->medios as $medio) {
+            Storage::disk('public')->delete($medio->ruta);
+            if ($medio->poster) {
+                Storage::disk('public')->delete($medio->poster);
             }
-        }
-
-        foreach ($producto->imagenes as $imagen) {
-            Storage::disk('public')->delete($imagen->ruta);
         }
 
         $producto->delete();
@@ -149,17 +146,6 @@ class ProductoAdminController extends Controller
         Sitio::revalidar();
 
         return response()->json(['ok' => true]);
-    }
-
-    /** Borra una de las fotos extra de la galería. */
-    public function borrarImagen(Producto $producto, int $imagen)
-    {
-        $foto = $producto->imagenes()->findOrFail($imagen);
-
-        Storage::disk('public')->delete($foto->ruta);
-        $foto->delete();
-
-        return response()->json(null, 204);
     }
 
     /**
@@ -206,10 +192,9 @@ class ProductoAdminController extends Controller
             // procesa guardarMedios(), que optimiza y guarda la ruta.
             'imagen' => 'sometimes|nullable|image|max:12288',
             'video' => 'sometimes|nullable|file|mimetypes:video/mp4,video/quicktime,video/webm|max:102400',
-            'imagenes_extra' => 'sometimes|array|max:6',
-            'imagenes_extra.*' => 'image|max:12288',
-            'quitar_imagen' => 'sometimes|boolean',
-            'quitar_video' => 'sometimes|boolean',
+            'medios' => 'sometimes|nullable|array|max:8',
+            'medios.*.id' => 'sometimes|nullable|integer',
+            'medios.*.archivo' => 'sometimes|file|mimetypes:image/jpeg,image/png,image/webp,image/avif,video/mp4,video/quicktime,video/webm|max:131072',
         ];
     }
 
@@ -217,7 +202,7 @@ class ProductoAdminController extends Controller
     private function soloCampos(array $datos): array
     {
         return array_diff_key($datos, array_flip([
-            'imagen', 'video', 'imagenes_extra', 'quitar_imagen', 'quitar_video', 'componentes',
+            'imagen', 'video', 'medios', 'componentes',
         ]));
     }
 
@@ -258,41 +243,93 @@ class ProductoAdminController extends Controller
      */
     private function guardarMedios(Request $request, Producto $producto): void
     {
-        $cambios = [];
+        // Sin el campo, los medios se quedan como están: guardar desde otro
+        // sitio —el chatbot cambiando un precio— no puede borrar la galería.
+        //
+        // Se pregunta por los DOS lados: una fila nueva viaja solo como
+        // archivo, y `has()` mira únicamente la entrada de texto. Preguntando
+        // solo por ahí, subir fotos a un producto sin fotos no hacía nada.
+        if (! $request->has('medios') && ! $request->hasFile('medios')) {
+            $this->subirSueltos($request, $producto);
 
-        if ($request->boolean('quitar_imagen') && $producto->imagen) {
-            Storage::disk('public')->delete($producto->imagen);
-            $cambios['imagen'] = null;
+            return;
         }
 
-        if ($request->hasFile('imagen')) {
-            if ($producto->imagen) {
-                Storage::disk('public')->delete($producto->imagen);
+        $entrantes = $request->input('medios', []) ?: [];
+        $archivos = $request->file('medios', []) ?: [];
+
+        // Las posiciones salen de la unión de los dos: las filas que ya
+        // existían llegan como texto (su id) y las nuevas como archivo. El
+        // orden de la lista es el orden de las posiciones.
+        $posiciones = array_unique(array_merge(array_keys($entrantes), array_keys($archivos)));
+        sort($posiciones, SORT_NUMERIC);
+
+        $sobreviven = [];
+
+        foreach ($posiciones as $i => $posicion) {
+            $fila = $entrantes[$posicion] ?? [];
+            $archivo = $archivos[$posicion]['archivo'] ?? null;
+
+            // Fila con archivo nuevo: se sube y entra en esta posición.
+            if ($archivo) {
+                $esVideo = str_starts_with((string) $archivo->getMimeType(), 'video/');
+                $medio = $producto->medios()->create([
+                    'tipo' => $esVideo ? 'video' : 'imagen',
+                    'ruta' => $esVideo
+                        ? VideoOptimizer::store($archivo, 'productos')
+                        : ImageOptimizer::store($archivo, 'productos'),
+                    'orden' => $i,
+                ]);
+                $sobreviven[] = $medio->id;
+
+                continue;
             }
-            $cambios['imagen'] = ImageOptimizer::store($request->file('imagen'), 'productos');
-        }
 
-        if ($request->boolean('quitar_video') && $producto->video) {
-            Storage::disk('public')->delete($producto->video);
-            $cambios['video'] = null;
-        }
-
-        if ($request->hasFile('video')) {
-            if ($producto->video) {
-                Storage::disk('public')->delete($producto->video);
+            // Fila que ya existía: solo cambia de posición.
+            $id = (int) ($fila['id'] ?? 0);
+            if ($id && $medio = $producto->medios()->find($id)) {
+                $medio->update(['orden' => $i]);
+                $sobreviven[] = $medio->id;
             }
-            $cambios['video'] = VideoOptimizer::store($request->file('video'), 'productos');
         }
 
-        if ($cambios) {
-            $producto->update($cambios);
+        // Lo que no viene en la lista se borró desde el panel: se va con su
+        // archivo, que si no queda ocupando disco para siempre.
+        foreach ($producto->medios()->whereNotIn('id', $sobreviven ?: [0])->get() as $sobra) {
+            Storage::disk('public')->delete($sobra->ruta);
+            if ($sobra->poster) {
+                Storage::disk('public')->delete($sobra->poster);
+            }
+            $sobra->delete();
         }
+    }
 
-        foreach ((array) $request->file('imagenes_extra', []) as $archivo) {
-            $producto->imagenes()->create([
-                'ruta' => ImageOptimizer::store($archivo, 'productos'),
-                'orden' => (int) $producto->imagenes()->max('orden') + 1,
+    /**
+     * La vía de antes, para quien manda `imagen` o `video` sueltos: el chatbot
+     * le pone foto a un producto sin saber nada de listas ni de orden.
+     */
+    private function subirSueltos(Request $request, Producto $producto): void
+    {
+        foreach (['imagen' => 'imagen', 'video' => 'video'] as $campo => $tipo) {
+            if (! $request->hasFile($campo)) {
+                continue;
+            }
+
+            $archivo = $request->file($campo);
+            $producto->medios()->create([
+                'tipo' => $tipo,
+                'ruta' => $tipo === 'video'
+                    ? VideoOptimizer::store($archivo, 'productos')
+                    : ImageOptimizer::store($archivo, 'productos'),
+                // Una foto suelta manda: se pone de primera y pasa a ser la
+                // portada, que es lo que espera quien la sube desde WhatsApp.
+                'orden' => $tipo === 'imagen' ? -1 : (int) $producto->medios()->max('orden') + 1,
             ]);
+        }
+
+        // Se renumera para que no queden huecos ni negativos.
+        foreach ($producto->medios()->orderBy('orden')->get()->values() as $i => $m) {
+            $m->update(['orden' => $i]);
         }
     }
 
@@ -441,16 +478,19 @@ class ProductoAdminController extends Controller
 
             // El panel necesita ver lo que ya está subido para poder
             // reemplazarlo o quitarlo.
-            'imagen_url' => $p->imagen ? asset('storage/'.$p->imagen) : null,
-            'video_url' => $p->video ? asset('storage/'.$p->video) : null,
+            // La foto que representa al producto en las listas del panel.
+            'imagen_url' => $p->fotoPrincipal(),
             'componentes' => ($p->relationLoaded('componentes') ? $p->componentes : $p->componentes()->get())
                 ->map(fn ($c) => ['id' => $c->id, 'nombre' => $c->nombre])
                 ->values()
                 ->all(),
-            'imagenes_extra' => ($p->relationLoaded('imagenes') ? $p->imagenes : $p->imagenes()->get())
-                ->map(fn ($img) => ['id' => $img->id, 'url' => asset('storage/'.$img->ruta)])
-                ->values()
-                ->all(),
+            // La galería completa y en orden: es lo que edita el formulario.
+            'medios' => $p->medioLista()->map(fn ($m) => [
+                'id' => $m->id,
+                'tipo' => $m->tipo,
+                'url' => $m->url(),
+                'poster_url' => $m->posterUrl(),
+            ])->values()->all(),
         ];
     }
 }

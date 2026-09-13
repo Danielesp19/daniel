@@ -120,7 +120,7 @@ class AdminApiTest extends TestCase
             'imagen' => UploadedFile::fake()->image('foto.jpg', 900, 900),
         ])->assertCreated();
 
-        $ruta = Producto::first()->imagen;
+        $ruta = Producto::first()->portada()?->ruta;
         $this->assertNotNull($ruta, 'la foto debió guardarse');
         Storage::disk('public')->assertExists($ruta);
 
@@ -274,5 +274,76 @@ class AdminApiTest extends TestCase
         $r = $this->panel()->post('/api/admin/hero', ['titulo' => 'El arte del café']);
 
         $this->assertGreaterThanOrEqual(400, $r->status());
+    }
+
+    public function test_los_medios_guardan_el_orden_que_mande_el_panel(): void
+    {
+        Storage::fake('public');
+
+        $producto = $this->categoria->productos()->create(['nombre' => 'Kit', 'precio_cop' => 10000]);
+        $a = $producto->medios()->create(['tipo' => 'imagen', 'ruta' => 'productos/a.webp', 'orden' => 0]);
+        $b = $producto->medios()->create(['tipo' => 'imagen', 'ruta' => 'productos/b.webp', 'orden' => 1]);
+
+        // Se mandan al revés: la segunda pasa a ser la portada.
+        $this->panel()->post("/api/admin/productos/{$producto->id}", [
+            '_method' => 'PATCH',
+            'medios' => [['id' => $b->id], ['id' => $a->id]],
+        ])->assertOk();
+
+        $this->assertSame('productos/b.webp', $producto->fresh()->portada()->ruta);
+    }
+
+    public function test_el_medio_que_no_viene_en_la_lista_se_borra_con_su_archivo(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('productos/sobra.webp', 'x');
+
+        $producto = $this->categoria->productos()->create(['nombre' => 'Kit', 'precio_cop' => 10000]);
+        $queda = $producto->medios()->create(['tipo' => 'imagen', 'ruta' => 'productos/queda.webp', 'orden' => 0]);
+        $producto->medios()->create(['tipo' => 'imagen', 'ruta' => 'productos/sobra.webp', 'orden' => 1]);
+
+        $this->panel()->post("/api/admin/productos/{$producto->id}", [
+            '_method' => 'PATCH',
+            'medios' => [['id' => $queda->id]],
+        ])->assertOk();
+
+        $this->assertSame(1, $producto->medios()->count());
+        Storage::disk('public')->assertMissing('productos/sobra.webp');
+    }
+
+    public function test_guardar_sin_mandar_medios_no_toca_la_galeria(): void
+    {
+        $producto = $this->categoria->productos()->create(['nombre' => 'Kit', 'precio_cop' => 10000]);
+        $producto->medios()->create(['tipo' => 'imagen', 'ruta' => 'productos/a.webp', 'orden' => 0]);
+
+        // El chatbot cambia un precio y no sabe nada de galerías: no puede
+        // llevarse las fotos por delante.
+        $this->panel()
+            ->patchJson("/api/admin/productos/{$producto->id}", ['precio_cop' => 12000])
+            ->assertOk();
+
+        $this->assertSame(1, $producto->medios()->count());
+    }
+
+    public function test_sube_fotos_nuevas_en_el_orden_en_que_llegan(): void
+    {
+        Storage::fake('public');
+
+        $producto = $this->categoria->productos()->create(['nombre' => 'Kit', 'precio_cop' => 10000]);
+
+        // Filas nuevas: viajan SOLO como archivo, sin id. Es el caso que se
+        // colaba —`has()` no ve los archivos— y dejaba el producto sin fotos.
+        $this->panel()->post("/api/admin/productos/{$producto->id}", [
+            '_method' => 'PATCH',
+            'medios' => [
+                ['archivo' => UploadedFile::fake()->image('primera.jpg', 800, 800)],
+                ['archivo' => UploadedFile::fake()->image('segunda.jpg', 800, 800)],
+            ],
+        ])->assertOk();
+
+        $medios = $producto->fresh()->medios;
+        $this->assertCount(2, $medios);
+        $this->assertSame([0, 1], $medios->pluck('orden')->all());
+        Storage::disk('public')->assertExists($medios->first()->ruta);
     }
 }

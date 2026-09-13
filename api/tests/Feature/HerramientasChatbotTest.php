@@ -177,7 +177,8 @@ class HerramientasChatbotTest extends TestCase
         $r = Herramientas::ejecutar('asignar_foto', ['producto_id' => $producto->id], self::ADMIN);
 
         $this->assertTrue($r['ok']);
-        $this->assertSame('productos/nueva.webp', $producto->fresh()->imagen);
+        // La foto entra como portada: primer medio de la lista.
+        $this->assertSame('productos/nueva.webp', $producto->fresh()->portada()?->ruta);
     }
 
     public function test_la_foto_se_consume_para_no_repetirla_en_otro_producto(): void
@@ -213,14 +214,15 @@ class HerramientasChatbotTest extends TestCase
         $r = Herramientas::ejecutar('asignar_foto', ['producto_id' => $producto->id], '573009998877');
 
         $this->assertArrayHasKey('error', $r);
-        $this->assertNull($producto->fresh()->imagen);
+        $this->assertNull($producto->fresh()->portada());
     }
 
     public function test_al_reemplazar_la_foto_se_borra_la_anterior(): void
     {
         Storage::fake('public');
         Storage::disk('public')->put('productos/vieja.webp', 'x');
-        $producto = $this->producto($this->categoria(), ['imagen' => 'productos/vieja.webp']);
+        $producto = $this->producto($this->categoria());
+        $producto->medios()->create(['tipo' => 'imagen', 'ruta' => 'productos/vieja.webp', 'orden' => 0]);
         Cache::put(Asistente::llaveFotoDe(self::ADMIN), 'productos/nueva.webp');
 
         Herramientas::ejecutar('asignar_foto', ['producto_id' => $producto->id], self::ADMIN);

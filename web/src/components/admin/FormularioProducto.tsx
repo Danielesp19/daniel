@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useRef, useState, FormEvent } from "react";
 import {
   crearProducto,
   editarProducto,
-  borrarImagenExtra,
   moverStock,
   listarSedes,
   listarProductos,
@@ -17,7 +16,7 @@ import {
   campo,
   rotulo,
   Campo,
-  CampoArchivo,
+  Flechas,
   CampoDinero,
   Boton,
   Interruptor,
@@ -96,6 +95,160 @@ function Titulo({ children, nota }: { children: string; nota?: string }) {
  * antes y el después. Al crear todavía no hay producto al cual colgarle
  * unidades, así que ese bloque solo aparece al editar.
  */
+/**
+ * Una foto o un video mientras se edita.
+ *
+ * `url` es lo que ya está guardado y `archivo` lo que se acaba de escoger; una
+ * fila tiene lo uno o lo otro. El `id` de una fila nueva es negativo para que
+ * React la distinga sin confundirla con una guardada.
+ */
+interface Medio {
+  id: number;
+  tipo: "imagen" | "video";
+  url: string | null;
+  archivo: File | null;
+}
+
+/**
+ * Las fotos y los videos del producto, en una sola lista.
+ *
+ * Eran tres controles —portada, video y adicionales— y con eso no había forma
+ * de decidir el orden ni de poner el video primero. Acá la PRIMERA fila es la
+ * portada, sea foto o video, y se mueve con las flechas. Es la misma idea de
+ * la carta de la meca: "la primera foto es la que aparece".
+ */
+function ListaMedios({ medios, onCambio }: { medios: Medio[]; onCambio: (m: Medio[]) => void }) {
+  const entrada = useRef<HTMLInputElement>(null);
+  const [encima, setEncima] = useState(false);
+
+  const agregar = (lista: FileList | null) => {
+    const nuevos: Medio[] = Array.from(lista ?? []).map((f, i) => ({
+      // Negativo: no choca con ningún id de la base.
+      id: -(Date.now() + i),
+      tipo: f.type.startsWith("video/") ? "video" : "imagen",
+      url: URL.createObjectURL(f),
+      archivo: f,
+    }));
+    if (nuevos.length) onCambio([...medios, ...nuevos]);
+  };
+
+  const mover = (i: number, direccion: -1 | 1) => {
+    const destino = i + direccion;
+    if (destino < 0 || destino >= medios.length) return;
+    const copia = [...medios];
+    [copia[i], copia[destino]] = [copia[destino], copia[i]];
+    onCambio(copia);
+  };
+
+  return (
+    <div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {medios.map((m, i) => (
+          <div
+            key={m.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: 8,
+              background: COLOR.papel,
+              border: `1px solid ${i === 0 ? COLOR.tinta : COLOR.linea}`,
+              borderRadius: 10,
+            }}
+          >
+            <Flechas
+              onSubir={() => mover(i, -1)}
+              onBajar={() => mover(i, 1)}
+              arribaBloqueada={i === 0}
+              abajoBloqueada={i === medios.length - 1}
+            />
+
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                flexShrink: 0,
+                borderRadius: 8,
+                overflow: "hidden",
+                background: COLOR.fondo,
+                border: `1px solid ${COLOR.linea}`,
+              }}
+            >
+              {m.url ? (
+                m.tipo === "video" ? (
+                  <video src={m.url} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={m.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                )
+              ) : null}
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0, fontSize: 12.5 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <span style={{ fontWeight: 600 }}>{m.tipo === "video" ? "Video" : "Foto"}</span>
+                {i === 0 && <span style={{ ...rotulo, marginBottom: 0 }}>portada</span>}
+              </div>
+              <div style={{ color: COLOR.suave, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {m.archivo ? `${m.archivo.name} · se sube al guardar` : "Ya publicada"}
+              </div>
+            </div>
+
+            <Boton
+              chico
+              tono="peligro"
+              type="button"
+              onClick={() => onCambio(medios.filter((x) => x.id !== m.id))}
+              aria-label="Quitar"
+            >
+              ✕
+            </Boton>
+          </div>
+        ))}
+      </div>
+
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setEncima(true);
+        }}
+        onDragLeave={() => setEncima(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setEncima(false);
+          agregar(e.dataTransfer.files);
+        }}
+        onClick={() => entrada.current?.click()}
+        style={{
+          marginTop: medios.length ? 8 : 0,
+          padding: "14px 12px",
+          border: `1px dashed ${encima ? COLOR.tinta : COLOR.linea}`,
+          borderRadius: 10,
+          background: encima ? COLOR.fondo : "transparent",
+          textAlign: "center",
+          fontSize: 12.5,
+          color: COLOR.suave,
+          cursor: "pointer",
+        }}
+      >
+        Arrastra fotos o videos aquí, o haz clic para buscarlos.
+      </div>
+
+      <input
+        ref={entrada}
+        type="file"
+        accept="image/*,video/*"
+        multiple
+        onChange={(e) => {
+          agregar(e.target.files);
+          if (entrada.current) entrada.current.value = "";
+        }}
+        style={{ display: "none" }}
+      />
+    </div>
+  );
+}
+
 export default function FormularioProducto({
   producto,
   categorias,
@@ -110,11 +263,10 @@ export default function FormularioProducto({
   onGuardado: () => void;
 }) {
   const [datos, setDatos] = useState<Borrador>(() => borradorDe(producto, categoriaPorDefecto));
-  const [imagen, setImagen] = useState<File | null>(null);
-  const [video, setVideo] = useState<File | null>(null);
-  const [extras, setExtras] = useState<File[]>([]);
-  const [quitarImagen, setQuitarImagen] = useState(false);
-  const [quitarVideo, setQuitarVideo] = useState(false);
+  // Fotos y videos en una sola lista ordenada: la primera es la portada.
+  const [medios, setMedios] = useState<Medio[]>(() =>
+    (producto?.medios ?? []).map((m) => ({ id: m.id, tipo: m.tipo, url: m.url, archivo: null })),
+  );
   const [nota, setNota] = useState("");
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -122,6 +274,10 @@ export default function FormularioProducto({
   // Lo que había al abrir, para saber si hay cambios sin guardar. Se compara
   // el borrador entero de un tirón en vez de campo por campo: son veinte
   // campos y cualquiera de ellos cuenta igual.
+  const [mediosIniciales] = useState(() =>
+    JSON.stringify((producto?.medios ?? []).map((m) => [m.id, null])),
+  );
+
   const [inicial] = useState(() => JSON.stringify(borradorDe(producto, categoriaPorDefecto)));
 
   const [sedes, setSedes] = useState<AdminSede[]>([]);
@@ -197,11 +353,16 @@ export default function FormularioProducto({
       if (datos.componentes.length === 0) cuerpo.append("componentes", "");
       datos.componentes.forEach((id) => cuerpo.append("componentes[]", String(id)));
 
-      if (imagen) cuerpo.append("imagen", imagen);
-      if (video) cuerpo.append("video", video);
-      extras.forEach((f) => cuerpo.append("imagenes_extra[]", f));
-      if (quitarImagen) cuerpo.append("quitar_imagen", "1");
-      if (quitarVideo) cuerpo.append("quitar_video", "1");
+      // La lista viaja completa y EN ORDEN: la posición en el arreglo es el
+      // orden, los que ya existían van por id y los nuevos con su archivo. Lo
+      // que no viaje, el backend lo da por borrado.
+      medios.forEach((m, i) => {
+        if (m.archivo) cuerpo.append(`medios[${i}][archivo]`, m.archivo);
+        else cuerpo.append(`medios[${i}][id]`, String(m.id));
+      });
+      // Sin medios hay que decirlo explícito, o el backend entiende "no me
+      // mandaron nada" y deja la galería como estaba.
+      if (medios.length === 0) cuerpo.append("medios", "");
 
       const guardado = editando ? await editarProducto(producto.id, cuerpo) : await crearProducto(cuerpo);
 
@@ -225,26 +386,13 @@ export default function FormularioProducto({
     }
   }
 
-  async function quitarExtra(id: number) {
-    if (!producto) return;
-    try {
-      await borrarImagenExtra(producto.id, id);
-      onGuardado();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo borrar la foto");
-    }
-  }
-
   return (
     <Hoja
       titulo={editando ? producto.nombre : "Producto nuevo"}
       onCerrar={onCerrar}
       sucio={
         JSON.stringify(datos) !== inicial ||
-        Boolean(imagen || video) ||
-        extras.length > 0 ||
-        quitarImagen ||
-        quitarVideo
+        JSON.stringify(medios.map((m) => [m.id, m.archivo?.name ?? null])) !== mediosIniciales
       }
       pie={
         <>
@@ -498,73 +646,11 @@ export default function FormularioProducto({
         )}
 
         {/* ── Medios ── */}
-        <Titulo nota="La foto se convierte a WebP y el video se recomprime al subirlos.">Fotos y video</Titulo>
+        <Titulo nota="La primera es la portada: es la que sale en el catálogo. Muévelas con las flechas. Las fotos se convierten a WebP y los videos se recomprimen al subirlos.">
+          Fotos y video
+        </Titulo>
 
-        <div style={seccion}>
-          <CampoArchivo
-            etiqueta="Foto principal"
-            actual={quitarImagen ? null : producto?.imagen_url}
-            archivo={imagen}
-            onArchivo={setImagen}
-            onQuitar={() => setQuitarImagen(true)}
-          />
-
-          <CampoArchivo
-            etiqueta="Video"
-            tipo="video"
-            actual={quitarVideo ? null : producto?.video_url}
-            archivo={video}
-            onArchivo={setVideo}
-            onQuitar={() => setQuitarVideo(true)}
-          />
-        </div>
-
-        <div style={{ marginTop: 14 }}>
-          {producto && producto.imagenes_extra.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-              {producto.imagenes_extra.map((img) => (
-                <div key={img.id} style={{ position: "relative" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={img.url}
-                    alt=""
-                    style={{ width: 62, height: 62, objectFit: "cover", borderRadius: 8, border: `1px solid ${COLOR.linea}` }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => quitarExtra(img.id)}
-                    title="Borrar"
-                    style={{
-                      position: "absolute",
-                      top: -6,
-                      right: -6,
-                      width: 20,
-                      height: 20,
-                      borderRadius: "50%",
-                      border: "none",
-                      background: COLOR.tinta,
-                      color: "#FFF",
-                      fontSize: 11,
-                      cursor: "pointer",
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          <CampoArchivo
-            etiqueta="Fotos adicionales"
-            nota={
-              extras.length > 0
-                ? `${extras.length} ${extras.length === 1 ? "foto" : "fotos"} por subir`
-                : "Se pueden soltar varias de una vez. En un kit salen juntas en la miniatura."
-            }
-            multiple
-            onArchivos={setExtras}
-          />
-        </div>
+        <ListaMedios medios={medios} onCambio={setMedios} />
 
         {/* ── Kit ── */}
         <Titulo nota="Deja esto vacío en un producto normal. Un kit se vende como una sola cosa —un precio, una línea en el pedido— y esto es lo que le dice al comprador qué se lleva.">

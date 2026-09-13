@@ -57,6 +57,8 @@ export interface Producto {
   video_url: string | null;
   video_poster_url: string | null;
   imagenes_extra: string[];
+  /** Fotos y videos en el orden del panel. La primera es la portada. */
+  medios: { id: number; tipo: "imagen" | "video"; url: string; poster_url: string | null }[];
 
   destacado: boolean;
   categoria?: string;
