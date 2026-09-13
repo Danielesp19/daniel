@@ -154,7 +154,12 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
   }, []);
 
   const etiqueta = hero?.etiqueta ?? `${MARCA.oficio} · ${MARCA.ciudad}`;
-  const subtitulo = hero?.subtitulo ?? MARCA.descripcion;
+  // El texto por defecto es el del diseño, no `MARCA.descripcion`: esa abría
+  // con el subcampeonato y el cliente lo mandó quitar de la portada. Se ve
+  // mientras la portada no se haya editado desde el panel.
+  const subtitulo =
+    hero?.subtitulo ??
+    "Cursos, experiencias y café de especialidad tostado en el Huila. Formación de baristas y asesoría para cafeterías.";
 
   // El titular se parte en dos: lo que va en redonda y lo que va en itálica.
   // Es el recurso que sostiene el diseño entero. Si el título viene del panel
@@ -217,7 +222,7 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
               igual y no se sabía cuál era el camino principal. */}
           <div className="hero-botones">
             <a href={hero?.cta_url ?? "#catalogo"} className="boton boton-grande boton-solido-claro">
-              {hero?.cta_texto ?? "Ver la tienda"}
+              {hero?.cta_texto ?? "Ver el catálogo"}
             </a>
             <a href="#cat-servicios" className="boton boton-grande hero-boton-linea">
               Cursos y asesorías
