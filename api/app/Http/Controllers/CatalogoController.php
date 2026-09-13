@@ -220,6 +220,7 @@ class CatalogoController extends Controller
             // topar el selector de cantidad, no solo un booleano de agotado.
             // `controla_stock` en false = servicio: no se cuenta ni se agota.
             'controla_stock' => (bool) $p->controla_stock,
+            'es_cafe' => (bool) $p->es_cafe,
             'stock' => (int) $p->stock,
             'agotado' => $p->agotado(),
             'por_acabarse' => $p->porAcabarse(),

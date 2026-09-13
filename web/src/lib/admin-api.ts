@@ -40,6 +40,8 @@ export interface AdminProducto {
   precio_cop: number;
   gramos: number;
   controla_stock: boolean;
+  /** Enciende el peso y la ficha de origen en el formulario y en la página. */
+  es_cafe: boolean;
   /** Total de todas las sedes. De solo lectura: es su suma. */
   stock: number;
   stock_minimo: number;

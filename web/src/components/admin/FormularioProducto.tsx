@@ -34,6 +34,7 @@ interface Borrador {
   precio_cop: string;
   gramos: string;
   controla_stock: boolean;
+  es_cafe: boolean;
   stock_minimo: string;
   finca: string;
   productor: string;
@@ -58,6 +59,7 @@ function borradorDe(producto: AdminProducto | null, categoriaId: number): Borrad
     precio_cop: producto ? String(producto.precio_cop) : "",
     gramos: producto ? String(producto.gramos) : "0",
     controla_stock: producto?.controla_stock ?? true,
+    es_cafe: producto?.es_cafe ?? false,
     stock_minimo: producto ? String(producto.stock_minimo) : "3",
     finca: producto?.finca ?? "",
     productor: producto?.productor ?? "",
@@ -171,6 +173,7 @@ export default function FormularioProducto({
       cuerpo.append("precio_cop", datos.precio_cop || "0");
       cuerpo.append("gramos", datos.gramos || "0");
       cuerpo.append("controla_stock", datos.controla_stock ? "1" : "0");
+      cuerpo.append("es_cafe", datos.es_cafe ? "1" : "0");
       cuerpo.append("stock_minimo", datos.stock_minimo || "0");
       cuerpo.append("activo", datos.activo ? "1" : "0");
       cuerpo.append("destacado", datos.destacado ? "1" : "0");
@@ -257,6 +260,16 @@ export default function FormularioProducto({
       <form onSubmit={guardar} id="form-producto">
         {error && <div style={{ marginBottom: 14 }}><Aviso>{error}</Aviso></div>}
 
+        {/* Lo primero que hay que decidir: de eso depende medio formulario. */}
+        <div style={{ marginBottom: 14 }}>
+          <Interruptor
+            etiqueta="Es un café"
+            nota="Enciéndelo y aparecen el peso de la bolsa y la ficha de origen: finca, región, altura, proceso, tueste, puntaje y notas de cata."
+            valor={datos.es_cafe}
+            onChange={(v) => set("es_cafe", v)}
+          />
+        </div>
+
         <div style={seccion}>
           <Campo etiqueta="Nombre">
             <input style={campo} value={datos.nombre} onChange={(e) => set("nombre", e.target.value)} required />
@@ -300,9 +313,13 @@ export default function FormularioProducto({
             requerido
           />
 
-          <Campo etiqueta="Peso de la bolsa" nota="En gramos. Deja 0 para equipos y servicios.">
-            <input style={campo} type="number" min={0} value={datos.gramos} onChange={(e) => set("gramos", e.target.value)} />
-          </Campo>
+          {/* El peso solo se pregunta en un café: un molino no se vende por
+              gramos y el campo se quedaba en cero estorbando. */}
+          {datos.es_cafe && (
+            <Campo etiqueta="Peso de la bolsa" nota="En gramos: 250, 340, 500.">
+              <input style={campo} type="number" min={0} value={datos.gramos} onChange={(e) => set("gramos", e.target.value)} />
+            </Campo>
+          )}
         </div>
 
         <div style={{ marginTop: 14 }}>
@@ -384,94 +401,101 @@ export default function FormularioProducto({
           )}
         </div>
 
-        {/* ── Ficha de origen ── */}
-        <Titulo nota="Solo para cafés. Lo que dejes vacío no se muestra en el catálogo.">Ficha de origen</Titulo>
+        {/* La ficha de origen entera cuelga de la casilla: son ocho campos que
+            en un molino o en una asesoría se quedan vacíos y hay que saltar uno
+            por uno cada vez que se crea algo. */}
+        {datos.es_cafe && (
+          <>
+          {/* ── Ficha de origen ── */}
+          <Titulo nota="Solo para cafés. Lo que dejes vacío no se muestra en el catálogo.">Ficha de origen</Titulo>
 
-        <div style={seccion}>
-          <Campo etiqueta="Finca">
-            <input style={campo} value={datos.finca} onChange={(e) => set("finca", e.target.value)} />
-          </Campo>
-          <Campo etiqueta="Productor">
-            <input style={campo} value={datos.productor} onChange={(e) => set("productor", e.target.value)} />
-          </Campo>
-          <Campo etiqueta="Región">
-            <input style={campo} value={datos.region} onChange={(e) => set("region", e.target.value)} placeholder="Huila" />
-          </Campo>
-          <Campo etiqueta="Altura (msnm)">
-            <input
-              style={campo}
-              type="number"
-              min={0}
-              max={4000}
-              value={datos.altitud_msnm}
-              onChange={(e) => set("altitud_msnm", e.target.value)}
-            />
-          </Campo>
-          <Campo etiqueta="Variedad">
-            <input style={campo} value={datos.variedad} onChange={(e) => set("variedad", e.target.value)} />
-          </Campo>
-          <Campo etiqueta="Proceso">
-            <input style={campo} value={datos.proceso} onChange={(e) => set("proceso", e.target.value)} />
-          </Campo>
-          <Campo etiqueta="Tueste">
-            <input style={campo} value={datos.tueste} onChange={(e) => set("tueste", e.target.value)} />
-          </Campo>
-          <Campo etiqueta="Puntaje SCA" nota="80 a 100. Admite medios puntos.">
-            <input
-              style={campo}
-              type="number"
-              step="0.25"
-              min={0}
-              max={100}
-              value={datos.puntaje_sca}
-              onChange={(e) => set("puntaje_sca", e.target.value)}
-            />
-          </Campo>
-        </div>
-
-        <div style={{ marginTop: 14 }}>
-          <span style={rotulo}>Notas de cata</span>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-            {datos.notas.map((n) => (
-              <span
-                key={n}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "4px 10px",
-                  borderRadius: 999,
-                  border: `1px solid ${COLOR.linea}`,
-                  fontSize: 12.5,
-                }}
-              >
-                {n}
-                <button
-                  type="button"
-                  onClick={() => set("notas", datos.notas.filter((x) => x !== n))}
-                  style={{ border: "none", background: "none", color: COLOR.rotulo, cursor: "pointer", padding: 0 }}
-                >
-                  ✕
-                </button>
-              </span>
-            ))}
+          <div style={seccion}>
+            <Campo etiqueta="Finca">
+              <input style={campo} value={datos.finca} onChange={(e) => set("finca", e.target.value)} />
+            </Campo>
+            <Campo etiqueta="Productor">
+              <input style={campo} value={datos.productor} onChange={(e) => set("productor", e.target.value)} />
+            </Campo>
+            <Campo etiqueta="Región">
+              <input style={campo} value={datos.region} onChange={(e) => set("region", e.target.value)} placeholder="Huila" />
+            </Campo>
+            <Campo etiqueta="Altura (msnm)">
+              <input
+                style={campo}
+                type="number"
+                min={0}
+                max={4000}
+                value={datos.altitud_msnm}
+                onChange={(e) => set("altitud_msnm", e.target.value)}
+              />
+            </Campo>
+            <Campo etiqueta="Variedad">
+              <input style={campo} value={datos.variedad} onChange={(e) => set("variedad", e.target.value)} />
+            </Campo>
+            <Campo etiqueta="Proceso">
+              <input style={campo} value={datos.proceso} onChange={(e) => set("proceso", e.target.value)} />
+            </Campo>
+            <Campo etiqueta="Tueste">
+              <input style={campo} value={datos.tueste} onChange={(e) => set("tueste", e.target.value)} />
+            </Campo>
+            <Campo etiqueta="Puntaje SCA" nota="80 a 100. Admite medios puntos.">
+              <input
+                style={campo}
+                type="number"
+                step="0.25"
+                min={0}
+                max={100}
+                value={datos.puntaje_sca}
+                onChange={(e) => set("puntaje_sca", e.target.value)}
+              />
+            </Campo>
           </div>
-          <input
-            style={campo}
-            value={nota}
-            onChange={(e) => setNota(e.target.value)}
-            // Enter agregaría la nota y además enviaría el formulario: se corta
-            // el envío y se deja solo lo primero.
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === ",") {
-                e.preventDefault();
-                agregarNota(nota);
-              }
-            }}
-            placeholder={datos.notas.length >= 6 ? "Máximo 6 notas" : "Escribe y presiona Enter: panela, mandarina…"}
-            disabled={datos.notas.length >= 6}
-          />
-        </div>
+
+          <div style={{ marginTop: 14 }}>
+            <span style={rotulo}>Notas de cata</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+              {datos.notas.map((n) => (
+                <span
+                  key={n}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    border: `1px solid ${COLOR.linea}`,
+                    fontSize: 12.5,
+                  }}
+                >
+                  {n}
+                  <button
+                    type="button"
+                    onClick={() => set("notas", datos.notas.filter((x) => x !== n))}
+                    style={{ border: "none", background: "none", color: COLOR.rotulo, cursor: "pointer", padding: 0 }}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              style={campo}
+              value={nota}
+              onChange={(e) => setNota(e.target.value)}
+              // Enter agregaría la nota y además enviaría el formulario: se corta
+              // el envío y se deja solo lo primero.
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  agregarNota(nota);
+                }
+              }}
+              placeholder={datos.notas.length >= 6 ? "Máximo 6 notas" : "Escribe y presiona Enter: panela, mandarina…"}
+              disabled={datos.notas.length >= 6}
+            />
+          </div>
+          </>
+        )}
 
         {/* ── Medios ── */}
         <Titulo nota="La foto se convierte a WebP y el video se recomprime al subirlos.">Fotos y video</Titulo>

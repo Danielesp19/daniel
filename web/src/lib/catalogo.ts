@@ -32,6 +32,8 @@ export interface Producto {
 
   /** false = servicio (asesoría, barra para eventos): no se cuenta ni se agota. */
   controla_stock: boolean;
+  /** Un café: es lo que decide si la tarjeta y la ficha muestran el origen. */
+  es_cafe: boolean;
   /** Total de todas las sedes: es la suma de `sedes[].stock`. */
   stock: number;
   agotado: boolean;

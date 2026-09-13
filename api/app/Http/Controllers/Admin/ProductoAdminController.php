@@ -183,6 +183,7 @@ class ProductoAdminController extends Controller
             'stock_minimo' => 'sometimes|integer|min:0',
             'gramos' => 'sometimes|integer|min:0',
             'controla_stock' => 'sometimes|boolean',
+            'es_cafe' => 'sometimes|boolean',
             'finca' => 'sometimes|nullable|string|max:255',
             'productor' => 'sometimes|nullable|string|max:255',
             'region' => 'sometimes|nullable|string|max:255',
@@ -411,6 +412,7 @@ class ProductoAdminController extends Controller
             'precio_cop' => (int) $p->precio_cop,
             'gramos' => (int) $p->gramos,
             'controla_stock' => (bool) $p->controla_stock,
+            'es_cafe' => (bool) $p->es_cafe,
             // Total de todas las sedes. Es de solo lectura: sale de sumarlas.
             'stock' => (int) $p->stock,
             'stock_minimo' => (int) $p->stock_minimo,

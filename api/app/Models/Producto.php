@@ -18,7 +18,7 @@ class Producto extends Model
 
     protected $fillable = [
         'categoria_id', 'nombre', 'slug', 'descripcion', 'precio_cop',
-        'stock', 'stock_minimo', 'gramos', 'controla_stock',
+        'stock', 'stock_minimo', 'gramos', 'controla_stock', 'es_cafe',
         'finca', 'productor', 'region', 'altitud_msnm', 'variedad', 'proceso',
         'tueste', 'notas', 'puntaje_sca',
         'imagen', 'video', 'video_poster',
@@ -55,6 +55,7 @@ class Producto extends Model
         'activo' => 'boolean',
         'destacado' => 'boolean',
         'orden' => 'integer',
+        'es_cafe' => 'boolean',
     ];
 
     protected static function booted(): void
