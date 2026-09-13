@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { enlaceWhatsApp, MARCA } from "@/lib/marca";
 import IconoRed, { type Red } from "./IconoRed";
+import FondoBotanico from "./FondoBotanico";
 
 /**
  * El video de portada y su primer cuadro.
@@ -181,13 +182,9 @@ export default function Hero() {
 
   return (
     <section ref={seccionRef} id="hero" className="hero">
-      {/* El fondo es un cuadro del propio video: desenfocado, en gris y muy
-          bajo de opacidad. Es el póster y no un segundo video —mismo encuadre,
-          ni un decodificador más—. */}
-      <div className="hero-fondo" aria-hidden="true" style={{ backgroundImage: `url(${POSTER_FONDO})` }} />
-      {/* Dos luces y un velo: las luces levantan el centro y la esquina de
-          arriba, el velo asienta el texto contra el borde inferior. */}
-      <div className="hero-luces" aria-hidden="true" />
+      {/* El fondo: ramas de café grabadas, como en la carta impresa. */}
+      <FondoBotanico />
+      {/* El velo asienta el texto contra los dos bordes. */}
       <div className="hero-velo" aria-hidden="true" />
 
       {/* La barra de la portada. NO es el menú del sitio —ese entra al bajar

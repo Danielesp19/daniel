@@ -8,6 +8,11 @@
  *
  * Todos comparten un lienzo de 24×24 y el mismo peso visual, para que en fila
  * no se vea uno más gordo que otro.
+ *
+ * Los trazos salen del diseño que mandó Daniel, que a su vez usa los de la
+ * familia Feather. Los que había antes eran aproximaciones dibujadas a ojo —la
+ * "f" de Facebook parecía una cruz y el de TikTok un palito con rabo— y a 18 px
+ * no se reconocía ninguno.
  */
 
 export type Red = "instagram" | "tiktok" | "facebook" | "whatsapp" | "threads";
@@ -15,16 +20,21 @@ export type Red = "instagram" | "tiktok" | "facebook" | "whatsapp" | "threads";
 const TRAZOS: Record<Red, React.ReactNode> = {
   instagram: (
     <>
-      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <rect x="2" y="2" width="20" height="20" rx="5" />
       <circle cx="12" cy="12" r="4" />
-      <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="17.5" cy="6.5" r="1" />
     </>
   ),
+  // La nota de TikTok: el gancho baja hasta el círculo y el brazo sale hacia
+  // la bandera. La versión anterior era un palito con un rabo y no se
+  // reconocía a 18 px.
   tiktok: (
-    <path d="M14 4v9.5a3.5 3.5 0 1 1-3-3.46M14 4c.3 2.3 1.8 3.8 4 4" />
+    <path d="M9 12a4 4 0 1 0 4 4V3a5 5 0 0 0 5 5" />
   ),
+  // La "f" de Facebook con su caja: antes eran cuatro trazos sueltos que
+  // formaban algo parecido a una cruz.
   facebook: (
-    <path d="M14.5 8.5h2.2M14.5 8.5V7.2c0-1 .5-1.7 1.6-1.7h1M14.5 8.5V19M10 12h6" />
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
   ),
   whatsapp: (
     <>
@@ -37,7 +47,7 @@ const TRAZOS: Record<Red, React.ReactNode> = {
   ),
 };
 
-export default function IconoRed({ red, tamano = 18 }: { red: Red; tamano?: number }) {
+export default function IconoRed({ red, tamano = 18, grosor = 2.2 }: { red: Red; tamano?: number; grosor?: number }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -45,7 +55,10 @@ export default function IconoRed({ red, tamano = 18 }: { red: Red; tamano?: numb
       height={tamano}
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.6}
+      // Trazo grueso: a 17 px, 1,6 dejaba los logos desvaídos y con la "f" de
+      // Facebook casi ilegible. El diseño los dibuja a 2,75; acá 2,2 es el
+      // punto donde se leen sin engordar el resto del pie.
+      strokeWidth={grosor}
       strokeLinecap="round"
       strokeLinejoin="round"
       // Decorativo: el nombre de la red ya va escrito al lado del icono, así

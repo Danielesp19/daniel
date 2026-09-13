@@ -457,38 +457,85 @@ body {
   background: #0B0B0B;
 }
 
+/* ── El fondo: ramas de café grabadas ── */
 .hero-fondo {
   position: absolute;
   inset: 0;
-  background-position: center;
-  background-size: cover;
-  /* En gris y muy bajo: si entra en color compite con el medallón, que es la
-     única mancha de café que tiene que verse. */
-  filter: blur(40px) grayscale(1) contrast(1.05);
-  /* Muy bajo: la escena solo tiene que dar el tono, y a más opacidad compite
-     con el medallón, que es la única mancha de café que debe verse. */
-  opacity: .16;
-  /* Ampliado, porque el desenfoque difumina los bordes y sin la escala se ve
-     un halo claro contra el marco. */
-  transform: scale(1.35);
+  overflow: hidden;
   pointer-events: none;
+  /* El radial que sostiene todo: un marrón muy oscuro que se apaga hacia los
+     bordes. Sin él, el negro plano deja las ramas flotando. */
+  background: radial-gradient(120% 68% at 50% 16%, #19120E 0%, #0E0A09 48%, #060505 100%);
 }
 
-.hero-luces {
+/* El lienzo de definiciones no ocupa sitio: solo guarda la rama para que las
+   cuatro esquinas la referencien con <use>. */
+.hero-defs { position: absolute; width: 0; height: 0; }
+
+/* Una rama por esquina, con tamaño propio. El diseño trae un solo SVG a
+   sangre sobre un lienzo de celular (448x860); recortado a una pantalla ancha,
+   ese dibujo se ampliaba hasta dejar una hoja del tamaño de media portada. Con
+   una rama por esquina el grabado conserva su escala en cualquier ventana. */
+.hero-rama {
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-  /* Apenas un levante en la esquina de arriba a la izquierda. La luz que había
-     detrás del medallón se quitó: encendía justo el trozo de fondo contra el
-     que tiene que recortarse el video, y lo dejaba lechoso. */
-  background: radial-gradient(100% 80% at 8% 6%, rgba(255,255,255,.05), transparent 55%);
+  width: clamp(190px, 26vw, 340px);
+  height: auto;
+  color: #E8D5BD;
+  overflow: visible;
+}
+/* Se mecen con tiempos distintos para que no vayan a compás: a la vez se lee
+   como un GIF, desfasadas se lee como aire. Cada esquina es la de arriba a la
+   izquierda, reflejada. */
+.hero-rama-a { top: 0; left: 0; opacity: .48; animation: heroMece1 19s ease-in-out infinite; }
+.hero-rama-b { top: 0; right: 0; opacity: .42; transform: scaleX(-1); animation: heroMece2 23s ease-in-out infinite; }
+.hero-rama-c { bottom: 0; left: 0; opacity: .40; transform: scaleY(-1); animation: heroMece2 21s ease-in-out infinite; }
+.hero-rama-d { bottom: 0; right: 0; opacity: .36; transform: scale(-1); animation: heroMece1 25s ease-in-out infinite; }
+
+/* El vaivén va en `rotate`/`translate` propios y NO en `transform`, que ya lo
+   usa cada esquina para reflejarse: si la animación lo escribiera, el reflejo
+   se perdería a medio ciclo. */
+@keyframes heroMece1 {
+  0%, 100% { rotate: -1.2deg; translate: 0 0; }
+  50%      { rotate: 1.4deg; translate: 0 -8px; }
+}
+@keyframes heroMece2 {
+  0%, 100% { rotate: 1deg; translate: 0 0; }
+  50%      { rotate: -1.6deg; translate: 0 6px; }
+}
+
+/* El halo cálido va detrás del medallón: es lo que lo despega del fondo sin
+   tener que ponerle un borde. */
+.hero-halo-calido {
+  position: absolute;
+  top: -16%;
+  left: 50%;
+  width: 520px;
+  height: 520px;
+  margin-left: -260px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(198,113,57,.26) 0%, rgba(198,113,57,.07) 46%, rgba(198,113,57,0) 72%);
+  animation: heroBrilla 14s ease-in-out infinite;
+}
+@keyframes heroBrilla {
+  0%, 100% { opacity: .55; transform: scale(1); }
+  50%      { opacity: .85; transform: scale(1.06); }
+}
+
+.hero-halo-hoja {
+  position: absolute;
+  bottom: -20%;
+  left: -24%;
+  width: 420px;
+  height: 420px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(122,138,94,.18) 0%, rgba(122,138,94,0) 70%);
 }
 
 .hero-velo {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,.12) 30%, rgba(0,0,0,.72) 100%);
+  background: linear-gradient(180deg, rgba(6,5,5,.3) 0%, rgba(6,5,5,0) 32%, rgba(6,5,5,.45) 100%);
 }
 
 /* Escritorio: texto a la izquierda, medallón a la derecha. Celular: medallón
@@ -506,9 +553,11 @@ body {
   gap: 12px;
   height: clamp(56px, 7vh, 72px);
   padding: 0 8px 0 clamp(14px, 1.6vw, 22px);
-  background: #FFF;
-  border-radius: clamp(18px, 2vw, 20px);
-  box-shadow: 0 18px 40px -22px rgba(0, 0, 0, .75);
+  /* Crema y no blanco puro: sobre una tinta cálida, el blanco se ve azulado y
+     se despega del resto de la portada. */
+  background: #FAF5EC;
+  border-radius: 999px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .35);
 }
 
 .hero-marca {
@@ -519,7 +568,8 @@ body {
   color: #000;
   text-decoration: none;
 }
-.hero-marca svg { flex-shrink: 0; width: clamp(22px, 2vw, 28px); height: clamp(22px, 2vw, 28px); }
+/* La taza en el cereza de la marca: es el único color de la barra. */
+.hero-marca svg { flex-shrink: 0; width: clamp(22px, 2vw, 28px); height: clamp(22px, 2vw, 28px); color: #C67139; }
 .hero-marca span {
   font-family: var(--font-serif);
   font-size: clamp(17px, 1.7vw, 22px);
@@ -530,15 +580,15 @@ body {
   flex-shrink: 0;
   padding: clamp(11px, 1.4vh, 15px) clamp(16px, 1.8vw, 26px);
   border-radius: 999px;
-  background: #000;
-  color: #FFF;
+  background: #141211;
+  color: #FAF5EC;
   font-size: clamp(12.5px, 1.2vw, 16px);
   font-weight: 700;
   white-space: nowrap;
   text-decoration: none;
   transition: background .18s ease, transform .18s var(--salida);
 }
-.hero-pedido:hover { background: #1F1F1F; transform: translateY(-1px); }
+.hero-pedido:hover { background: #C67139; color: #FFF; transform: translateY(-1px); }
 
 /* El cuerpo arranca por debajo de la barra y termina por encima del pie: los
    dos reservan su sitio con padding, así el bloque central nunca se les monta
@@ -552,7 +602,7 @@ body {
   justify-content: center;
   gap: clamp(22px, 4vh, 40px);
   padding: clamp(86px, 12vh, 116px) clamp(22px, 6vw, 64px) clamp(104px, 15vh, 128px);
-  color: #FFF;
+  color: #FAF5EC;
 }
 
 /* La órbita: el epígrafe dando la vuelta al medallón, muy despacio.
@@ -603,9 +653,9 @@ body {
 @media (min-width: 900px) { .hero-epigrafe { display: flex; } }
 /* La rayita solo acompaña bien a un epígrafe de una línea. En celular el texto
    se parte en dos y la raya queda colgando de la primera, así que ahí no va. */
-.hero-raya { display: none; width: 26px; height: 1px; background: rgba(255,255,255,.45); }
+.hero-raya { display: none; width: 26px; height: 1px; background: rgba(232,213,189,.45); }
 @media (min-width: 900px) { .hero-raya { display: block; } }
-.hero-epigrafe .epigrafe { color: rgba(255,255,255,.78); }
+.hero-epigrafe .epigrafe { color: rgba(232,213,189,.78); }
 
 .hero-titulo {
   font-size: clamp(40px, 8.4vw, 74px);
@@ -621,7 +671,7 @@ body {
   max-width: 44ch;
   font-size: 18px;
   line-height: 1.6;
-  color: rgba(255,255,255,.78);
+  color: rgba(250,245,236,.78);
   text-wrap: pretty;
 }
 
@@ -634,7 +684,7 @@ body {
   font-family: var(--font-serif);
   font-size: clamp(26px, 2.4vw, 34px);
   line-height: 1;
-  color: #FFF;
+  color: #FAF5EC;
 }
 .hero-cifra span { opacity: .5; }
 .hero-cifra-nota {
@@ -656,13 +706,13 @@ body {
   max-width: 320px;
   margin-top: clamp(20px, 3.4vh, 30px);
 }
-.hero-boton-linea { border: 1px solid rgba(255,255,255,.38); color: #FFF; }
-.hero-boton-linea:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.7); }
+.hero-boton-linea { border: 1.5px solid rgba(232,213,189,.35); background: rgba(250,245,236,.05); color: #FAF5EC; }
+.hero-boton-linea:hover { background: rgba(198,113,57,.22); border-color: #C67139; }
 
 .hero-filete {
   width: min(100%, 560px);
   height: 1px;
-  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.28) 50%, rgba(255,255,255,0));
+  background: linear-gradient(90deg, rgba(232,213,189,0), rgba(232,213,189,.25) 50%, rgba(232,213,189,0));
 }
 
 .hero-redes { display: flex; gap: 10px; }
@@ -672,12 +722,12 @@ body {
   justify-content: center;
   width: 40px;
   height: 40px;
-  border: 1px solid rgba(255,255,255,.22);
+  border: 1.5px solid rgba(232,213,189,.28);
   border-radius: 999px;
-  color: rgba(255,255,255,.85);
+  color: #E8D5BD;
   transition: background .18s ease, color .18s ease, border-color .18s ease;
 }
-.hero-red:hover { background: #FFF; border-color: #FFF; color: #0B0B0B; }
+.hero-red:hover { border-color: #C67139; color: #F0CDAB; }
 
 /* ── El medallón ── */
 .hero-medallon {
@@ -736,40 +786,56 @@ body {
 
 /* En pantalla ancha se abre en dos columnas: el texto pasa a alinearse a la
    izquierda y el medallón se va a la derecha, que es como está el diseño. */
+/* En pantalla ancha NO se abre en dos columnas: la portada se queda en una
+   sola columna centrada, como el diseño nuevo. Estuvo en dos —texto a la
+   izquierda, medallón a la derecha— y el medallón terminaba a casi 300 px del
+   centro de la pantalla: la portada se leía partida en dos mitades lejanas en
+   vez de como una sola pieza.
+
+   Lo que cambia a lo ancho no es la disposición sino el aire: el medallón
+   crece, los botones caben en una fila y las cifras se reparten al lado. */
+/* En pantalla ancha NO se abre en dos columnas: la portada se queda en una
+   sola columna centrada, como el diseño nuevo. Estuvo en dos —texto a la
+   izquierda, medallón a la derecha— y el medallón terminaba a casi 300 px del
+   centro de la pantalla: la portada se leía partida en dos mitades lejanas en
+   vez de como una sola pieza.
+
+   Centrada hay que medir el alto con cuidado, porque ahora todo va en fila
+   india: medallón, epígrafe, titular, párrafo, botones, cifras y redes. Con
+   los tamaños de antes no cabía en una pantalla de 900 y el medallón se
+   cortaba contra la barra. */
 @media (min-width: 900px) {
+  .hero { height: min(100svh, 900px); }
+
   .hero-cuerpo {
-    flex-direction: row;
-    justify-content: space-between;
-    gap: clamp(40px, 5vw, 72px);
+    max-width: 760px;
+    margin-inline: auto;
+    gap: clamp(16px, 2.4vh, 26px);
+    /* El pie de abajo desaparece acá, así que el cuerpo recupera ese sitio. */
+    padding: clamp(92px, 11vh, 108px) clamp(22px, 6vw, 64px) clamp(40px, 6vh, 64px);
   }
-  /* Una fracción de la pantalla y no toda: con el titular, el párrafo, las
-     cifras y las redes ya hay bastante que leer, y a pantalla completa sobraba
-     aire en medio. El tope de 860 es el del artboard con un poco de holgura. */
-  .hero { height: min(100svh, 860px); }
 
-  .hero-texto { align-items: flex-start; text-align: left; width: auto; max-width: 620px; }
-  .hero-bajada { display: block; }
-  .hero-cifras { display: flex; }
-  .hero-redes.hero-redes-columna { display: flex; }
+  .hero-medallon { width: clamp(230px, min(32vh, 26vw), 300px); }
 
-  /* Lado a lado: en escritorio hay ancho de sobra y así el par ocupa una sola
-     línea, como en el diseño. */
-  .hero-botones { flex-direction: row; max-width: none; }
+  /* Más chico que el titular de dos columnas: acá comparte alto con todo lo
+     demás en vez de tener una columna para él solo. */
+  .hero-titulo { font-size: clamp(40px, 4.6vw, 58px); max-width: 16ch; }
+
+  .hero-bajada { display: block; max-width: 56ch; margin-top: 4px; }
+  .hero-cifras { display: flex; justify-content: center; margin-top: 18px; }
+
+  /* Las redes bajan a la columna, con las cifras: el pie absoluto se les
+     montaba encima, porque el contenido ahora llega hasta abajo. */
+  .hero-redes.hero-redes-columna { display: flex; margin-top: 18px; }
+  .hero-pie { display: none; }
+
+  /* Lado a lado: a lo ancho hay sitio y el par ocupa una sola línea. */
+  .hero-botones { flex-direction: row; justify-content: center; max-width: none; margin-top: 20px; }
   .hero-botones .boton { flex: 0 0 auto; }
 
-  /* El medallón crece todo lo que le deja la columna de texto. */
-  /* El tope lo pone la órbita, que sobresale un 13 % por lado: con 520 px de
-     medallón el texto se salía por el borde derecho de la ventana. */
-  .hero-medallon { order: 0; width: clamp(300px, min(52vh, 34vw), 460px); }
-
-  /* El pie de abajo desaparece: sus redes suben con las cifras —que es donde
-     las pone el diseño— y sin ellas la línea sola dejaba una franja vacía de
-     dos dedos contra el borde inferior. El cuerpo recupera ese sitio y el
-     bloque queda centrado de verdad. */
-  .hero-pie { display: none; }
-  .hero-cuerpo { padding-bottom: clamp(48px, 7vh, 72px); }
-  .hero-scroll { display: block; }
-  .hero-filete { background: linear-gradient(90deg, rgba(255,255,255,.28), rgba(255,255,255,0) 78%); }
+  /* Sin la rayita de "sigue bajando": la columna llega hasta el borde y no
+     queda sitio para ella sin pisar las redes. */
+  .hero-scroll { display: none; }
 }
 
 .punto-scroll { animation: scrollPunto 2.2s ease-in-out 1.4s infinite; }
