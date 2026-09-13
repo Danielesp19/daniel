@@ -79,19 +79,6 @@ export interface AdminSede {
   bolsas_en_stock: number;
 }
 
-/**
- * La portada, solo textos: el fondo es un video fijo del frontend
- * (public/videos/hero.mp4) y no se administra desde el panel.
- */
-export interface AdminHero {
-  id: number;
-  titulo: string;
-  subtitulo: string | null;
-  etiqueta: string | null;
-  cta_texto: string | null;
-  cta_url: string | null;
-  activo: boolean;
-}
 
 /** La banda de aviso: solo textos y un botón. */
 export interface AdminAviso {
@@ -326,13 +313,6 @@ export const borrarSede = (id: number, confirmar = false) =>
     method: "DELETE",
     headers: cabeceras(),
   });
-
-// ── Portada ─────────────────────────────────────────────────────────────────
-
-export const obtenerHero = () => pedir<AdminHero | null>("/hero", { headers: cabeceras() });
-
-export const guardarHero = (datos: FormData) =>
-  pedir<AdminHero>("/hero", { method: "POST", headers: cabeceras(), body: datos });
 
 // ── Aviso ───────────────────────────────────────────────────────────────────
 

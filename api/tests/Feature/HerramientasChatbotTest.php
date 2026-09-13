@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Categoria;
-use App\Models\Hero;
 use App\Models\Producto;
 use App\Models\Sede;
 use App\Support\Chatbot\Asistente;
@@ -257,19 +256,14 @@ class HerramientasChatbotTest extends TestCase
         $this->assertSame(0, Categoria::count());
     }
 
-    public function test_cambia_los_textos_de_la_portada(): void
+    public function test_ya_no_existe_la_herramienta_de_portada(): void
     {
-        Hero::create(['titulo' => 'Café bien hecho', 'subtitulo' => 'Viejo', 'activo' => true]);
+        // La portada dejó de ser editable, así que el chatbot tampoco debe
+        // ofrecerla: una herramienta que escribe donde nadie lee es peor que
+        // no tenerla.
+        $nombres = array_column(Herramientas::definiciones(), 'name');
 
-        $r = Herramientas::ejecutar('editar_portada', [
-            'titulo' => 'Café de verdad',
-            'subtitulo' => 'Nuevo texto',
-        ], self::ADMIN);
-
-        $this->assertTrue($r['ok']);
-        $hero = Hero::first();
-        $this->assertSame('Café de verdad', $hero->titulo);
-        $this->assertSame('Nuevo texto', $hero->subtitulo);
+        $this->assertNotContains('editar_portada', $nombres);
     }
 
     public function test_una_herramienta_desconocida_no_revienta_la_conversacion(): void

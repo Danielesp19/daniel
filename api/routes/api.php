@@ -3,7 +3,6 @@
 use App\Http\Controllers\Admin\AvisoAdminController;
 use App\Http\Controllers\Admin\CategoriaAdminController;
 use App\Http\Controllers\Admin\ConsultaAdminController;
-use App\Http\Controllers\Admin\HeroAdminController;
 use App\Http\Controllers\Admin\PreguntaAdminController;
 use App\Http\Controllers\Admin\ProductoAdminController;
 use App\Http\Controllers\Admin\RecetaAdminController;
@@ -18,7 +17,6 @@ Route::prefix('catalogo')->group(function () {
     Route::get('/', [CatalogoController::class, 'index']);
     Route::get('/stock', [CatalogoController::class, 'stock']);
     Route::get('/sedes', [CatalogoController::class, 'sedes']);
-    Route::get('/hero', [CatalogoController::class, 'hero']);
     Route::get('/aviso', [CatalogoController::class, 'aviso']);
     Route::get('/recetas', [CatalogoController::class, 'recetas']);
     Route::get('/preguntas', [CatalogoController::class, 'preguntas']);
@@ -67,8 +65,6 @@ Route::middleware(['throttle:admin-api', 'admin.token'])->prefix('admin')->group
     Route::delete('sedes/{sede}', [SedeAdminController::class, 'destroy']);
 
     // ── Portada y aviso ─────────────────────────────────────────────────────
-    Route::get('hero', [HeroAdminController::class, 'show']);
-    Route::post('hero', [HeroAdminController::class, 'update']);
     Route::get('aviso', [AvisoAdminController::class, 'show']);
     Route::post('aviso', [AvisoAdminController::class, 'update']);
 

@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Categoria;
-use App\Models\Hero;
 use App\Models\Producto;
 use App\Models\Sede;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -265,15 +264,15 @@ class AdminApiTest extends TestCase
 
     // ── Portada ──────────────────────────────────────────────────────────────
 
-    public function test_guarda_la_portada_aunque_no_exista_ninguna(): void
+    public function test_la_portada_ya_no_se_edita(): void
     {
-        $this->assertSame(0, Hero::count());
+        // Los textos del hero viven en el componente desde que la portada pasó
+        // a ser una pieza de diseño fija. Si alguien vuelve a exponer la ruta
+        // sin querer, esta prueba lo canta.
+        // No se comprueba un código exacto —según qué otra ruta case, Laravel
+        // responde 404 o 405— sino que la petición NO prospera.
+        $r = $this->panel()->post('/api/admin/hero', ['titulo' => 'El arte del café']);
 
-        $this->panel()
-            ->post('/api/admin/hero', ['titulo' => 'El arte del café', 'etiqueta' => 'Huila'])
-            ->assertOk()
-            ->assertJsonPath('titulo', 'El arte del café');
-
-        $this->assertSame(1, Hero::count());
+        $this->assertGreaterThanOrEqual(400, $r->status());
     }
 }

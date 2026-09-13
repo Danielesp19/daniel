@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { Hero as HeroDatos } from "@/lib/catalogo";
 import { enlaceWhatsApp, MARCA } from "@/lib/marca";
 import IconoRed, { type Red } from "./IconoRed";
 
@@ -62,6 +61,24 @@ const CIFRAS = [
   { dato: "Todo", tenue: " el país", nota: "envíos nacionales" },
 ];
 
+/**
+ * Los textos de la portada.
+ *
+ * Viven acá y no en el panel. Los editaba el admin hasta que la portada se
+ * rediseñó como una pieza fija: el titular parte en dos por la coma para que
+ * la segunda mitad salga en itálica, el epígrafe da la vuelta al medallón y el
+ * párrafo está medido para dos líneas en escritorio. Un texto cualquiera
+ * escrito desde un formulario rompía las tres cosas, así que se dejó de
+ * ofrecer esa edición en vez de ofrecerla y que decepcione.
+ */
+const TEXTOS = {
+  etiqueta: `${MARCA.oficio} · ${MARCA.ciudad}`,
+  titulo: "El arte del café, en cada taza.",
+  subtitulo:
+    "Cursos, experiencias y café de especialidad tostado en el Huila. Formación de baristas y asesoría para cafeterías.",
+  cta: { texto: "Ver el catálogo", url: "#catalogo" },
+};
+
 /** Las redes que se muestran bajo el titular, en el orden del diseño. */
 const REDES: { red: Red; url: string }[] = [
   { red: "facebook", url: MARCA.facebook },
@@ -93,7 +110,7 @@ const REDES: { red: Red; url: string }[] = [
  * confirmados y una portada no es sitio para inventarlos. Los logros reales ya
  * están en la sección del barista, como medallas.
  */
-export default function Hero({ hero }: { hero: HeroDatos | null }) {
+export default function Hero() {
   const seccionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -153,18 +170,11 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
     };
   }, []);
 
-  const etiqueta = hero?.etiqueta ?? `${MARCA.oficio} · ${MARCA.ciudad}`;
-  // El texto por defecto es el del diseño, no `MARCA.descripcion`: esa abría
-  // con el subcampeonato y el cliente lo mandó quitar de la portada. Se ve
-  // mientras la portada no se haya editado desde el panel.
-  const subtitulo =
-    hero?.subtitulo ??
-    "Cursos, experiencias y café de especialidad tostado en el Huila. Formación de baristas y asesoría para cafeterías.";
+  const { etiqueta, titulo, subtitulo, cta } = TEXTOS;
 
   // El titular se parte en dos: lo que va en redonda y lo que va en itálica.
-  // Es el recurso que sostiene el diseño entero. Si el título viene del panel
-  // sin coma, se muestra completo en redonda en vez de partirlo a la fuerza.
-  const titulo = hero?.titulo ?? "El arte del café, en cada taza.";
+  // Es el recurso que sostiene el diseño entero. Sin coma se muestra completo
+  // en redonda en vez de partirlo a la fuerza.
   const corte = titulo.indexOf(",");
   const recto = corte > 0 ? titulo.slice(0, corte + 1) : titulo;
   const cursiva = corte > 0 ? titulo.slice(corte + 1).trim() : null;
@@ -221,8 +231,8 @@ export default function Hero({ hero }: { hero: HeroDatos | null }) {
           {/* Uno encima del otro y no lado a lado: en fila los dos pesaban
               igual y no se sabía cuál era el camino principal. */}
           <div className="hero-botones">
-            <a href={hero?.cta_url ?? "#catalogo"} className="boton boton-grande boton-solido-claro">
-              {hero?.cta_texto ?? "Ver el catálogo"}
+            <a href={cta.url} className="boton boton-grande boton-solido-claro">
+              {cta.texto}
             </a>
             <a href="#cat-servicios" className="boton boton-grande hero-boton-linea">
               Cursos y asesorías

@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Categoria;
-use App\Models\Hero;
 use App\Models\Producto;
 use App\Models\Sede;
 use Illuminate\Database\Eloquent\Collection;
@@ -27,19 +26,6 @@ class CatalogoSeeder extends Seeder
     public function run(): void
     {
         $this->sembrarSedes();
-
-        Hero::create([
-            'etiqueta' => 'Arte latte · Café de especialidad · Huila',
-            'titulo' => 'El arte del café, en cada taza',
-            // El párrafo de la portada, tal como quedó en el diseño nuevo. El
-            // anterior abría con el subcampeonato y lo pidió quitar el cliente:
-            // el podio ya está en las medallas de la sección del barista.
-            'subtitulo' => 'Cursos, experiencias y café de especialidad tostado en el Huila. Formación de baristas y asesoría para cafeterías.',
-            'cta_texto' => 'Ver el catálogo',
-            'cta_url' => '#catalogo',
-            'activo' => true,
-            'orden' => 0,
-        ]);
 
         // ── Tres secciones, tres tratamientos distintos ─────────────────────
         // La página se sentía repetida cuando eran cinco: el café salía dos

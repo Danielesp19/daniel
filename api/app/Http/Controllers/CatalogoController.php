@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Aviso;
 use App\Models\Categoria;
-use App\Models\Hero;
 use App\Models\Pregunta;
 use App\Models\Producto;
 use App\Models\Receta;
@@ -118,25 +117,6 @@ class CatalogoController extends Controller
 
         return response()->json($stock)
             ->header('Cache-Control', 'no-store');
-    }
-
-    public function hero()
-    {
-        $heroes = Hero::where('activo', true)
-            ->orderBy('orden')
-            ->get()
-            ->map(fn (Hero $h) => [
-                'id' => $h->id,
-                'titulo' => $h->titulo,
-                'subtitulo' => $h->subtitulo,
-                'etiqueta' => $h->etiqueta,
-                'imagen_url' => $h->imagen ? asset('storage/'.$h->imagen) : null,
-                'cta_texto' => $h->cta_texto,
-                'cta_url' => $h->cta_url,
-            ]);
-
-        return response()->json($heroes)
-            ->header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
     }
 
     /** El aviso de arriba del sitio, si hay uno encendido. */

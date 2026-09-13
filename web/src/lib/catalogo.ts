@@ -161,15 +161,6 @@ export interface Pregunta {
   respuesta: string;
 }
 
-export interface Hero {
-  id: number;
-  titulo: string;
-  subtitulo: string | null;
-  etiqueta: string | null;
-  imagen_url: string | null;
-  cta_texto: string | null;
-  cta_url: string | null;
-}
 
 // En el servidor se pega directo a Laravel (sin pasar por el rewrite).
 // En el navegador se usa el proxy de Next para no lidiar con CORS.
@@ -231,10 +222,6 @@ export const getCatalogo = () =>
     })),
   );
 
-export const getHero = () =>
-  pedir<Hero[]>("/catalogo/hero", { next: { revalidate: 60 } } as RequestInit).then(
-    (h) => h[0] ?? null,
-  );
 
 export const getAviso = () =>
   pedir<Aviso | null>("/catalogo/aviso", { next: { revalidate: 60 } } as RequestInit);

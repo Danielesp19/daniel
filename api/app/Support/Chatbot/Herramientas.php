@@ -3,7 +3,6 @@
 namespace App\Support\Chatbot;
 
 use App\Models\Categoria;
-use App\Models\Hero;
 use App\Models\Producto;
 use App\Models\Sede;
 use Illuminate\Support\Facades\Cache;
@@ -15,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
  *
  * Este conjunto es el panel de administración: la idea es que quien atiende el
  * negocio nunca tenga que abrir un navegador. Por eso hay herramientas para
- * crear productos, cambiar la portada y ponerle fotos a las cosas, no solo
+ * crear productos y ponerle fotos a las cosas, no solo
  * para mover el inventario.
  *
  * Van contra Eloquent directamente, no contra la API HTTP de administración:
@@ -192,7 +191,7 @@ class Herramientas
                 ],
             ],
 
-            // ── Categorías y portada ─────────────────────────────────────────
+            // ── Categorías ───────────────────────────────────────────────────
             [
                 'name' => 'crear_categoria',
                 'description' => 'Crea una sección nueva del catálogo. '
@@ -228,21 +227,6 @@ class Herramientas
                     'required' => ['categoria_id'],
                 ],
             ],
-            [
-                'name' => 'editar_portada',
-                'description' => 'Cambia los textos de la portada del sitio: la línea pequeña de arriba, '
-                    .'el título grande, el párrafo debajo y el botón. Manda solo lo que quiera cambiar.',
-                'inputSchema' => [
-                    'type' => 'object',
-                    'properties' => [
-                        'titulo' => ['type' => 'string', 'description' => 'El título grande. Corto: dos o tres palabras.'],
-                        'subtitulo' => ['type' => 'string', 'description' => 'El párrafo bajo el título.'],
-                        'etiqueta' => ['type' => 'string', 'description' => 'La línea pequeña sobre el título.'],
-                        'cta_texto' => ['type' => 'string', 'description' => 'Texto del botón.'],
-                    ],
-                    'required' => [],
-                ],
-            ],
         ];
     }
 
@@ -267,7 +251,6 @@ class Herramientas
                 'asignar_foto' => self::asignarFoto($input, $de),
                 'crear_categoria' => self::crearCategoria($input),
                 'editar_categoria' => self::editarCategoria($input),
-                'editar_portada' => self::editarPortada($input),
                 default => ['error' => "No existe una herramienta llamada {$nombre}."],
             };
 
@@ -612,7 +595,7 @@ class Herramientas
         ];
     }
 
-    // ── Categorías y portada ────────────────────────────────────────────────
+    // ── Categorías ──────────────────────────────────────────────────────────
 
     /** @param array<string, mixed> $input */
     private static function crearCategoria(array $input): array
@@ -663,28 +646,6 @@ class Herramientas
         $categoria->update($cambios);
 
         return ['ok' => true, 'categoria' => $categoria->nombre, 'antes' => $antes, 'despues' => $cambios];
-    }
-
-    /** @param array<string, mixed> $input */
-    private static function editarPortada(array $input): array
-    {
-        $cambios = array_intersect_key($input, array_flip(['titulo', 'subtitulo', 'etiqueta', 'cta_texto']));
-        if (! $cambios) {
-            return ['error' => 'No mandaste ningún texto para cambiar.'];
-        }
-
-        // Solo hay una portada; si todavía no existe se crea con lo que mandó.
-        $hero = Hero::where('activo', true)->orderBy('orden')->first();
-        if (! $hero) {
-            $hero = Hero::create($cambios + ['titulo' => $cambios['titulo'] ?? 'Café', 'activo' => true]);
-
-            return ['ok' => true, 'mensaje' => 'Portada creada.', 'despues' => $hero->only(array_keys($cambios))];
-        }
-
-        $antes = $hero->only(array_keys($cambios));
-        $hero->update($cambios);
-
-        return ['ok' => true, 'antes' => $antes, 'despues' => $cambios];
     }
 
     // ── Utilidades ──────────────────────────────────────────────────────────

@@ -2,12 +2,10 @@ import type { Metadata } from "next";
 import {
   getAviso,
   getCatalogo,
-  getHero,
   getPreguntas,
   getRecetas,
   type Aviso as AvisoDatos,
   type Categoria,
-  type Hero as HeroDatos,
   type Pregunta,
   type Receta,
 } from "@/lib/catalogo";
@@ -39,9 +37,8 @@ export default async function Inicio() {
   // Datos traídos en el servidor. Si el backend está caído, la página se
   // publica igual con lo que haya: mejor el hero y la presentación que un
   // error a pantalla completa.
-  const [categorias, hero, aviso, recetas, preguntas] = await Promise.all([
+  const [categorias, aviso, recetas, preguntas] = await Promise.all([
     getCatalogo().catch(() => [] as Categoria[]),
-    getHero().catch(() => null as HeroDatos | null),
     getAviso().catch(() => null as AvisoDatos | null),
     getRecetas().catch(() => [] as Receta[]),
     getPreguntas().catch(() => [] as Pregunta[]),
@@ -53,7 +50,7 @@ export default async function Inicio() {
       <Cabecera categorias={categorias.map((c) => ({ slug: c.slug, nombre: c.nombre }))} />
 
       <main>
-        <Hero hero={hero} />
+        <Hero />
         <Aviso aviso={aviso} />
         <Barista />
         <Catalogo categorias={categorias} />
