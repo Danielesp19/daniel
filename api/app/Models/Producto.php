@@ -17,7 +17,7 @@ class Producto extends Model
 
     protected $fillable = [
         'categoria_id', 'nombre', 'slug', 'descripcion', 'precio_cop',
-        'stock', 'stock_minimo', 'gramos', 'controla_stock', 'es_cafe',
+        'stock', 'stock_minimo', 'gramos', 'controla_stock', 'es_cafe', 'es_kit',
         'finca', 'productor', 'region', 'altitud_msnm', 'variedad', 'proceso',
         'tueste', 'notas', 'puntaje_sca',
         'activo', 'destacado', 'orden',
@@ -54,6 +54,7 @@ class Producto extends Model
         'destacado' => 'boolean',
         'orden' => 'integer',
         'es_cafe' => 'boolean',
+        'es_kit' => 'boolean',
     ];
 
     protected static function booted(): void
@@ -135,8 +136,18 @@ class Producto extends Model
     }
 
     /** ¿Es un kit? Lo es si trae algo adentro. */
+    /** Las piezas que solo existen dentro de este kit. */
+    public function piezas()
+    {
+        return $this->hasMany(KitPieza::class)->orderBy('orden');
+    }
+
     public function esKit(): bool
     {
+        if ($this->es_kit) {
+            return true;
+        }
+
         return ($this->relationLoaded('componentes') ? $this->componentes : $this->componentes())
             ->count() > 0;
     }

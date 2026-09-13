@@ -346,4 +346,40 @@ class AdminApiTest extends TestCase
         $this->assertSame([0, 1], $medios->pluck('orden')->all());
         Storage::disk('public')->assertExists($medios->first()->ruta);
     }
+
+    public function test_un_kit_guarda_sus_piezas_propias(): void
+    {
+        $suelto = $this->categoria->productos()->create(['nombre' => 'Molino', 'precio_cop' => 890000]);
+
+        $r = $this->panel()->post('/api/admin/productos', [
+            'categoria_id' => $this->categoria->id,
+            'nombre' => 'Kit para empezar',
+            'precio_cop' => 1140000,
+            'es_kit' => true,
+            // Lo que ya se vende suelto entra como componente...
+            'componentes' => [$suelto->id],
+            // ...y lo que solo viene en la caja, como pieza.
+            'piezas' => [['nombre' => 'Filtros de papel x40'], ['nombre' => 'Bolsa de muestra']],
+        ])->assertCreated();
+
+        $kit = Producto::find($r->json('id'));
+
+        $this->assertTrue($kit->es_kit);
+        $this->assertSame(['Molino'], $kit->componentes->pluck('nombre')->all());
+        $this->assertSame(['Filtros de papel x40', 'Bolsa de muestra'], $kit->piezas->pluck('nombre')->all());
+        $this->assertSame([0, 1], $kit->piezas->pluck('orden')->all());
+    }
+
+    public function test_guardar_sin_mandar_piezas_no_las_borra(): void
+    {
+        $kit = $this->categoria->productos()->create(['nombre' => 'Kit', 'precio_cop' => 10000, 'es_kit' => true]);
+        $kit->piezas()->create(['nombre' => 'Filtros', 'orden' => 0]);
+
+        // El chatbot cambia el precio y no sabe que existen las piezas.
+        $this->panel()
+            ->patchJson("/api/admin/productos/{$kit->id}", ['precio_cop' => 12000])
+            ->assertOk();
+
+        $this->assertSame(1, $kit->piezas()->count());
+    }
 }

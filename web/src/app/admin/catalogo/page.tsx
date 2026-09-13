@@ -61,7 +61,12 @@ export default function CatalogoAdmin() {
   const [editandoCategoria, setEditandoCategoria] = useState<AdminCategoria | null>(null);
   // false = cerrado; null = sección nueva; un id = subcategoría de esa sección.
   const [creandoCategoria, setCreandoCategoria] = useState<false | null | number>(false);
-  const [productoEnEdicion, setProductoEnEdicion] = useState<{ producto: AdminProducto | null; categoriaId: number } | null>(null);
+  const [productoEnEdicion, setProductoEnEdicion] = useState<{
+    producto: AdminProducto | null;
+    categoriaId: number;
+    /** Nace como kit: se entró por "+ Kit". */
+    kit?: boolean;
+  } | null>(null);
 
   const cargar = useCallback(async () => {
     try {
@@ -231,6 +236,11 @@ export default function CatalogoAdmin() {
                 <Boton chico onClick={() => setProductoEnEdicion({ producto: null, categoriaId: c.id })}>
                   + Producto
                 </Boton>
+                {/* Un kit es un producto más de la sección, solo que se arma
+                    con otro formulario: por eso se crea desde acá. */}
+                <Boton chico tono="plano" onClick={() => setProductoEnEdicion({ producto: null, categoriaId: c.id, kit: true })}>
+                  + Kit
+                </Boton>
                 <Boton chico tono="plano" onClick={() => setCreandoCategoria(c.id)}>
                   + Subcategoría
                 </Boton>
@@ -354,6 +364,7 @@ export default function CatalogoAdmin() {
           producto={productoEnEdicion.producto}
           categorias={categorias}
           categoriaPorDefecto={productoEnEdicion.categoriaId}
+          kitInicial={productoEnEdicion.kit}
           onCerrar={() => setProductoEnEdicion(null)}
           onGuardado={() => {
             setProductoEnEdicion(null);

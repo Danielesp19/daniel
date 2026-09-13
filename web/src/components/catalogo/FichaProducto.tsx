@@ -117,12 +117,18 @@ export default function FichaProducto({
           {/* Si es un kit, lo primero que hay que saber es qué trae: es la
               razón por la que alguien lo mira en vez de comprar las piezas
               sueltas. */}
-          {producto.componentes.length > 0 && (
+          {/* Los componentes son productos del catálogo y las piezas solo
+              existen dentro del kit, pero para quien compra son lo mismo:
+              cosas que vienen en la caja. Van en una sola lista. */}
+          {producto.componentes.length + (producto.piezas?.length ?? 0) > 0 && (
             <div className="ficha-kit">
               <span className="rotulo">Incluye</span>
               <ul>
                 {producto.componentes.map((c) => (
-                  <li key={c.id}>{c.nombre}</li>
+                  <li key={`c${c.id}`}>{c.nombre}</li>
+                ))}
+                {(producto.piezas ?? []).map((z) => (
+                  <li key={`z${z.id}`}>{z.nombre}</li>
                 ))}
               </ul>
             </div>

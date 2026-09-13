@@ -96,8 +96,9 @@ class ProductoAdminController extends Controller
         $producto = Producto::create($this->soloCampos($datos));
         $this->guardarMedios($request, $producto);
         $this->guardarComponentes($request, $producto);
+        $this->guardarPiezas($request, $producto);
 
-        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'medios', 'componentes'])), 201);
+        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'medios', 'componentes', 'piezas'])), 201);
     }
 
     public function update(Request $request, Producto $producto)
@@ -107,8 +108,9 @@ class ProductoAdminController extends Controller
         $producto->update($this->soloCampos($datos));
         $this->guardarMedios($request, $producto);
         $this->guardarComponentes($request, $producto);
+        $this->guardarPiezas($request, $producto);
 
-        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'medios', 'componentes'])));
+        return response()->json($this->formato($producto->fresh(['categoria:id,nombre', 'sedes', 'medios', 'componentes', 'piezas'])));
     }
 
     /**
@@ -170,6 +172,11 @@ class ProductoAdminController extends Controller
             'gramos' => 'sometimes|integer|min:0',
             'controla_stock' => 'sometimes|boolean',
             'es_cafe' => 'sometimes|boolean',
+            'es_kit' => 'sometimes|boolean',
+            'piezas' => 'sometimes|nullable|array|max:12',
+            'piezas.*.nombre' => 'required_with:piezas.*|string|max:255',
+            'piezas.*.imagen' => 'sometimes|image|max:12288',
+            'piezas.*.imagen_actual' => 'sometimes|nullable|string',
             'finca' => 'sometimes|nullable|string|max:255',
             'productor' => 'sometimes|nullable|string|max:255',
             'region' => 'sometimes|nullable|string|max:255',
@@ -202,7 +209,7 @@ class ProductoAdminController extends Controller
     private function soloCampos(array $datos): array
     {
         return array_diff_key($datos, array_flip([
-            'imagen', 'video', 'medios', 'componentes',
+            'imagen', 'video', 'medios', 'componentes', 'piezas',
         ]));
     }
 
@@ -302,6 +309,52 @@ class ProductoAdminController extends Controller
             }
             $sobra->delete();
         }
+    }
+
+    /**
+     * Las piezas del kit: las que solo existen dentro de él.
+     *
+     * Se borran y se vuelven a crear en cada guardado —son pocas y sin datos
+     * propios que perder— pero conservando la foto de las que ya la tenían: sin
+     * eso, cambiarle el nombre a una pieza le borraba la imagen a todas.
+     */
+    private function guardarPiezas(Request $request, Producto $producto): void
+    {
+        if (! $request->has('piezas') && ! $request->hasFile('piezas')) {
+            return;
+        }
+
+        $entrantes = $request->input('piezas', []) ?: [];
+        $archivos = $request->file('piezas', []) ?: [];
+        $filas = [];
+        $conservadas = [];
+
+        foreach (array_values($entrantes) as $i => $pieza) {
+            $nombre = trim((string) ($pieza['nombre'] ?? ''));
+            if ($nombre === '') {
+                continue;
+            }
+
+            $imagen = $pieza['imagen_actual'] ?? null;
+            if ($archivo = $archivos[$i]['imagen'] ?? null) {
+                $imagen = ImageOptimizer::store($archivo, 'productos');
+            }
+
+            if ($imagen) {
+                $conservadas[] = $imagen;
+            }
+            $filas[] = ['nombre' => $nombre, 'imagen' => $imagen, 'orden' => count($filas)];
+        }
+
+        // Las fotos que ya no usa ninguna pieza se van del disco.
+        foreach ($producto->piezas as $vieja) {
+            if ($vieja->imagen && ! in_array($vieja->imagen, $conservadas, true)) {
+                Storage::disk('public')->delete($vieja->imagen);
+            }
+        }
+
+        $producto->piezas()->delete();
+        $producto->piezas()->createMany($filas);
     }
 
     /**
@@ -450,6 +503,16 @@ class ProductoAdminController extends Controller
             'gramos' => (int) $p->gramos,
             'controla_stock' => (bool) $p->controla_stock,
             'es_cafe' => (bool) $p->es_cafe,
+            'es_kit' => $p->esKit(),
+            'piezas' => ($p->relationLoaded('piezas') ? $p->piezas : $p->piezas()->get())
+                ->map(fn ($z) => [
+                    'id' => $z->id,
+                    'nombre' => $z->nombre,
+                    'imagen' => $z->imagen,
+                    'imagen_url' => $z->imagenUrl(),
+                ])
+                ->values()
+                ->all(),
             // Total de todas las sedes. Es de solo lectura: sale de sumarlas.
             'stock' => (int) $p->stock,
             'stock_minimo' => (int) $p->stock_minimo,

@@ -19,7 +19,7 @@ class CatalogoController extends Controller
         // viaja adentro de la suya. Se piden los productos de las dos —los que
         // cuelgan directo de la sección y los de cada subcategoría— en la misma
         // consulta.
-        $conProductos = ['productosVisibles.medios', 'productosVisibles.sedes', 'productosVisibles.componentes'];
+        $conProductos = ['productosVisibles.medios', 'productosVisibles.sedes', 'productosVisibles.componentes', 'productosVisibles.piezas'];
 
         $categorias = Categoria::where('activa', true)
             ->secciones()
@@ -79,7 +79,7 @@ class CatalogoController extends Controller
     public function show(Producto $producto)
     {
         abort_unless($producto->activo, 404);
-        $producto->load(['categoria', 'medios', 'sedes', 'componentes']);
+        $producto->load(['categoria', 'medios', 'sedes', 'componentes', 'piezas']);
 
         return response()->json($this->formato($producto, detalle: true));
     }
@@ -261,11 +261,19 @@ class CatalogoController extends Controller
                 ->all(),
 
             'destacado' => (bool) $p->destacado,
+            'es_kit' => $p->esKit(),
 
             // Lo que trae adentro, si es un kit. Vacío en todo lo demás, que es
             // la inmensa mayoría: el frontend pregunta por el largo.
             'componentes' => ($p->relationLoaded('componentes') ? $p->componentes : $p->componentes()->get())
                 ->map(fn ($c) => ['id' => $c->id, 'nombre' => $c->nombre, 'slug' => $c->slug])
+                ->values()
+                ->all(),
+            // Las piezas que solo existen dentro del kit: van junto a los
+            // componentes en la lista de "qué incluye", porque para quien
+            // compra son lo mismo — cosas que vienen en la caja.
+            'piezas' => ($p->relationLoaded('piezas') ? $p->piezas : $p->piezas()->get())
+                ->map(fn ($z) => ['id' => $z->id, 'nombre' => $z->nombre, 'imagen_url' => $z->imagenUrl()])
                 ->values()
                 ->all(),
 

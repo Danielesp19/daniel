@@ -34,6 +34,9 @@ export interface Producto {
   controla_stock: boolean;
   /** Un café: es lo que decide si la tarjeta y la ficha muestran el origen. */
   es_cafe: boolean;
+  es_kit: boolean;
+  /** Lo que viene dentro del kit y no se vende aparte. */
+  piezas: { id: number; nombre: string; imagen_url: string | null }[];
   /** Total de todas las sedes: es la suma de `sedes[].stock`. */
   stock: number;
   agotado: boolean;

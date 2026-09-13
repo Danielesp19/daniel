@@ -42,6 +42,10 @@ export interface AdminProducto {
   controla_stock: boolean;
   /** Enciende el peso y la ficha de origen en el formulario y en la página. */
   es_cafe: boolean;
+  /** Se arma con el formulario de kit: componentes del catálogo y piezas. */
+  es_kit: boolean;
+  /** Lo que solo existe dentro del kit: nombre y foto. */
+  piezas: { id: number; nombre: string; imagen: string | null; imagen_url: string | null }[];
   /** Total de todas las sedes. De solo lectura: es su suma. */
   stock: number;
   stock_minimo: number;

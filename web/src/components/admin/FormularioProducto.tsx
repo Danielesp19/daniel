@@ -34,6 +34,7 @@ interface Borrador {
   gramos: string;
   controla_stock: boolean;
   es_cafe: boolean;
+  es_kit: boolean;
   stock_minimo: string;
   finca: string;
   productor: string;
@@ -59,6 +60,7 @@ function borradorDe(producto: AdminProducto | null, categoriaId: number): Borrad
     gramos: producto ? String(producto.gramos) : "0",
     controla_stock: producto?.controla_stock ?? true,
     es_cafe: producto?.es_cafe ?? false,
+    es_kit: producto?.es_kit ?? false,
     stock_minimo: producto ? String(producto.stock_minimo) : "3",
     finca: producto?.finca ?? "",
     productor: producto?.productor ?? "",
@@ -249,20 +251,159 @@ function ListaMedios({ medios, onCambio }: { medios: Medio[]; onCambio: (m: Medi
   );
 }
 
+/**
+ * Una pieza del kit mientras se edita: nombre, la foto que ya tenía y la que se
+ * acaba de escoger.
+ */
+interface Pieza {
+  nombre: string;
+  imagen: string | null;
+  imagen_url: string | null;
+  archivo: File | null;
+}
+
+/**
+ * Las piezas que solo existen dentro del kit.
+ *
+ * Los filtros de papel del V60, la bolsa de muestra: cosas que el comprador
+ * recibe y hay que nombrar, pero que no se venden sueltas. Por eso llevan
+ * nombre y foto y nada más — sin precio, porque no se venden, y sin stock,
+ * porque el que se cuenta es el del kit.
+ */
+function ListaPiezas({ piezas, onCambio }: { piezas: Pieza[]; onCambio: (p: Pieza[]) => void }) {
+  const editar = (i: number, cambio: Partial<Pieza>) =>
+    onCambio(piezas.map((z, j) => (j === i ? { ...z, ...cambio } : z)));
+
+  return (
+    <div>
+      <Etiqueta style={{ display: "block", marginBottom: 4 }}>Piezas que solo vienen en el kit</Etiqueta>
+      <p style={{ margin: "0 0 10px", fontSize: 12, color: COLOR.suave }}>
+        Lo que va en la caja pero no se vende aparte: filtros, una bolsa de muestra. Si la pieza sí
+        se vende suelta, márcala arriba en vez de escribirla acá.
+      </p>
+
+      <div style={{ display: "grid", gap: 8 }}>
+        {piezas.map((z, i) => (
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: 8,
+              background: COLOR.papel,
+              border: `1px solid ${COLOR.linea}`,
+              borderRadius: 10,
+            }}
+          >
+            <PiezaFoto
+              url={z.archivo ? undefined : z.imagen_url}
+              archivo={z.archivo}
+              onArchivo={(f) => editar(i, { archivo: f })}
+            />
+
+            <input
+              style={{ ...campo, flex: 1 }}
+              value={z.nombre}
+              placeholder="Filtros de papel x40"
+              onChange={(e) => editar(i, { nombre: e.target.value })}
+            />
+
+            <Boton
+              chico
+              tono="peligro"
+              type="button"
+              onClick={() => onCambio(piezas.filter((_, j) => j !== i))}
+              aria-label="Quitar"
+            >
+              ✕
+            </Boton>
+          </div>
+        ))}
+      </div>
+
+      <Boton
+        chico
+        type="button"
+        style={{ marginTop: 10 }}
+        onClick={() => onCambio([...piezas, { nombre: "", imagen: null, imagen_url: null, archivo: null }])}
+      >
+        + Agregar pieza
+      </Boton>
+    </div>
+  );
+}
+
+/** La miniatura de una pieza: se toca y se escoge la foto. */
+function PiezaFoto({
+  url,
+  archivo,
+  onArchivo,
+}: {
+  url?: string | null;
+  archivo: File | null;
+  onArchivo: (f: File | null) => void;
+}) {
+  const entrada = useRef<HTMLInputElement>(null);
+  const previo = archivo ? URL.createObjectURL(archivo) : null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => entrada.current?.click()}
+      title="Poner foto"
+      style={{
+        width: 46,
+        height: 46,
+        flexShrink: 0,
+        display: "grid",
+        placeItems: "center",
+        padding: 0,
+        borderRadius: 8,
+        border: `1px dashed ${COLOR.linea}`,
+        background: COLOR.fondo,
+        overflow: "hidden",
+        cursor: "pointer",
+        color: COLOR.suave,
+      }}
+    >
+      {previo ?? url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={(previo ?? url)!} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      ) : (
+        <span aria-hidden="true">+</span>
+      )}
+      <input
+        ref={entrada}
+        type="file"
+        accept="image/*"
+        onChange={(e) => onArchivo(e.target.files?.[0] ?? null)}
+        style={{ display: "none" }}
+      />
+    </button>
+  );
+}
+
 export default function FormularioProducto({
   producto,
   categorias,
   categoriaPorDefecto,
+  kitInicial = false,
   onCerrar,
   onGuardado,
 }: {
   producto: AdminProducto | null;
   categorias: AdminCategoria[];
   categoriaPorDefecto: number;
+  /** Nace como kit: se entró por "+ Kit" y no por "+ Producto". */
+  kitInicial?: boolean;
   onCerrar: () => void;
   onGuardado: () => void;
 }) {
-  const [datos, setDatos] = useState<Borrador>(() => borradorDe(producto, categoriaPorDefecto));
+  const [datos, setDatos] = useState<Borrador>(() => ({
+    ...borradorDe(producto, categoriaPorDefecto),
+    es_kit: producto?.es_kit ?? kitInicial,
+  }));
   // Fotos y videos en una sola lista ordenada: la primera es la portada.
   const [medios, setMedios] = useState<Medio[]>(() =>
     (producto?.medios ?? []).map((m) => ({ id: m.id, tipo: m.tipo, url: m.url, archivo: null })),
@@ -274,6 +415,18 @@ export default function FormularioProducto({
   // Lo que había al abrir, para saber si hay cambios sin guardar. Se compara
   // el borrador entero de un tirón en vez de campo por campo: son veinte
   // campos y cualquiera de ellos cuenta igual.
+  const [piezas, setPiezas] = useState<Pieza[]>(() =>
+    (producto?.piezas ?? []).map((z) => ({
+      nombre: z.nombre,
+      imagen: z.imagen,
+      imagen_url: z.imagen_url,
+      archivo: null,
+    })),
+  );
+  const [piezasIniciales] = useState(() =>
+    JSON.stringify((producto?.piezas ?? []).map((z) => [z.nombre, z.imagen])),
+  );
+
   const [mediosIniciales] = useState(() =>
     JSON.stringify((producto?.medios ?? []).map((m) => [m.id, null])),
   );
@@ -330,6 +483,16 @@ export default function FormularioProducto({
       cuerpo.append("gramos", datos.gramos || "0");
       cuerpo.append("controla_stock", datos.controla_stock ? "1" : "0");
       cuerpo.append("es_cafe", datos.es_cafe ? "1" : "0");
+      cuerpo.append("es_kit", datos.es_kit ? "1" : "0");
+
+      // Las piezas viajan en orden, con la foto que ya tenían o la nueva.
+      const utiles = piezas.filter((z) => z.nombre.trim());
+      if (utiles.length === 0) cuerpo.append("piezas", "");
+      utiles.forEach((z, i) => {
+        cuerpo.append(`piezas[${i}][nombre]`, z.nombre.trim());
+        if (z.archivo) cuerpo.append(`piezas[${i}][imagen]`, z.archivo);
+        else if (z.imagen) cuerpo.append(`piezas[${i}][imagen_actual]`, z.imagen);
+      });
       cuerpo.append("stock_minimo", datos.stock_minimo || "0");
       cuerpo.append("activo", datos.activo ? "1" : "0");
       cuerpo.append("destacado", datos.destacado ? "1" : "0");
@@ -388,11 +551,13 @@ export default function FormularioProducto({
 
   return (
     <Hoja
-      titulo={editando ? producto.nombre : "Producto nuevo"}
+      titulo={editando ? producto.nombre : datos.es_kit ? "Kit nuevo" : "Producto nuevo"}
       onCerrar={onCerrar}
       sucio={
         JSON.stringify(datos) !== inicial ||
-        JSON.stringify(medios.map((m) => [m.id, m.archivo?.name ?? null])) !== mediosIniciales
+        JSON.stringify(medios.map((m) => [m.id, m.archivo?.name ?? null])) !== mediosIniciales ||
+        JSON.stringify(piezas.map((z) => [z.nombre, z.imagen])) !== piezasIniciales ||
+        piezas.some((z) => z.archivo)
       }
       pie={
         <>
@@ -409,12 +574,19 @@ export default function FormularioProducto({
         {error && <div style={{ marginBottom: 14 }}><Aviso>{error}</Aviso></div>}
 
         {/* Lo primero que hay que decidir: de eso depende medio formulario. */}
-        <div style={{ marginBottom: 14 }}>
+        <div style={{ marginBottom: 14, display: "grid", gap: 10 }}>
           <Interruptor
             etiqueta="Es un café"
             nota="Enciéndelo y aparecen el peso de la bolsa y la ficha de origen: finca, región, altura, proceso, tueste, puntaje y notas de cata."
             valor={datos.es_cafe}
             onChange={(v) => set("es_cafe", v)}
+          />
+
+          <Interruptor
+            etiqueta="Es un kit"
+            nota="Enciéndelo y abajo eliges qué trae: productos que ya están en el catálogo y piezas que solo vienen dentro del kit."
+            valor={datos.es_kit}
+            onChange={(v) => set("es_kit", v)}
           />
         </div>
 
@@ -653,35 +825,48 @@ export default function FormularioProducto({
         <ListaMedios medios={medios} onCambio={setMedios} />
 
         {/* ── Kit ── */}
-        <Titulo nota="Deja esto vacío en un producto normal. Un kit se vende como una sola cosa —un precio, una línea en el pedido— y esto es lo que le dice al comprador qué se lleva.">
-          Qué incluye
-        </Titulo>
+        {/* Un kit se arma con dos cosas: productos que ya existen en el
+            catálogo —entran con su nombre y su foto— y piezas que solo viven
+            dentro del kit. Todo esto cuelga de la casilla: en un producto
+            normal no se ve. */}
+        {datos.es_kit && (
+          <>
+            <Titulo nota="Lo que el comprador recibe en la caja. Un kit se vende como una sola cosa —un precio, una línea en el pedido—, así que esto es lo que le dice qué se lleva.">
+              Qué incluye
+            </Titulo>
 
-        <div style={{ display: "grid", gap: 8, maxHeight: 220, overflowY: "auto", padding: 2 }}>
-          {otros
-            .filter((o) => o.id !== producto?.id)
-            .map((o) => (
-              <Interruptor
-                key={o.id}
-                etiqueta={o.nombre}
-                nota={o.categoria ?? undefined}
-                valor={datos.componentes.includes(o.id)}
-                onChange={(marcado) =>
-                  set(
-                    "componentes",
-                    marcado
-                      ? [...datos.componentes, o.id]
-                      : datos.componentes.filter((id) => id !== o.id),
-                  )
-                }
-              />
-            ))}
-          {otros.length === 0 && (
-            <p style={{ margin: 0, fontSize: 12.5, color: COLOR.suave }}>
-              No hay otros productos todavía.
-            </p>
-          )}
-        </div>
+            <Etiqueta style={{ display: "block", marginBottom: 8 }}>Productos del catálogo</Etiqueta>
+            <div style={{ display: "grid", gap: 8, maxHeight: 200, overflowY: "auto", padding: 2 }}>
+              {otros
+                .filter((o) => o.id !== producto?.id && !o.es_kit)
+                .map((o) => (
+                  <Interruptor
+                    key={o.id}
+                    etiqueta={o.nombre}
+                    nota={o.categoria ?? undefined}
+                    valor={datos.componentes.includes(o.id)}
+                    onChange={(marcado) =>
+                      set(
+                        "componentes",
+                        marcado
+                          ? [...datos.componentes, o.id]
+                          : datos.componentes.filter((id) => id !== o.id),
+                      )
+                    }
+                  />
+                ))}
+              {otros.length === 0 && (
+                <p style={{ margin: 0, fontSize: 12.5, color: COLOR.suave }}>
+                  No hay otros productos todavía.
+                </p>
+              )}
+            </div>
+
+            <div style={{ marginTop: 16 }}>
+              <ListaPiezas piezas={piezas} onCambio={setPiezas} />
+            </div>
+          </>
+        )}
 
         {/* ── Publicación ── */}
         <Titulo>Publicación</Titulo>

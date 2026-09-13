@@ -103,7 +103,9 @@ export default function TeselaFoto({
       ? producto.medios.filter((m) => m.tipo === "imagen").map((m) => m.url)
       : [producto.imagen_url, ...producto.imagenes_extra]
   ).filter(Boolean) as string[];
-  const esKit = producto.componentes.length > 0;
+  // Se pregunta por la marca y no por "tiene componentes": un kit armado solo
+  // con piezas propias —que no son productos del catálogo— también es un kit.
+  const esKit = producto.es_kit ?? producto.componentes.length > 0;
 
   if (esKit && fotos.length >= 2) {
     // Máximo cuatro: con más, cada pieza queda del tamaño de una estampilla y
