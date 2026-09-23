@@ -88,7 +88,9 @@ class CatalogoApiTest extends TestCase
         $this->getJson('/api/catalogo')
             ->assertOk()
             ->assertJsonPath('0.productos.0.agotado', true)
-            ->assertJsonPath('0.productos.0.stock', 0);
+            // Y sin el número: cuántas unidades hay es del negocio, no del
+            // catálogo. La bandera alcanza para pintar el sello.
+            ->assertJsonMissingPath('0.productos.0.stock');
     }
 
     public function test_un_producto_inactivo_no_aparece(): void
@@ -116,7 +118,11 @@ class CatalogoApiTest extends TestCase
 
         $respuesta = $this->getJson('/api/catalogo/stock')->assertOk();
 
-        $respuesta->assertJsonPath((string) $producto->id, 7);
+        // Booleano, NO el conteo: este endpoint es público y sin caché, así
+        // que devolver el número dejaba el inventario del negocio a la vista
+        // de cualquiera que abriera las herramientas del navegador.
+        $respuesta->assertJsonPath((string) $producto->id, true);
+        $this->assertNotSame(7, $respuesta->json((string) $producto->id));
         // El carrito revalida contra este endpoint justo antes de mandar el
         // pedido; si el CDN lo cachea, la revalidación no sirve de nada.
         // Se busca la directiva, no la cabecera completa: Laravel le añade
@@ -149,10 +155,10 @@ class CatalogoApiTest extends TestCase
             'controla_stock' => false,
         ]);
 
-        // El carrito usa este mapa para recortar cantidades. Si un servicio
-        // apareciera con stock 0, lo borraría del pedido al enviarlo.
+        // El carrito usa este mapa para sacar lo que se agotó. Si un servicio
+        // apareciera como no disponible, lo borraría del pedido al enviarlo.
         $respuesta = $this->getJson('/api/catalogo/stock')->assertOk();
-        $respuesta->assertJsonPath((string) $cafe->id, 7);
+        $respuesta->assertJsonPath((string) $cafe->id, true);
         $respuesta->assertJsonMissingPath((string) $servicio->id);
     }
 

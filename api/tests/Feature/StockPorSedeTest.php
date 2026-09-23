@@ -196,22 +196,29 @@ class StockPorSedeTest extends TestCase
 
     // ── El catálogo público ──────────────────────────────────────────────────
 
-    public function test_el_catalogo_publica_el_desglose_con_la_direccion_de_cada_sede(): void
+    public function test_el_catalogo_publica_las_sedes_con_su_direccion_pero_sin_inventario(): void
     {
+        // El cliente necesita saber a qué local ir; cuántas unidades hay en
+        // cada uno es información del negocio. Antes esto viajaba en el JSON
+        // público y quedaba a la vista de cualquiera —competencia incluida—.
         $this->producto->ajustarStockSede(Sede::where('nombre', 'Sede Bogotá')->first(), 'fijar', 6);
 
-        $this->getJson('/api/catalogo')
-            ->assertOk()
-            ->assertJsonPath('0.productos.0.stock', 6)
-            // La sede sin surtir sale igual, en cero: saber dónde NO hay es
-            // parte de lo que este bloque viene a responder.
-            ->assertJsonPath('0.productos.0.sedes.0.nombre', 'Sede Centro')
-            ->assertJsonPath('0.productos.0.sedes.0.stock', 0)
-            ->assertJsonPath('0.productos.0.sedes.0.agotado', true)
+        $r = $this->getJson('/api/catalogo')->assertOk();
+
+        $r->assertJsonPath('0.productos.0.sedes.0.nombre', 'Sede Centro')
             ->assertJsonPath('0.productos.0.sedes.1.nombre', 'Sede Bogotá')
-            ->assertJsonPath('0.productos.0.sedes.1.stock', 6)
             ->assertJsonPath('0.productos.0.sedes.1.direccion', 'Carrera 13 # 55-30')
             ->assertJsonPath('0.productos.0.sedes.1.ciudad', 'Bogotá');
+
+        // Ni el total ni el desglose por sede.
+        $r->assertJsonMissingPath('0.productos.0.stock')
+            ->assertJsonMissingPath('0.productos.0.sedes.0.stock')
+            ->assertJsonMissingPath('0.productos.0.sedes.1.stock')
+            ->assertJsonMissingPath('0.productos.0.sedes.1.agotado');
+
+        // Y por si algún día alguien reintroduce el número con otro nombre:
+        // el 6 no puede aparecer por ningún lado del payload público.
+        $this->assertStringNotContainsString('"stock"', $r->getContent());
     }
 
     public function test_un_servicio_no_lleva_desglose_de_sedes(): void

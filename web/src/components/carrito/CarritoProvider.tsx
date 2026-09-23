@@ -34,8 +34,8 @@ interface Carrito {
   cambiarCantidad: (id: number, cantidad: number) => void;
   quitar: (id: number) => void;
   vaciar: () => void;
-  /** Recorta las cantidades al stock recién consultado. Devuelve los ajustes. */
-  ajustarAStock: (stock: Record<string, number>) => Ajuste[];
+  /** Quita lo que ya no se consigue, según el servidor. Devuelve los ajustes. */
+  ajustarAStock: (disponibles: Record<string, boolean>) => Ajuste[];
 }
 
 export interface Ajuste {
@@ -49,6 +49,15 @@ export interface Ajuste {
 // faltantes. Un carrito a medio llenar se pierde; un carrito mal interpretado
 // manda un pedido equivocado.
 const LLAVE = "carrito:v3";
+
+/**
+ * Cuántas unidades de una misma línea deja meter el carrito.
+ *
+ * Es un número parejo y no el inventario real: el catálogo dejó de publicar
+ * cuántas unidades hay. Doce es más de lo que se pide por WhatsApp de una
+ * sentada, y por encima de eso la conversación pasa por Daniel igual.
+ */
+const TOPE_POR_LINEA = 12;
 
 const Contexto = createContext<Carrito | null>(null);
 
@@ -86,10 +95,15 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
     setLineas((previas) => {
       const existente = previas.find((l) => l.id === producto.id);
       if (existente) {
-        // Nunca por encima del stock que conocemos, salvo en servicios, que no
-        // tienen tope. El límite real se vuelve a revisar contra el servidor
-        // al momento de enviar el pedido.
-        const tope = producto.controla_stock ? producto.stock : Infinity;
+        // Un tope parejo y no el inventario real: el catálogo ya no publica
+        // cuántas unidades hay —era el inventario del negocio a la vista de
+        // cualquiera—, así que acá no hay número contra el cual topar. Doce es
+        // más de lo que se pide por WhatsApp de una sentada; por encima de eso
+        // la conversación pasa por Daniel de todos modos.
+        //
+        // Antes de mandar el pedido se revalida contra el servidor, que dice
+        // si el producto sigue disponible (sin decir cuánto queda).
+        const tope = producto.controla_stock ? TOPE_POR_LINEA : Infinity;
         return previas.map((l) =>
           l.id === producto.id ? { ...l, cantidad: Math.min(l.cantidad + 1, tope) } : l,
         );
@@ -123,28 +137,33 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
   const vaciar = useCallback(() => setLineas([]), []);
 
   /**
-   * Recorta el carrito al stock real.
+   * Saca del carrito lo que ya no se consigue.
    *
    * Se llama justo antes de armar el mensaje de WhatsApp: el catálogo se sirve
-   * cacheado y el stock que se pintó puede tener hasta un minuto. Mejor
-   * avisarle al cliente aquí que dejar que pida tres bolsas de algo que se
-   * acabó hace media hora.
+   * cacheado y el sello de agotado que se pintó puede tener hasta un minuto.
+   * Mejor avisarle al cliente aquí que dejar que pida algo que se acabó hace
+   * media hora.
+   *
+   * ANTES RECORTABA LA CANTIDAD al número disponible; ahora solo saca lo
+   * agotado, porque el servidor ya no dice cuántas unidades quedan —eso es
+   * inventario del negocio—. Pedir de más se resuelve en el chat, que es donde
+   * se confirma el pedido de todas formas.
    */
-  const ajustarAStock = useCallback((stock: Record<string, number>): Ajuste[] => {
+  const ajustarAStock = useCallback((disponibles: Record<string, boolean>): Ajuste[] => {
     const ajustes: Ajuste[] = [];
 
     setLineas((previas) =>
       previas.flatMap((l) => {
-        // Los servicios no se recortan: no hay inventario que revisar.
+        // Los servicios no se revisan: se agendan, no se agotan.
         if (!l.controla_stock) return [l];
 
-        const disponibles = Math.max(0, stock[String(l.id)] ?? 0);
-        const permitidas = Math.min(l.cantidad, disponibles);
-
-        if (permitidas !== l.cantidad) {
-          ajustes.push({ nombre: l.nombre, pedidas: l.cantidad, disponibles: permitidas });
+        // Sin noticia del servidor se deja pasar: un producto nuevo que
+        // todavía no salga en el mapa no puede desaparecer del carrito.
+        if (disponibles[String(l.id)] === false) {
+          ajustes.push({ nombre: l.nombre, pedidas: l.cantidad, disponibles: 0 });
+          return [];
         }
-        return permitidas > 0 ? [{ ...l, cantidad: permitidas }] : [];
+        return [l];
       }),
     );
 

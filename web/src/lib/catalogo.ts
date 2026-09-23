@@ -17,8 +17,6 @@ export interface Sede {
   ciudad: string;
   barrio: string | null;
   horario: string | null;
-  stock: number;
-  agotado: boolean;
 }
 
 export interface Producto {
@@ -37,11 +35,15 @@ export interface Producto {
   es_kit: boolean;
   /** Lo que viene dentro del kit y no se vende aparte. */
   piezas: { id: number; nombre: string; imagen_url: string | null }[];
-  /** Total de todas las sedes: es la suma de `sedes[].stock`. */
-  stock: number;
+  /**
+   * Si todavía se puede pedir. El NÚMERO de unidades ya no se publica: era
+   * el inventario del negocio a la vista de cualquiera que abriera las
+   * herramientas del navegador. Lo ve quien administra, en el panel.
+   */
   agotado: boolean;
+  /** Quedan pocas. Sin decir cuántas. */
   por_acabarse: boolean;
-  /** Dónde hay y dónde no. Vacío en los servicios, que no se cuentan. */
+  /** Dónde se consigue: dirección y horario, sin conteos. */
   sedes: Sede[];
 
   // Ficha técnica de origen — el bloque de datos duros del diseño.
@@ -297,4 +299,4 @@ export async function enviarConsulta(datos: { mensaje: string; contacto?: string
  * atrasado — sirve para pintar el sello de AGOTADO, pero antes de mandar un
  * pedido a WhatsApp el carrito revalida contra esto.
  */
-export const getStock = () => pedir<Record<string, number>>("/catalogo/stock", { cache: "no-store" });
+export const getStock = () => pedir<Record<string, boolean>>("/catalogo/stock", { cache: "no-store" });

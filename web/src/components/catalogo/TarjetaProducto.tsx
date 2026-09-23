@@ -28,7 +28,7 @@ export default function TarjetaProducto({ producto }: { producto: Producto }) {
   const sello = producto.agotado
     ? "Agotado"
     : producto.por_acabarse
-      ? `Últimas ${producto.stock}`
+      ? "Últimas unidades"
       : producto.destacado
         ? "Destacado"
         : null;

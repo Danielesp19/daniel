@@ -99,23 +99,27 @@ class CatalogoController extends Controller
     }
 
     /**
-     * Stock en vivo, sin caché: id → unidades disponibles.
+     * Disponibilidad en vivo, sin caché: id → si todavía se puede pedir.
      *
-     * Es una respuesta diminuta a propósito (solo números), para que el
-     * carrito pueda pedirla justo antes de armar el mensaje de WhatsApp sin
-     * volver a bajar el catálogo entero.
+     * DEVUELVE BOOLEANOS Y NO UNIDADES. Antes mandaba el número exacto de cada
+     * producto, así que cualquiera que abriera las herramientas del navegador
+     * veía el inventario completo del negocio. Cuánto hay en bodega es asunto
+     * de quien administra; al cliente solo le importa si puede pedirlo.
+     *
+     * Es una respuesta diminuta a propósito, para que el carrito la pida justo
+     * antes de armar el mensaje de WhatsApp sin volver a bajar el catálogo.
      */
     public function stock()
     {
         // Solo lo que se cuenta. Los servicios no salen aquí: no tienen
         // inventario que revalidar, y el carrito los deja pasar sin mirar
         // este mapa.
-        $stock = Producto::where('activo', true)
+        $disponibles = Producto::where('activo', true)
             ->where('controla_stock', true)
             ->pluck('stock', 'id')
-            ->map(fn ($s) => (int) $s);
+            ->map(fn ($s) => (int) $s > 0);
 
-        return response()->json($stock)
+        return response()->json($disponibles)
             ->header('Cache-Control', 'no-store');
     }
 
@@ -219,12 +223,12 @@ class CatalogoController extends Controller
             'precio_cop' => (int) $p->precio_cop,
             'gramos' => (int) $p->gramos,
 
-            // Inventario expuesto en crudo: el frontend necesita el número para
-            // topar el selector de cantidad, no solo un booleano de agotado.
+            // El inventario NO se publica. Viajan dos banderas y ningún
+            // número: si se puede pedir, y si conviene apurarse. Cuántas
+            // unidades hay es información del negocio, no del catálogo.
             // `controla_stock` en false = servicio: no se cuenta ni se agota.
             'controla_stock' => (bool) $p->controla_stock,
             'es_cafe' => (bool) $p->es_cafe,
-            'stock' => (int) $p->stock,
             'agotado' => $p->agotado(),
             'por_acabarse' => $p->porAcabarse(),
 
@@ -277,12 +281,13 @@ class CatalogoController extends Controller
                 ->values()
                 ->all(),
 
-            // Dónde hay y dónde no. Los servicios no llevan desglose: no se
-            // guardan en ningún estante, y una lista de sedes en cero debajo de
-            // una asesoría se leería como que está agotada en todas partes.
+            // Dónde se consigue. SIN cuántas unidades hay en cada una: el
+            // cliente necesita la dirección y el horario para ir a buscarlo,
+            // no el conteo del estante. Los servicios no llevan lista: no se
+            // guardan en ningún sitio y se agendan por chat.
             'sedes' => $p->controla_stock
                 ? $p->disponibilidad($sedes)
-                    ->map(fn (array $fila) => $this->formatoSede($fila['sede'], $fila['stock']))
+                    ->map(fn (array $fila) => $this->formatoSede($fila['sede']))
                     ->all()
                 : [],
         ];
@@ -295,17 +300,21 @@ class CatalogoController extends Controller
     }
 
     /**
-     * Una sede como la ve el público. Cuando viaja dentro de un producto lleva
-     * además cuántas bolsas de ESE producto hay en ELLA.
+     * Una sede como la ve el público: dónde queda y a qué horas abre.
+     *
+     * LLEVABA TAMBIÉN CUÁNTAS UNIDADES DEL PRODUCTO HABÍA EN ELLA, y eso se
+     * quitó: publicaba el inventario del negocio sede por sede, que es lo
+     * último que conviene dejar a la vista de un competidor. Quien administra
+     * lo sigue viendo en el panel, que es donde hace falta.
      *
      * SIN teléfono ni WhatsApp propios: todo el contacto pasa por la línea de
      * Daniel, y dar tres números distintos solo lograba que el pedido llegara
      * al lugar equivocado. Las columnas siguen en la base por si algún día una
      * sede necesita el suyo; simplemente no se publican.
      */
-    private function formatoSede(Sede $s, ?int $stock = null): array
+    private function formatoSede(Sede $s): array
     {
-        $datos = [
+        return [
             'id' => $s->id,
             'nombre' => $s->nombre,
             'slug' => $s->slug,
@@ -314,12 +323,5 @@ class CatalogoController extends Controller
             'barrio' => $s->barrio,
             'horario' => $s->horario,
         ];
-
-        if ($stock !== null) {
-            $datos['stock'] = $stock;
-            $datos['agotado'] = $stock <= 0;
-        }
-
-        return $datos;
     }
 }

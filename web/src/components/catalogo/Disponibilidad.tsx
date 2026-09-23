@@ -1,21 +1,22 @@
 import type { Sede } from "@/lib/catalogo";
 
 /**
- * Dónde hay este producto y dónde no, agrupado por ciudad.
+ * Dónde se consigue este producto, agrupado por ciudad.
  *
- * Lo que se viene a mirar acá es UN número: cuántas quedan y en cuál sede. Por
- * eso el número manda —grande, en su ficha, alineado a la derecha— y la
- * dirección queda debajo del nombre, en gris, para cuando ya se decidió a
- * cuál ir.
+ * ANTES ESTO PUBLICABA EL INVENTARIO: cada sede venía con cuántas unidades
+ * tenía, en grande y alineado a la derecha. Eso es información del negocio
+ * —cualquiera que entrara sabía cuánto café había en cada local, y un
+ * competidor también—, así que ahora vive solo en el panel. Lo que queda es lo
+ * que el cliente necesita para ir a buscarlo: la dirección, el barrio y el
+ * horario.
+ *
+ * Si el producto está agotado del todo, el sello de la ficha ya lo dice; acá
+ * no se repite sede por sede, porque sin conteos todas las filas se verían
+ * iguales y el aviso perdería fuerza.
  *
  * Se agrupa por ciudad porque es el primer corte que hace cualquiera: alguien
  * en Pitalito no compara contra la sede de Bogotá, la descarta entera. Con una
  * sola ciudad el encabezado no aparece — sería un título para una sola cosa.
- *
- * Muestra TAMBIÉN las sedes en cero. Para quien está decidiendo si cruza la
- * ciudad, "en el Centro no hay" es tan útil como "en el Norte quedan tres";
- * esconder la sede vacía lo dejaría sin saber si no hay o si nunca se surtió
- * ahí. Por eso la fila agotada se apaga en vez de desaparecer.
  *
  * No hay teléfono por sede: todo el contacto pasa por la línea de Daniel, y
  * tres números distintos solo lograban que el pedido llegara al lugar
@@ -43,20 +44,14 @@ export default function Disponibilidad({
     else ciudades.set(sede.ciudad, [sede]);
   }
 
-  const total = sedes.reduce((suma, s) => suma + s.stock, 0);
-  const conStock = sedes.filter((s) => !s.agotado).length;
   const varias = ciudades.size > 1;
 
   return (
     <section className={`sedes${oscuro ? " sedes-oscuro" : ""}`}>
       <div className="sedes-cabeza">
-        <h4 className="rotulo sedes-titulo">Dónde hay</h4>
-        {/* El resumen evita tener que sumar de a una para saber si vale la pena
-            seguir leyendo la lista. */}
+        <h4 className="rotulo sedes-titulo">Dónde encontrarlo</h4>
         <span className="sedes-resumen">
-          {total === 0
-            ? "Agotado en todas"
-            : `${total} ${total === 1 ? "unidad" : "unidades"} en ${conStock} ${conStock === 1 ? "sede" : "sedes"}`}
+          {sedes.length} {sedes.length === 1 ? "punto de venta" : "puntos de venta"}
         </span>
       </div>
 
@@ -66,7 +61,7 @@ export default function Disponibilidad({
 
           <ul className="sedes-lista">
             {deLaCiudad.map((sede) => (
-              <li key={sede.id} className={`sede${sede.agotado ? " sede-agotada" : ""}`}>
+              <li key={sede.id} className="sede">
                 <div className="sede-info">
                   <span className="sede-nombre">{sede.nombre}</span>
 
@@ -80,24 +75,6 @@ export default function Disponibilidad({
 
                   {sede.horario && <span className="sede-dato">{sede.horario}</span>}
                 </div>
-
-                <span
-                  className="sede-stock"
-                  aria-label={
-                    sede.agotado
-                      ? `Agotado en ${sede.nombre}`
-                      : `${sede.stock} disponibles en ${sede.nombre}`
-                  }
-                >
-                  {sede.agotado ? (
-                    <span className="sede-stock-agotado">Agotado</span>
-                  ) : (
-                    <>
-                      <span className="cifra sede-stock-cifra">{sede.stock}</span>
-                      <span className="sede-stock-unidad">{sede.stock === 1 ? "queda" : "quedan"}</span>
-                    </>
-                  )}
-                </span>
               </li>
             ))}
           </ul>

@@ -93,7 +93,7 @@ export default function FichaProducto({
 
           {producto.agotado && <span className="sello">Agotado</span>}
           {!producto.agotado && producto.por_acabarse && (
-            <span className="sello">Últimas {producto.stock}</span>
+            <span className="sello">Últimas unidades</span>
           )}
 
           <button ref={cerrarRef} type="button" className="ficha-cerrar" aria-label="Cerrar" onClick={onCerrar}>

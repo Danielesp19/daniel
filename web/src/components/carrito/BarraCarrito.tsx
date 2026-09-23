@@ -51,10 +51,10 @@ export default function BarraCarrito() {
     setEnviando(true);
     setAjustes(null);
     try {
-      // Última revisión contra el servidor: el catálogo viene del CDN y su
-      // stock puede estar hasta un minuto atrasado.
-      const stock = await getStock();
-      const recortes = carrito.ajustarAStock(stock);
+      // Última revisión contra el servidor: el catálogo viene del CDN y el
+      // sello de agotado puede estar hasta un minuto atrasado.
+      const disponibles = await getStock();
+      const recortes = carrito.ajustarAStock(disponibles);
 
       if (recortes.length > 0) {
         // No se abre WhatsApp: primero que el cliente vea qué cambió.
@@ -95,10 +95,11 @@ export default function BarraCarrito() {
           }}
         >
           <strong style={{ display: "block", marginBottom: 6 }}>Ajustamos tu pedido</strong>
+          {/* Sin cifras: el servidor dice si algo se consiguió o no, y cuántas
+              unidades quedan es asunto del negocio. */}
           {ajustes.map((a) => (
             <div key={a.nombre} style={{ color: "var(--color-suave)" }}>
-              {a.nombre}: pediste {a.pedidas} y{" "}
-              {a.disponibles === 0 ? "ya no queda" : `solo quedan ${a.disponibles}`}.
+              {a.nombre}: se agotó mientras armabas el pedido.
             </div>
           ))}
           <div style={{ marginTop: 8 }}>Revisa y vuelve a enviar.</div>
