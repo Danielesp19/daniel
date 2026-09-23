@@ -56,7 +56,6 @@ services:
       - key: DB_PASSWORD
         fromDatabase: { name: barista-db, property: password }
 
-      # La cola no es opcional: el chatbot despacha su trabajo ahí.
       - key: QUEUE_CONNECTION
         value: database
       - key: CACHE_STORE
@@ -74,31 +73,11 @@ services:
       - key: REVALIDAR_SECRETO
         sync: false           # EXACTAMENTE el mismo valor que en Vercel
 
-      # ── Chatbot ────────────────────────────────────────────────────────────
-      # Sin CHATBOT_ADMIN el bot ignora todos los mensajes; sin
-      # CHATBOT_APP_SECRET rechaza todos los webhooks. Es a propósito.
-      - key: CHATBOT_ADMIN
-        sync: false
-      # Tope de gasto del mes en centavos de dólar (500 = US$5). Sin esto no
-      # hay tope y la cuenta de Claude sube sin techo.
-      - key: CHATBOT_TOPE_MENSUAL_USD_CENTAVOS
-        sync: false
-      - key: CHATBOT_VERIFY_TOKEN
-        sync: false
-      - key: CHATBOT_APP_SECRET
-        sync: false
-      - key: CHATBOT_PHONE_ID
-        sync: false
-      - key: CHATBOT_ACCESS_TOKEN
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
-
   # ── Worker de la cola ─────────────────────────────────────────────────────
-  # Separado de la API a propósito: el webhook tiene que responderle a Meta en
-  # segundos, y una vuelta del modelo con herramientas tarda bastante más.
+  # Hoy no hay trabajos en cola —el único era el del chatbot, que se descartó—,
+  # pero el servicio se deja definido para cuando vuelva a hacer falta.
   # Comparte entorno con la API vía envVarGroup no; aquí se repiten las claves
-  # que necesita para conectarse a la misma base y a la misma API de Claude.
+  # que necesita para conectarse a la misma base.
   - type: worker
     name: barista-worker
     runtime: docker
@@ -135,17 +114,9 @@ services:
       - key: CACHE_STORE
         value: database
 
-      - key: CHATBOT_PHONE_ID
-        sync: false
-      - key: CHATBOT_ACCESS_TOKEN
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: CHATBOT_MODELO
-        value: claude-opus-5
 
-      # El worker es quien de verdad ejecuta los cambios del chat, así que es
-      # el que tiene que poder avisarle al sitio que se regenere.
+      # Para que cualquier trabajo que toque el catálogo pueda avisarle al
+      # sitio que se regenere.
       - key: SITIO_URL
         sync: false
       - key: REVALIDAR_SECRETO

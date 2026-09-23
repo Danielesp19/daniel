@@ -16,7 +16,7 @@ import { useCarrito, type Ajuste } from "./CarritoProvider";
  * chat.
  *
  * El pedido no se guarda en el servidor: quien atiende confirma y descuenta el
- * stock desde el chatbot de administración.
+ * stock desde el panel.
  */
 export default function BarraCarrito() {
   const carrito = useCarrito();

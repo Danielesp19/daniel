@@ -37,10 +37,10 @@ class Categoria extends Model
     {
         // Guardar o borrar una categoría empuja al sitio a regenerarse.
         //
-        // Va en el modelo y no en quien lo llama: así avisan igual el panel, el
-        // chatbot y cualquier comando de consola. Antes solo avisaba el
-        // chatbot, y mover una sección desde el panel no se veía en la página
-        // hasta que venciera el minuto del caché.
+        // Va en el modelo y no en quien lo llama: así avisan igual el panel y
+        // cualquier comando de consola. Cuando el aviso vivía en quien llamaba,
+        // mover una sección desde el panel no se veía en la página hasta que
+        // venciera el minuto del caché.
         static::saved(fn () => Sitio::revalidar());
         static::deleted(fn () => Sitio::revalidar());
 

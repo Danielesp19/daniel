@@ -5,21 +5,17 @@ namespace Tests\Feature;
 use App\Models\Categoria;
 use App\Models\Producto;
 use App\Models\Sede;
-use App\Support\Chatbot\Herramientas;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
  * Con varias sedes, mover inventario sin decir en cuál es la peor equivocación
  * posible: descuadra dos estantes de una vez y nadie se entera hasta el conteo
- * físico. Estas pruebas fijan que ni el chatbot ni la API adivinen — que
- * pregunten.
+ * físico. Estas pruebas fijan que la API no adivine — que pregunte.
  */
 class StockPorSedeTest extends TestCase
 {
     use RefreshDatabase;
-
-    private const ADMIN = '573222248487';
 
     private Producto $producto;
 
@@ -52,50 +48,27 @@ class StockPorSedeTest extends TestCase
         ]);
     }
 
-    // ── El chatbot ───────────────────────────────────────────────────────────
+    // ── Resolver la sede por su nombre ──────────────────────────────────────
+    //
+    // El endpoint acepta la sede por id (lo que manda el panel) o por nombre.
+    // Lo que se fija acá es la vía del nombre en los casos difíciles: cuando
+    // calza con dos y cuando una sede se llama como el principio de otra.
 
-    public function test_el_chatbot_no_mueve_stock_sin_saber_la_sede(): void
+    /** @param array<string, mixed> $datos */
+    private function ajustar(array $datos)
     {
-        $r = Herramientas::ejecutar('ajustar_stock', [
-            'producto_id' => $this->producto->id,
-            'accion' => 'sumar',
-            'cantidad' => 12,
-        ], self::ADMIN);
-
-        $this->assertArrayHasKey('error', $r);
-        // Le devuelve los nombres para que pueda preguntar con opciones en vez
-        // de un "¿en cuál sede?" a secas.
-        $this->assertSame(['Sede Centro', 'Sede Bogotá'], $r['sedes']);
-        $this->assertSame(0, $this->producto->fresh()->stock, 'no debió moverse ni una bolsa');
+        return $this->withToken('token-de-prueba')
+            ->patchJson("/api/admin/productos/{$this->producto->id}/stock", $datos);
     }
 
-    public function test_el_chatbot_ubica_la_sede_por_un_nombre_parcial(): void
-    {
-        $r = Herramientas::ejecutar('ajustar_stock', [
-            'producto_id' => $this->producto->id,
-            'accion' => 'sumar',
-            'cantidad' => 12,
-            'sede' => 'bogotá',
-        ], self::ADMIN);
-
-        $this->assertTrue($r['ok']);
-        $this->assertSame('Sede Bogotá', $r['sede']);
-        $this->assertSame(12, $r['stock_despues']);
-    }
-
-    public function test_el_chatbot_pregunta_de_nuevo_si_el_nombre_calza_con_varias(): void
+    public function test_pregunta_de_nuevo_si_el_nombre_calza_con_varias(): void
     {
         Sede::create(['nombre' => 'Sede Centro Norte', 'direccion' => 'Calle 20', 'ciudad' => 'Neiva']);
 
-        $r = Herramientas::ejecutar('ajustar_stock', [
-            'producto_id' => $this->producto->id,
-            'accion' => 'sumar',
-            'cantidad' => 5,
-            'sede' => 'centro',
-        ], self::ADMIN);
+        $r = $this->ajustar(['accion' => 'sumar', 'cantidad' => 5, 'sede' => 'centro']);
 
-        $this->assertArrayHasKey('error', $r);
-        $this->assertSame(['Sede Centro', 'Sede Centro Norte'], $r['sedes']);
+        $r->assertStatus(422);
+        $this->assertSame(['Sede Centro', 'Sede Centro Norte'], $r->json('sedes'));
         $this->assertSame(0, $this->producto->fresh()->stock);
     }
 
@@ -106,53 +79,25 @@ class StockPorSedeTest extends TestCase
         // se volvería inalcanzable.
         Sede::create(['nombre' => 'Sede Centro Norte', 'direccion' => 'Calle 20', 'ciudad' => 'Neiva']);
 
-        $r = Herramientas::ejecutar('ajustar_stock', [
-            'producto_id' => $this->producto->id,
-            'accion' => 'sumar',
-            'cantidad' => 5,
-            'sede' => 'Sede Centro',
-        ], self::ADMIN);
-
-        $this->assertTrue($r['ok']);
-        $this->assertSame('Sede Centro', $r['sede']);
+        $this->ajustar(['accion' => 'sumar', 'cantidad' => 5, 'sede' => 'Sede Centro'])
+            ->assertOk()
+            ->assertJsonPath('sede', 'Sede Centro');
     }
 
-    public function test_el_chatbot_avisa_cuando_queda_en_cero_en_una_sede_pero_hay_en_otra(): void
+    public function test_avisa_cuando_queda_en_cero_en_una_sede_pero_hay_en_otra(): void
     {
-        Herramientas::ejecutar('ajustar_stock', [
-            'producto_id' => $this->producto->id, 'accion' => 'fijar', 'cantidad' => 4, 'sede' => 'Centro',
-        ], self::ADMIN);
-        Herramientas::ejecutar('ajustar_stock', [
-            'producto_id' => $this->producto->id, 'accion' => 'fijar', 'cantidad' => 6, 'sede' => 'Bogotá',
-        ], self::ADMIN);
+        $this->ajustar(['accion' => 'fijar', 'cantidad' => 4, 'sede' => 'Centro']);
+        $this->ajustar(['accion' => 'fijar', 'cantidad' => 6, 'sede' => 'Bogotá']);
 
-        $r = Herramientas::ejecutar('ajustar_stock', [
-            'producto_id' => $this->producto->id, 'accion' => 'fijar', 'cantidad' => 0, 'sede' => 'Centro',
-        ], self::ADMIN);
+        $r = $this->ajustar(['accion' => 'fijar', 'cantidad' => 0, 'sede' => 'Centro']);
 
-        // Las dos cifras por separado: es lo que le permite responder "en el
-        // Centro se acabó, pero quedan seis en Bogotá" en vez de decir que el
-        // producto se agotó cuando todavía se puede vender.
-        $this->assertTrue($r['quedo_agotado_en_sede']);
-        $this->assertFalse($r['quedo_agotado']);
-        $this->assertSame(6, $r['stock_total']);
-    }
-
-    public function test_crear_un_producto_con_stock_inicial_exige_decir_la_sede(): void
-    {
-        $categoria = Categoria::first();
-
-        $r = Herramientas::ejecutar('crear_producto', [
-            'categoria_id' => $categoria->id,
-            'nombre' => 'Bourbon Rosado',
-            'precio_cop' => 58000,
-            'stock' => 12,
-        ], self::ADMIN);
-
-        $this->assertArrayHasKey('error', $r);
-        // No se crea a medias: si hubiera quedado creado, el reintento del
-        // modelo lo duplicaría.
-        $this->assertNull(Producto::where('nombre', 'Bourbon Rosado')->first());
+        // Las dos cifras por separado: es lo que permite decir "en el Centro
+        // se acabó, pero quedan seis en Bogotá" en vez de dar por agotado un
+        // producto que todavía se puede vender.
+        $r->assertOk()
+            ->assertJsonPath('agotado_en_sede', true)
+            ->assertJsonPath('agotado', false)
+            ->assertJsonPath('total', 6);
     }
 
     // ── La API de administración ─────────────────────────────────────────────

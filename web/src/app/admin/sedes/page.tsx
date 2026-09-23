@@ -227,7 +227,7 @@ function FormularioSede({
       <div style={{ display: "grid", gap: 14 }}>
         {error && <Aviso>{error}</Aviso>}
 
-        <Campo etiqueta="Nombre" nota="Como la llama la gente. Es también el nombre por el que el chatbot la reconoce.">
+        <Campo etiqueta="Nombre" nota="Como la llama la gente. Es el que sale en la ficha del producto.">
           <input style={campo} value={d.nombre} onChange={(e) => set("nombre", e.target.value)} required />
         </Campo>
 

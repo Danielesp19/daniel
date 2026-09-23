@@ -18,10 +18,11 @@ use Illuminate\Validation\Rule;
 /**
  * API de administración del catálogo.
  *
- * La consumen dos clientes distintos y por eso algunas cosas se pueden pedir
- * de dos formas: el panel del frontend, que tiene formularios y manda ids, y
- * el chatbot de WhatsApp, que recibe frases sueltas y manda nombres. El caso
- * más claro es el ajuste de stock, que acepta `sede_id` o `sede`.
+ * Algunas cosas se pueden pedir de dos formas —el ajuste de stock acepta
+ * `sede_id` o el nombre de la sede— porque durante un tiempo la consumió
+ * también un bot de WhatsApp que recibía frases sueltas. Ese bot se descartó;
+ * las dos vías se conservan porque el panel usa los ids y la de nombres no
+ * estorba a nadie.
  */
 class ProductoAdminController extends Controller
 {
@@ -29,8 +30,7 @@ class ProductoAdminController extends Controller
      * Lista de productos, opcionalmente filtrada.
      *
      * `?buscar=` hace una búsqueda difusa por nombre, finca y región: el
-     * chatbot recibe "quedan bolsas del mirador?" y necesita encontrar el
-     * producto sin conocer su id ni su nombre exacto.
+     * panel filtra la lista mientras se escribe, sin exigir el nombre exacto.
      */
     public function index(Request $request)
     {
@@ -351,8 +351,8 @@ class ProductoAdminController extends Controller
      */
     private function guardarMedios(Request $request, Producto $producto): void
     {
-        // Sin el campo, los medios se quedan como están: guardar desde otro
-        // sitio —el chatbot cambiando un precio— no puede borrar la galería.
+        // Sin el campo, los medios se quedan como están: guardar solo el
+        // precio desde otro formulario no puede borrar la galería.
         //
         // Se pregunta por los DOS lados: una fila nueva viaja solo como
         // archivo, y `has()` mira únicamente la entrada de texto. Preguntando
@@ -459,8 +459,9 @@ class ProductoAdminController extends Controller
     }
 
     /**
-     * La vía de antes, para quien manda `imagen` o `video` sueltos: el chatbot
-     * le pone foto a un producto sin saber nada de listas ni de orden.
+     * La vía simple, para quien manda `imagen` o `video` sueltos sin saber
+     * nada de listas ni de orden. La usa cualquier cliente que no sea el
+     * formulario de la galería.
      */
     private function subirSueltos(Request $request, Producto $producto): void
     {
@@ -491,20 +492,18 @@ class ProductoAdminController extends Controller
      * Movimiento de inventario en una sede. La lógica vive en
      * Producto::ajustarStockSede().
      *
-     * La sede se pide POR NOMBRE y no por id: quien llama es el chatbot, y
-     * quien le habla al chatbot escribe "en el centro", no "sede_id 2". Cuando
-     * el nombre no alcanza para decidir, esto responde 422 con la lista de
-     * nombres para que el asistente vuelva a preguntar — mover bolsas en el
-     * estante equivocado es peor que preguntar una vez más.
+     * La sede se puede pedir por id (lo que manda el panel, que tiene un
+     * selector) o por nombre. Cuando el nombre no alcanza para decidir, esto
+     * responde 422 con la lista de nombres en vez de elegir — mover unidades
+     * en el estante equivocado es peor que preguntar una vez más.
      */
     public function stock(Request $request, Producto $producto)
     {
         $datos = $request->validate([
             'accion' => ['required', Rule::in(['fijar', 'sumar', 'restar'])],
             'cantidad' => 'required|integer|min:0|max:100000',
-            // Dos formas de decir la misma sede: por nombre la usa el chatbot,
-            // que recibe "en el centro"; por id la usa el panel, que tiene un
-            // selector y no necesita adivinar.
+            // Dos formas de decir la misma sede: por id la usa el panel, que
+            // tiene un selector; por nombre se acepta para quien no lo tenga.
             'sede' => 'sometimes|nullable|string|max:255',
             'sede_id' => ['sometimes', 'nullable', 'integer', Rule::exists('sedes', 'id')],
         ]);
@@ -534,7 +533,7 @@ class ProductoAdminController extends Controller
             'antes' => $antes,
             'despues' => $nuevo,
             // El total de todas las sedes: es lo que ve el cliente en el sello
-            // del catálogo, así que el chatbot tiene que poder contarlo también.
+            // del catálogo, así que hay que poder contarlo también.
             'total' => $total,
             'agotado_en_sede' => $nuevo <= 0,
             'agotado' => $total <= 0,
@@ -619,8 +618,8 @@ class ProductoAdminController extends Controller
             'stock_minimo' => (int) $p->stock_minimo,
             'agotado' => $p->agotado(),
             'por_acabarse' => $p->porAcabarse(),
-            // El desglose, para que el chatbot pueda responder "quedan dos,
-            // pero las dos están en el Norte" en vez de solo el total.
+            // El desglose por sede: el total no dice dónde están las
+            // unidades, y esa es la pregunta cuando hay que despachar.
             'stock_por_sede' => $p->controla_stock
                 ? $p->disponibilidad($sedes)->map(fn (array $f) => [
                     'sede' => $f['sede']->nombre,

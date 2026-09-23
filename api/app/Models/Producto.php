@@ -61,10 +61,10 @@ class Producto extends Model
     {
         // Guardar o borrar una producto empuja al sitio a regenerarse.
         //
-        // Va en el modelo y no en quien lo llama: así avisan igual el panel, el
-        // chatbot y cualquier comando de consola. Antes solo avisaba el
-        // chatbot, y mover una sección desde el panel no se veía en la página
-        // hasta que venciera el minuto del caché.
+        // Va en el modelo y no en quien lo llama: así avisan igual el panel y
+        // cualquier comando de consola. Cuando el aviso vivía en quien llamaba,
+        // mover una sección desde el panel no se veía en la página hasta que
+        // venciera el minuto del caché.
         static::saved(fn () => Sitio::revalidar());
         static::deleted(fn () => Sitio::revalidar());
 
@@ -198,7 +198,7 @@ class Producto extends Model
      * Vuelve a sumar las sedes y deja el total en `productos.stock`.
      *
      * Ese total es lo que leen el sello de AGOTADO, la revalidación del carrito
-     * y el resumen del chatbot; mantenerlo al día en cada movimiento es lo que
+     * y los reportes del panel; mantenerlo al día en cada movimiento es lo que
      * permite que todo eso siga funcionando sin enterarse de que ahora hay
      * sedes. Suma TODAS las sedes, incluidas las inactivas: las bolsas de una
      * sede cerrada temporalmente siguen existiendo.
@@ -221,12 +221,12 @@ class Producto extends Model
      *
      * Se pide la ACCIÓN explícita en vez de aceptar solo un número nuevo:
      * "llegaron 12 bolsas" y "quedan 12 bolsas" son cosas distintas, y quien
-     * llame (el panel o el chatbot) tiene que poder expresar cuál de las dos
-     * entendió. Vive en el modelo porque tanto la API como el chatbot la usan
-     * y el redondeo a cero no puede quedar implementado dos veces.
+     * llame tiene que poder expresar cuál de las dos entendió. Vive en el
+     * modelo y no en el controlador para que el redondeo a cero no quede
+     * implementado dos veces.
      *
      * Va dentro de una transacción con la fila bloqueada: dos ajustes a la vez
-     * sobre la misma sede —el panel y el chatbot al tiempo— leerían el mismo
+     * sobre la misma sede —dos pestañas del panel al tiempo— leerían el mismo
      * "antes" y el segundo pisaría al primero.
      *
      * @param  'fijar'|'sumar'|'restar'  $accion

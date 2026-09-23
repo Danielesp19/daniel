@@ -119,7 +119,7 @@ class Sede extends Model
     /**
      * Busca sedes por nombre escrito a mano.
      *
-     * El chatbot recibe "súbele dos al centro" y tiene que resolver "centro"
+     * El panel acepta "centro" en vez del nombre completo y tiene que resolverlo
      * contra "Sede Centro Histórico" sin conocer ids. Devuelve TODAS las que
      * calzan —no la primera— porque con dos coincidencias lo correcto es que
      * el asistente vuelva a preguntar, no que adivine en cuál estante mueve

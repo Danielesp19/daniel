@@ -31,7 +31,7 @@ necesita una dirección a la que Meta pueda llegar.
 | `nginx` | reparte el tráfico y termina el TLS | `systemctl status nginx` |
 | `php8.3-fpm` | ejecuta Laravel | `systemctl status php8.3-fpm` |
 | `pm2` → `daniel-web` | mantiene vivo Next.js | `pm2 status` |
-| `daniel-worker` | cola de trabajos (chatbot, correos) | `systemctl status daniel-worker` |
+| `daniel-worker` | cola de trabajos (hoy sin usar) | `systemctl status daniel-worker` |
 | `certbot.timer` | renueva el certificado solo | `systemctl list-timers certbot*` |
 
 Base de datos: **SQLite**, en `/var/www/daniel/api/database/database.sqlite`.
@@ -113,5 +113,3 @@ sitio; después `chown -R www-data:www-data` sobre `database` y `storage`.
   `web/.env.production` es el de pruebas; los pedidos llegan ahí.
 - **Las cifras de la portada** (+400 baristas, 100 productos) salen del mockup
   y no están confirmadas. Están en `CIFRAS`, al principio de `Hero.tsx`.
-- **El chatbot de WhatsApp** necesita las credenciales de Meta en `api/.env` y
-  apuntar el webhook a `https://api.danielbuitron.com/api/chatbot/webhook`.

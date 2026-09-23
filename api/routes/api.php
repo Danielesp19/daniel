@@ -8,7 +8,6 @@ use App\Http\Controllers\Admin\ProductoAdminController;
 use App\Http\Controllers\Admin\RecetaAdminController;
 use App\Http\Controllers\Admin\SedeAdminController;
 use App\Http\Controllers\CatalogoController;
-use App\Http\Controllers\ChatbotWebhookController;
 use App\Http\Controllers\ConsultaController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,10 +28,9 @@ Route::prefix('catalogo')->group(function () {
 Route::post('/consultas', [ConsultaController::class, 'store'])->middleware('throttle:consultas');
 
 // ── Administración ──────────────────────────────────────────────────────────
-// La usan el panel del frontend (/admin) y el chatbot de WhatsApp, los dos con
-// el mismo token Bearer y con límite por IP. Es la única forma de tocar el
-// catálogo desde afuera: si algo de aquí se rompe, la tienda se queda sin
-// quien la administre.
+// La usa el panel del frontend (/admin), con token Bearer y límite por IP. Es
+// la única forma de tocar el catálogo desde afuera: si algo de aquí se rompe,
+// la tienda se queda sin quien la administre.
 Route::middleware(['throttle:admin-api', 'admin.token'])->prefix('admin')->group(function () {
     // ── Productos ───────────────────────────────────────────────────────────
     // Las rutas de palabra fija van ANTES que '{producto}': si no, el
@@ -56,8 +54,6 @@ Route::middleware(['throttle:admin-api', 'admin.token'])->prefix('admin')->group
     Route::delete('categorias/{categoria}', [CategoriaAdminController::class, 'destroy']);
 
     // ── Sedes ───────────────────────────────────────────────────────────────
-    // El chatbot usa el listado para saber qué sedes puede nombrar cuando tiene
-    // que preguntar en cuál mover el inventario.
     Route::get('sedes', [SedeAdminController::class, 'index']);
     Route::post('sedes', [SedeAdminController::class, 'store']);
     Route::put('sedes/{sede}', [SedeAdminController::class, 'update']);
@@ -86,13 +82,6 @@ Route::middleware(['throttle:admin-api', 'admin.token'])->prefix('admin')->group
     Route::put('preguntas/{pregunta}', [PreguntaAdminController::class, 'update']);
     Route::delete('preguntas/{pregunta}', [PreguntaAdminController::class, 'destroy']);
 });
-
-// ── Webhook del chatbot ─────────────────────────────────────────────────────
-// Sin 'admin.token': quien llama es WhatsApp, no nosotros. Se autentica con la
-// firma HMAC del cuerpo y con la lista blanca de números (ver el controlador).
-Route::get('/chatbot/webhook', [ChatbotWebhookController::class, 'verificar']);
-Route::post('/chatbot/webhook', [ChatbotWebhookController::class, 'recibir'])
-    ->middleware('throttle:chatbot');
 
 // Preflight OPTIONS para CORS (sin autenticación)
 Route::options('{any}', fn () => response('', 204))->where('any', '.*');
