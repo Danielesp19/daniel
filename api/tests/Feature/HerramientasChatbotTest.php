@@ -5,10 +5,9 @@ namespace Tests\Feature;
 use App\Models\Categoria;
 use App\Models\Producto;
 use App\Models\Sede;
-use App\Support\Chatbot\Asistente;
+use App\Support\Chatbot\ColaDeFotos;
 use App\Support\Chatbot\Herramientas;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -172,7 +171,7 @@ class HerramientasChatbotTest extends TestCase
     {
         Storage::fake('public');
         $producto = $this->producto($this->categoria());
-        Cache::put(Asistente::llaveFotoDe(self::ADMIN), 'productos/nueva.webp');
+        ColaDeFotos::agregar(self::ADMIN, 'productos/nueva.webp');
 
         $r = Herramientas::ejecutar('asignar_foto', ['producto_id' => $producto->id], self::ADMIN);
 
@@ -187,7 +186,7 @@ class HerramientasChatbotTest extends TestCase
         $categoria = $this->categoria();
         $uno = $this->producto($categoria, ['nombre' => 'Uno']);
         $dos = $this->producto($categoria, ['nombre' => 'Dos']);
-        Cache::put(Asistente::llaveFotoDe(self::ADMIN), 'productos/nueva.webp');
+        ColaDeFotos::agregar(self::ADMIN, 'productos/nueva.webp');
 
         Herramientas::ejecutar('asignar_foto', ['producto_id' => $uno->id], self::ADMIN);
         $segundo = Herramientas::ejecutar('asignar_foto', ['producto_id' => $dos->id], self::ADMIN);
@@ -209,7 +208,7 @@ class HerramientasChatbotTest extends TestCase
     {
         Storage::fake('public');
         $producto = $this->producto($this->categoria());
-        Cache::put(Asistente::llaveFotoDe(self::ADMIN), 'productos/nueva.webp');
+        ColaDeFotos::agregar(self::ADMIN, 'productos/nueva.webp');
 
         $r = Herramientas::ejecutar('asignar_foto', ['producto_id' => $producto->id], '573009998877');
 
@@ -223,7 +222,7 @@ class HerramientasChatbotTest extends TestCase
         Storage::disk('public')->put('productos/vieja.webp', 'x');
         $producto = $this->producto($this->categoria());
         $producto->medios()->create(['tipo' => 'imagen', 'ruta' => 'productos/vieja.webp', 'orden' => 0]);
-        Cache::put(Asistente::llaveFotoDe(self::ADMIN), 'productos/nueva.webp');
+        ColaDeFotos::agregar(self::ADMIN, 'productos/nueva.webp');
 
         Herramientas::ejecutar('asignar_foto', ['producto_id' => $producto->id], self::ADMIN);
 

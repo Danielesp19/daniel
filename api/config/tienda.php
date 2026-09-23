@@ -55,17 +55,38 @@ return [
     | Chatbot de administración
     |----------------------------------------------------------------------
     |
-    | Los administradores consultan y actualizan el inventario por mensajes.
-    | `admins` es la lista blanca de números autorizados en formato E.164 sin
-    | el "+" (ej: 573001112233), separados por coma. Un mensaje de un número
-    | que no esté aquí se ignora: es la única barrera entre WhatsApp y la
-    | base de datos, así que no puede quedar vacía en producción.
+    | El inventario y el catálogo se administran por mensajes. `admin` es UN
+    | solo número —el del dueño— y es la única barrera entre WhatsApp y la
+    | base de datos: un mensaje de cualquier otro número se ignora, así que
+    | no puede quedar vacío en producción.
+    |
+    | Se guarda en dígitos pelados (573001112233) porque así manda Meta el
+    | remitente. Lo que se escriba en el .env se normaliza: da igual copiarlo
+    | de la agenda con "+", con espacios o con guiones.
     |
     */
     'chatbot' => [
-        'admins' => array_values(array_filter(array_map(
-            'trim',
-            explode(',', (string) env('CHATBOT_ADMINS', '')),
+        // Antes era una lista (CHATBOT_ADMINS). Se sigue leyendo para no
+        // tumbar un despliegue viejo, pero solo cuenta el primero: con varias
+        // manos sobre el mismo bot, dos personas se pisan el hilo de la
+        // conversación —que es uno solo por número— y nadie sabe quién dejó
+        // el catálogo como quedó.
+        'admin' => (static function (): string {
+            $crudo = (string) env('CHATBOT_ADMIN', '');
+
+            if ($crudo === '') {
+                $crudo = explode(',', (string) env('CHATBOT_ADMINS', ''))[0];
+            }
+
+            return preg_replace('/\D+/', '', $crudo) ?? '';
+        })(),
+
+        // Los que quedaron por fuera al pasar de lista a número único. No
+        // autorizan nada: sirven para que el log pueda decir "este número
+        // administraba antes" en vez de dejar un silencio sin explicación.
+        'admins_jubilados' => array_values(array_filter(array_map(
+            static fn (string $numero): string => preg_replace('/\D+/', '', $numero) ?? '',
+            array_slice(explode(',', (string) env('CHATBOT_ADMINS', '')), 1),
         ))),
         // Secreto que WhatsApp/Meta envía para validar el webhook.
         'verify_token' => env('CHATBOT_VERIFY_TOKEN'),
@@ -80,6 +101,46 @@ return [
         // mirador" → "súmale 12"), no una conversación larga.
         'memoria_turnos' => (int) env('CHATBOT_MEMORIA_TURNOS', 12),
         'memoria_minutos' => (int) env('CHATBOT_MEMORIA_MINUTOS', 30),
+
+        /*
+        |------------------------------------------------------------------
+        | Tope de gasto mensual
+        |------------------------------------------------------------------
+        |
+        | Anthropic cobra por token consumido, sin mensualidad. Los límites
+        | de su consola son de ellos y avisan tarde; este es el único tope
+        | que controla la aplicación, y por eso corta de verdad: pasado el
+        | límite el bot responde que llegó al tope SIN llamar a la API.
+        |
+        | En centavos de dólar (USD) para no arrastrar decimales: 500 = US$5.
+        | En cero queda sin tope, que es lo que conviene mientras se mide
+        | cuánto gasta de verdad el negocio.
+        |
+        */
+        'tope_mensual_centavos' => (int) env('CHATBOT_TOPE_MENSUAL_USD_CENTAVOS', 0),
+
+        // A qué porcentaje del tope avisar por WhatsApp que se está acabando.
+        // Un solo aviso por mes: repetirlo en cada mensaje sería ruido.
+        'aviso_tope_porcentaje' => (int) env('CHATBOT_AVISO_TOPE_PORCENTAJE', 80),
+
+        /*
+        | Precio por millón de tokens del modelo, en centavos de dólar, para
+        | poder convertir tokens en plata sin salir a consultar nada.
+        |
+        | Los valores por defecto son los de Claude Opus 5, que es el modelo
+        | configurado arriba. SI SE CAMBIA `CHATBOT_MODELO`, HAY QUE CAMBIAR
+        | ESTOS DOS TAMBIÉN: si no, el medidor cuenta a un precio que ya no
+        | es el que se está pagando y el tope deja de valer. Referencia por
+        | millón de tokens:
+        |   Opus 5      → entrada 500, salida 2500
+        |   Sonnet 5    → entrada 200, salida 1000
+        |   Haiku 4.5   → entrada 100, salida 500
+        | La lectura de caché se cuenta a una décima parte de la entrada,
+        | que es la tarifa estándar. El precio vigente manda: está en
+        | anthropic.com/pricing.
+        */
+        'precio_entrada_centavos_millon' => (int) env('CHATBOT_PRECIO_ENTRADA', 500),
+        'precio_salida_centavos_millon' => (int) env('CHATBOT_PRECIO_SALIDA', 2500),
     ],
 
 ];

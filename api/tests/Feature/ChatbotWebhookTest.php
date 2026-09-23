@@ -10,7 +10,7 @@ use Tests\TestCase;
 /**
  * El webhook del chatbot es público: cualquiera en internet puede pegarle.
  * Lo único que separa un mensaje de WhatsApp de la base de datos es la firma
- * HMAC y la lista blanca de números, así que ambas se prueban.
+ * HMAC y el número reservado del dueño, así que ambos se prueban.
  */
 class ChatbotWebhookTest extends TestCase
 {
@@ -25,7 +25,7 @@ class ChatbotWebhookTest extends TestCase
         parent::setUp();
         config([
             'tienda.chatbot.app_secret' => self::SECRETO,
-            'tienda.chatbot.admins' => [self::ADMIN],
+            'tienda.chatbot.admin' => self::ADMIN,
             'tienda.chatbot.verify_token' => 'token-de-verificacion',
         ]);
         Queue::fake();
@@ -98,6 +98,64 @@ class ChatbotWebhookTest extends TestCase
 
         // 200, no 403: a Meta se le responde OK siempre. Un 403 aquí haría que
         // reintentara el mensaje una y otra vez.
+        $this->call('POST', '/api/chatbot/webhook', [], [], [], $this->servidor($cabeceras), $cuerpo)
+            ->assertOk();
+
+        Queue::assertNothingPushed();
+    }
+
+    public function test_el_remitente_se_reconoce_aunque_venga_con_mas_y_espacios(): void
+    {
+        // El número configurado queda en dígitos pelados. Si el remitente
+        // llega con adornos —otra pasarela, un reenvío, un "+" de más— tiene
+        // que seguir siendo el mismo dueño y no un desconocido.
+        [$cuerpo, $cabeceras] = $this->mensaje('+57 300 111 2233', '¿cómo vamos?');
+
+        $this->call('POST', '/api/chatbot/webhook', [], [], [], $this->servidor($cabeceras), $cuerpo)
+            ->assertOk();
+
+        Queue::assertPushed(ResponderMensajeChatbot::class, 1);
+    }
+
+    public function test_el_numero_llega_normalizado_al_trabajo_de_la_cola(): void
+    {
+        // La misma cadena de dígitos es la llave del historial y de la cola
+        // de fotos. Si el trabajo recibiera el número con adornos, el mismo
+        // admin tendría dos conversaciones distintas según cómo escribiera.
+        [$cuerpo, $cabeceras] = $this->mensaje('+57 300 111 2233', 'mándame el resumen');
+
+        $this->call('POST', '/api/chatbot/webhook', [], [], [], $this->servidor($cabeceras), $cuerpo);
+
+        Queue::assertPushed(
+            ResponderMensajeChatbot::class,
+            fn (ResponderMensajeChatbot $job) => (new \ReflectionProperty($job, 'de'))
+                ->getValue($job) === self::ADMIN,
+        );
+    }
+
+    public function test_sin_numero_configurado_no_entra_nadie(): void
+    {
+        // Fallar cerrado: con el número vacío, una comparación descuidada
+        // daría por bueno cualquier remitente y abriría la base a internet.
+        config(['tienda.chatbot.admin' => '']);
+
+        [$cuerpo, $cabeceras] = $this->mensaje(self::ADMIN, 'pon todo en cero');
+
+        $this->call('POST', '/api/chatbot/webhook', [], [], [], $this->servidor($cabeceras), $cuerpo)
+            ->assertOk();
+
+        Queue::assertNothingPushed();
+    }
+
+    public function test_un_segundo_numero_de_la_lista_vieja_ya_no_administra(): void
+    {
+        // Al pasar de lista a número único, los demás dejan de mandar. Se
+        // prueba explícitamente porque es el cambio de comportamiento que
+        // más fácil pasa desapercibido en un despliegue existente.
+        config(['tienda.chatbot.admins_jubilados' => ['573009998877']]);
+
+        [$cuerpo, $cabeceras] = $this->mensaje('573009998877', 'súbele el precio al geisha');
+
         $this->call('POST', '/api/chatbot/webhook', [], [], [], $this->servidor($cabeceras), $cuerpo)
             ->assertOk();
 

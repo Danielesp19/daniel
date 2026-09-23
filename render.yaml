@@ -75,9 +75,13 @@ services:
         sync: false           # EXACTAMENTE el mismo valor que en Vercel
 
       # ── Chatbot ────────────────────────────────────────────────────────────
-      # Sin CHATBOT_ADMINS el bot ignora todos los mensajes; sin
+      # Sin CHATBOT_ADMIN el bot ignora todos los mensajes; sin
       # CHATBOT_APP_SECRET rechaza todos los webhooks. Es a propósito.
-      - key: CHATBOT_ADMINS
+      - key: CHATBOT_ADMIN
+        sync: false
+      # Tope de gasto del mes en centavos de dólar (500 = US$5). Sin esto no
+      # hay tope y la cuenta de Claude sube sin techo.
+      - key: CHATBOT_TOPE_MENSUAL_USD_CENTAVOS
         sync: false
       - key: CHATBOT_VERIFY_TOKEN
         sync: false

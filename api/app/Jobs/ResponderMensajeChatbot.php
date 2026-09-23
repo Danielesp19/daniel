@@ -6,6 +6,7 @@ use App\Support\Chatbot\Asistente;
 use App\Support\Chatbot\WhatsApp;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -20,11 +21,50 @@ class ResponderMensajeChatbot implements ShouldQueue
 {
     use Queueable;
 
-    /** Dos intentos: si el segundo también falla, es un problema de fondo. */
-    public int $tries = 2;
+    /**
+     * Dos fallas de verdad y se rinde. No es `$tries` porque un mensaje que
+     * espera su turno detrás de otro se devuelve a la cola, y eso gastaría
+     * intentos sin haber fallado nada: a la tercera foto de una ráfaga se
+     * habría quedado sin turnos antes de llegar a procesarse.
+     */
+    public int $maxExceptions = 2;
 
     /** Tope duro por si el modelo se queda pensando de más. */
     public int $timeout = 180;
+
+    /**
+     * Cuánto puede seguir intentándolo, contando las esperas.
+     *
+     * Reemplaza al conteo de intentos: lo que importa es que un mensaje no
+     * quede dando vueltas para siempre, no cuántas veces pidió turno.
+     */
+    public function retryUntil(): \DateTimeInterface
+    {
+        return now()->addMinutes(10);
+    }
+
+    /**
+     * Un mensaje a la vez por número.
+     *
+     * Mandar cuatro fotos seguidas son cuatro mensajes, y por lo tanto cuatro
+     * trabajos. Sin esto se procesan al tiempo, y como el historial de la
+     * conversación se lee y se reescribe entero, el último en guardar borra
+     * lo que escribieron los otros: el modelo pierde de vista las fotos que
+     * ya habían llegado. En fila india llegan todas al mismo hilo.
+     *
+     * @return array<int, object>
+     */
+    public function middleware(): array
+    {
+        return [(new WithoutOverlapping('chatbot:'.$this->de))
+            // Vuelve a la cola en vez de descartarse: el mensaje del admin no
+            // se puede perder solo porque llegó mientras se atendía otro.
+            ->releaseAfter(3)
+            // Si el trabajo que tiene el turno muere sin soltarlo, el
+            // candado se suelta solo pasado este tiempo. Va por encima del
+            // timeout de 180s para no soltarlo con el otro todavía vivo.
+            ->expireAfter(240)];
+    }
 
     /**
      * @param  string  $de  Número del admin en E.164 sin "+".

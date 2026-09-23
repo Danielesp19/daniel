@@ -5,6 +5,7 @@ namespace App\Support\Chatbot;
 use Anthropic\Beta\Messages\BetaTextBlock;
 use Anthropic\Beta\Messages\BetaToolUseBlock;
 use Anthropic\Client;
+use App\Models\ConsumoChatbot;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -16,11 +17,14 @@ class Asistente
 {
     /**
      * Vueltas máximas del ciclo pedir → ejecutar herramienta → volver a pedir.
-     * Consultar y ajustar un producto son dos llamadas; seis deja margen para
-     * varios productos en un mismo mensaje sin poder quedarse en un bucle
-     * infinito quemando tokens.
+     *
+     * Consultar y ajustar un producto son dos llamadas, pero armar un kit son
+     * muchas más: crearlo, agregarle las piezas y engancharle una foto a cada
+     * una. Con seis, ese flujo se cortaba a la mitad y dejaba el kit a medio
+     * hacer. Doce le alcanzan sin dejar de ser un techo contra un bucle que
+     * queme tokens sin avanzar.
      */
-    private const MAX_VUELTAS = 6;
+    private const MAX_VUELTAS = 12;
 
     /**
      * Tope de salida por vuelta. Generoso a propósito: en Claude Opus 5 el
@@ -42,6 +46,13 @@ class Asistente
      */
     public function responder(string $texto, string $de, ?string $mediaId = null): string
     {
+        // El tope se revisa ANTES de bajar la foto y antes de llamar al
+        // modelo: es lo único que de verdad corta el gasto, y un tope que se
+        // comprueba después de gastar no es un tope.
+        if (ConsumoChatbot::topeAlcanzado()) {
+            return $this->avisoDeTope();
+        }
+
         if ($mediaId !== null) {
             $texto = $this->recibirFoto($mediaId, $de, $texto);
         }
@@ -68,18 +79,63 @@ class Asistente
         // de herramientas de turnos viejos — si los necesita, los vuelve a
         // consultar, que además garantiza que el stock esté fresco.
         $this->recordar($de, $texto, $respuesta);
+        ConsumoChatbot::contarMensaje();
 
-        return $respuesta;
+        return $respuesta.$this->coletillaDeSaldo();
     }
 
     /**
-     * Baja la foto, la deja en espera y arma el texto que verá el modelo.
+     * Lo que se responde cuando ya se gastó el tope del mes.
+     *
+     * Se contesta igual —no se deja al admin hablándole a una pared— pero sin
+     * tocar la API: el mensaje se arma acá con texto fijo.
+     */
+    private function avisoDeTope(): string
+    {
+        $consumo = ConsumoChatbot::delMes();
+        $tope = number_format((int) config('tienda.chatbot.tope_mensual_centavos') / 100, 2);
+
+        return "Llegamos al tope de gasto de este mes (US\${$consumo->dolares()} de US\${$tope}), "
+            .'así que no puedo procesar más cambios hasta el primero del mes que viene. '
+            .'Si necesitas seguir hoy, súbele el tope en la configuración o entra al panel web.';
+    }
+
+    /**
+     * El aviso de "se está acabando el saldo", una sola vez en el mes.
+     *
+     * Va pegado a la respuesta normal en vez de como mensaje aparte: llega en
+     * el mismo globo, sin interrumpir lo que el admin estaba haciendo, y sin
+     * gastar otra llamada a WhatsApp.
+     */
+    private function coletillaDeSaldo(): string
+    {
+        $tope = (int) config('tienda.chatbot.tope_mensual_centavos');
+        if ($tope <= 0) {
+            return '';
+        }
+
+        $umbral = $tope * max(1, min(99, (int) config('tienda.chatbot.aviso_tope_porcentaje', 80))) / 100;
+        $consumo = ConsumoChatbot::delMes();
+
+        if ($consumo->aviso_enviado || $consumo->costo_centavos < $umbral) {
+            return '';
+        }
+
+        $consumo->update(['aviso_enviado' => true]);
+        $restante = number_format(max(0, $tope - $consumo->costo_centavos) / 100, 2);
+
+        return "\n\n(Aviso: este mes ya van US\${$consumo->dolares()} de US\$"
+            .number_format($tope / 100, 2).". Quedan US\${$restante}.)";
+    }
+
+    /**
+     * Baja la foto, la mete en la cola y arma el texto que verá el modelo.
      *
      * La imagen se guarda YA, antes de hablar con el modelo: si se esperara a
      * que él decidiera, habría que sostener la URL temporal de Meta —que
-     * caduca— durante toda la conversación. Queda apuntada como "pendiente"
-     * para este número, y `asignar_foto` la engancha al producto que él diga,
-     * aunque lo diga en el mensaje siguiente.
+     * caduca— durante toda la conversación. Queda en la cola de este número,
+     * y `asignar_foto` la engancha a donde él diga, aunque lo diga en el
+     * mensaje siguiente.
      */
     private function recibirFoto(string $mediaId, string $de, string $pieDeFoto): string
     {
@@ -90,15 +146,19 @@ class Asistente
                 .'Dile que la reenvíe, y que sea una imagen (no un archivo ni un video).]');
         }
 
-        Cache::put(
-            $this->llaveFoto($de),
-            $ruta,
-            now()->addMinutes((int) config('tienda.chatbot.memoria_minutos', 30)),
-        );
+        $posicion = ColaDeFotos::agregar($de, $ruta);
 
-        $aviso = '[Sistema: el admin acaba de enviar una foto y ya quedó guardada. '
-            .'Para ponérsela a un producto usa asignar_foto con el id del producto. '
-            .'Si no dijo de cuál es, pregúntaselo.]';
+        // El número de la foto viaja en el aviso porque mandar cuatro fotos
+        // seguidas son cuatro mensajes distintos, cada uno con su vuelta del
+        // modelo: sin decirle en cuál posición quedó cada una, no tiene cómo
+        // saber que "la tercera" es la del filtro.
+        $aviso = $posicion === 1
+            ? '[Sistema: llegó una foto del admin y quedó guardada (es la única en espera). '
+                .'Para usarla llama asignar_foto con el id del producto. Si no dijo de qué es, pregúntaselo.]'
+            : "[Sistema: llegó otra foto del admin y quedó guardada en la posición {$posicion} de la cola, "
+                ."en orden de llegada. Hay {$posicion} fotos esperando. Cuando uses asignar_foto dile "
+                .'cuál con numero_foto. Si no está claro qué foto va con qué cosa, pregúntaselo antes '
+                .'de asignar ninguna.]';
 
         return $pieDeFoto === '' ? $aviso : $pieDeFoto."\n\n".$aviso;
     }
@@ -108,11 +168,38 @@ class Asistente
     {
         $herramientas = Herramientas::definiciones();
 
+        // Se arma UNA vez para todo el mensaje, no una por vuelta. Dos
+        // razones: lee las categorías de la base, y si el modelo crea una a
+        // mitad del camino el texto cambiaría entre vueltas —invalidando el
+        // caché justo en las llamadas donde más se aprovecha—. Que el prompt
+        // no mencione la categoría recién creada no importa: el resultado de
+        // la herramienta ya se la nombró.
+        $instrucciones = $this->instrucciones();
+
         for ($vuelta = 0; $vuelta < self::MAX_VUELTAS; $vuelta++) {
             $respuesta = $this->cliente->beta->messages->create(
                 model: (string) config('tienda.chatbot.modelo'),
                 maxTokens: self::MAX_TOKENS,
-                system: $this->instrucciones(),
+                // El prompt del sistema y las definiciones de herramientas
+                // son idénticos en cada vuelta, y se reenvían enteros cada
+                // vez: son la mayor parte de lo que se paga. Marcado así, la
+                // relectura cuesta una décima parte.
+                //
+                // La marca va en el bloque del sistema y no en las
+                // herramientas porque el orden de armado es herramientas →
+                // sistema → mensajes: marcar el final del sistema guarda las
+                // dos cosas de una. Lo único que cambia entre llamadas es la
+                // lista de mensajes, que va después y por eso no rompe nada.
+                //
+                // Con la duración corta (la de por defecto) y no la de una
+                // hora: lo que se repite de verdad son las vueltas de un
+                // mismo mensaje, que pasan con segundos de diferencia, y
+                // guardar por una hora cuesta más caro escribirlo.
+                system: [[
+                    'type' => 'text',
+                    'text' => $instrucciones,
+                    'cacheControl' => ['type' => 'ephemeral'],
+                ]],
                 messages: $mensajes,
                 tools: $herramientas,
                 // Esfuerzo bajo: consultar stock y sumar bolsas no necesita
@@ -131,6 +218,11 @@ class Asistente
                 fallbacks: 'default',
                 betas: ['server-side-fallback-2026-07-01'],
             );
+
+            // El gasto se apunta apenas vuelve la llamada, antes de mirar si
+            // sirvió: una respuesta rechazada o cortada se paga igual, y un
+            // medidor que solo cuenta los aciertos miente.
+            $this->apuntarGasto($respuesta);
 
             // Siempre revisar stopReason ANTES de leer el contenido: en un
             // rechazo `content` viene vacío o a medias.
@@ -177,6 +269,33 @@ class Asistente
         return 'Me enredé haciendo esa consulta. ¿Me la pides de a un producto a la vez?';
     }
 
+    /**
+     * Apunta en el medidor lo que costó una llamada.
+     *
+     * Nunca deja caer la conversación: si el medidor falla —la tabla no
+     * migrada todavía, la base ocupada— se registra en el log y el admin
+     * igual recibe su respuesta. Perder la cuenta de unos centavos es mucho
+     * menos grave que dejar sin panel a quien está despachando.
+     */
+    private function apuntarGasto(object $respuesta): void
+    {
+        try {
+            $uso = $respuesta->usage ?? null;
+            if ($uso === null) {
+                return;
+            }
+
+            ConsumoChatbot::registrar(
+                $uso->inputTokens,
+                $uso->outputTokens,
+                $uso->cacheReadInputTokens ?? 0,
+                $uso->cacheCreationInputTokens ?? 0,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Chatbot: no se pudo apuntar el consumo', ['error' => $e->getMessage()]);
+        }
+    }
+
     /** @param array<int, mixed> $contenido */
     private function textoDe(array $contenido): string
     {
@@ -217,6 +336,21 @@ class Asistente
             en false. Eso sí lo desaparece del sitio.
           Si no queda claro cuál de las dos quiere, pregúntale.
         - Los precios son enteros de pesos: 48000. Nunca decimales.
+        - UN KIT es un producto que se vende como una sola cosa —un precio, una línea en el
+          pedido— pero que por dentro trae varias. Lo que trae se cuenta de DOS formas
+          distintas y no son intercambiables:
+          · PIEZAS: cosas que solo existen dentro del kit y no se venden sueltas (los filtros
+            de papel, la bolsa de muestra, la cuchara medidora). Llevan nombre y foto, nada
+            más: no tienen precio porque no se venden, ni stock porque el que se cuenta es
+            el del kit. Van en `piezas`.
+          · COMPONENTES: productos que YA existen en el catálogo y se venden solos, y que
+            además vienen dentro del kit (la prensa francesa, una bolsa de café). Van en
+            `componentes`, por id.
+          Si el admin nombra algo y no sabes de cuál de las dos se trata, búscalo primero en
+          el catálogo: si aparece, es componente; si no, es pieza. Cuando quede en duda,
+          pregúntale — un componente mal puesto le cambia la ficha al kit.
+        - El stock del kit es propio: vender un kit NO descuenta las bolsas de sus
+          componentes. Quien lo arma en el mostrador decide cuántos hay listos.
         - EL INVENTARIO SE LLEVA POR SEDE. Cada producto tiene bolsas en cada punto de venta,
           y el número que ve el cliente en la página es la suma de todas. Por eso:
           · Antes de mover stock necesitas saber en CUÁL sede. Si el admin no lo dijo,
@@ -236,9 +370,17 @@ class Asistente
           día a día y se revierten fácil.
         - Si el mensaje no deja claro si el número es lo que llegó, lo que salió o lo que
           queda, pregunta. Equivocarse de acción descuadra el inventario.
-        - Cuando te mande una foto, ya queda guardada. Solo necesitas saber de qué producto
-          es: si no lo dijo, pregúntale. Si te la manda antes de crear el producto, créalo
-          primero y después asígnasela.
+        - Cuando te mande una foto, ya queda guardada y hace fila. Solo necesitas saber de
+          qué es: si no lo dijo, pregúntale. Si te la manda antes de crear el producto,
+          créalo primero y después asígnasela.
+        - Puede mandarte VARIAS fotos seguidas, y cada una llega como un mensaje aparte.
+          Se numeran por orden de llegada (1 es la primera que mandó) y se usan con
+          numero_foto. Con más de una esperando NUNCA adivines cuál va dónde: mira la cola
+          con fotos_pendientes y pregúntale. Ponerle al café la foto del molino es un error
+          que nadie nota hasta que un cliente abre la página.
+        - Para armar un kit el orden que funciona es: crear el kit con sus piezas por
+          nombre, y después pedirle las fotos de cada pieza. Pedirlas antes deja fotos
+          sueltas sin dónde ponerlas.
         - Cuando termines un cambio, di el antes y el después con números concretos.
         - Avisa por tu cuenta cuando un producto quede agotado o por acabarse tras un ajuste.
 
@@ -284,16 +426,5 @@ class Asistente
     private function llave(string $de): string
     {
         return 'chatbot:hist:'.sha1($de);
-    }
-
-    /** Dónde queda apuntada la última foto que mandó este número. */
-    public static function llaveFotoDe(string $de): string
-    {
-        return 'chatbot:foto:'.sha1($de);
-    }
-
-    private function llaveFoto(string $de): string
-    {
-        return self::llaveFotoDe($de);
     }
 }

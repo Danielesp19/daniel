@@ -75,13 +75,14 @@ Los datos del negocio están centralizados; no hay que buscarlos por el código.
 | Nombre, logros, redes | `web/src/lib/marca.ts` |
 | Número de WhatsApp de pedidos | `NEXT_PUBLIC_WHATSAPP` |
 | Número de WhatsApp Business del bot | `CHATBOT_PHONE_ID` / `CHATBOT_ACCESS_TOKEN` |
-| Números autorizados para administrar | `CHATBOT_ADMINS` |
+| El número que administra (uno solo) | `CHATBOT_ADMIN` |
+| Tope de gasto mensual del bot | `CHATBOT_TOPE_MENSUAL_USD_CENTAVOS` |
 | Productos, precios y fotos reales | Por WhatsApp — el seeder trae datos de ejemplo |
 | Texto de la portada | Por WhatsApp |
 
 > **Los teléfonos son provisionales.** Todo apunta a `573222248487`, un número
 > de pruebas, mientras se consigue la línea de WhatsApp Business. Hay que
-> cambiarlo en `marca.ts` (o vía `NEXT_PUBLIC_WHATSAPP`) y en `CHATBOT_ADMINS`.
+> cambiarlo en `marca.ts` (o vía `NEXT_PUBLIC_WHATSAPP`) y en `CHATBOT_ADMIN`.
 
 > El palmarés en `marca.ts` tiene **tres** logros (Nacional Arte Latte 2025 y
 > 2024, Reto 4V 2024). En el Instagram hay un cuarto que empieza por "Ranci…"
@@ -149,8 +150,10 @@ responde. Lo que puede hacer:
 | "súbele el precio a 52.000" | Cambia el precio (te lo confirma antes) |
 | *(manda una foto)* "esta es la del mirador" | Le pone la foto al producto |
 | "agrega un café nuevo, Tabi del Quindío a 74.000" | Crea el producto y te pide lo que falte |
-| "cambia el título de la portada" | Edita los textos del hero |
+| "arma un kit de V60 a 180.000, trae filtros y cuchara" | Crea el kit con sus piezas y te pide las fotos |
+| "al kit métele también la prensa francesa" | Le engancha un producto del catálogo como componente |
 | "crea una sección de suscripciones" | Crea la categoría y elige cómo se muestra |
+| "¿cuánto llevo gastado este mes?" | Te dice el consumo del bot y cuánto queda de tope |
 
 **Agotado y oculto no son lo mismo**, y el bot está entrenado para no
 confundirlos: lo primero deja el producto visible con su sello, lo segundo lo
@@ -160,6 +163,12 @@ Las **fotos** son la pieza que hace que esto sustituya al panel de verdad: es
 lo único que no se puede hacer escribiendo. Cuando llega una imagen, se baja de
 Meta, se reduce y se pasa a WebP, y queda en espera hasta que digas de qué
 producto es — puede ser en el mismo mensaje o en el siguiente.
+
+Las fotos **hacen fila**: caben hasta ocho esperando, numeradas por orden de
+llegada, que es como hay que mandarlas para armar un kit (una por pieza). Con
+más de una en espera el bot nunca adivina cuál va dónde — pregunta. Es a
+propósito: ponerle al café la foto del molino no se nota hasta que un cliente
+abre la página.
 
 Después de cada cambio el backend le avisa al sitio que se regenere, así que no
 hay que esperar el minuto del caché para ver el resultado.
@@ -176,28 +185,76 @@ espera un 200 en segundos y una vuelta del modelo con herramientas tarda más.
 Para que funcione hace falta un worker vivo:
 
 ```bash
-php artisan queue:work --tries=2
+php artisan queue:work
 ```
 
+Un mensaje a la vez por número: mandar cuatro fotos seguidas son cuatro
+trabajos, y si se procesaran al tiempo el último en guardar le borraría al
+modelo el recuerdo de las otras tres.
+
 Configuración en `.env` (ver `api/.env.example` para el detalle):
-`CHATBOT_ADMINS`, `CHATBOT_VERIFY_TOKEN`, `CHATBOT_APP_SECRET`,
+`CHATBOT_ADMIN`, `CHATBOT_VERIFY_TOKEN`, `CHATBOT_APP_SECRET`,
 `CHATBOT_PHONE_ID`, `CHATBOT_ACCESS_TOKEN`, `ANTHROPIC_API_KEY`.
 
-> **`CHATBOT_ADMINS` y `CHATBOT_APP_SECRET` no son opcionales en producción.**
-> La lista blanca es lo único que separa un mensaje de WhatsApp de la base de
+> **`CHATBOT_ADMIN` y `CHATBOT_APP_SECRET` no son opcionales en producción.**
+> Ese número es lo único que separa un mensaje de WhatsApp de la base de
 > datos, y sin el secreto el webhook queda abierto a internet — por eso en
 > producción se rechazan todas las peticiones si falta.
+
+> **Administra UN solo número.** Es a propósito: con dos personas escribiéndole
+> al mismo bot se pisan el hilo de la conversación —que es uno solo por
+> número— y nadie sabe quién dejó el catálogo como quedó. Se escribe como
+> venga (`+57 322 224 8487`, `573222248487`): se normaliza a dígitos antes de
+> comparar. `CHATBOT_ADMINS`, la lista vieja, se sigue leyendo si `CHATBOT_ADMIN`
+> está vacío, pero solo vale el primero.
+
+### Cuánto cuesta esto al mes
+
+WhatsApp no cobra por responder: las conversaciones que inicia el admin son
+gratis, y el bot nunca escribe primero. **Lo único que cuesta es la API de
+Claude**, que se paga por token consumido, sin mensualidad ni mínimo: una
+semana sin escribirle no cuesta nada.
+
+Con un uso de dos o tres cambios por semana son unos pocos dólares al mes. El
+gasto no depende de cuántos productos cambies sino de cuántos mensajes se
+crucen: preguntar tres veces "¿cómo vamos?" cuesta casi lo mismo que crear un
+producto.
+
+Dos cosas lo mantienen bajo control:
+
+- **El prompt va cacheado.** Las instrucciones y las herramientas son
+  idénticas en cada vuelta y son la mayor parte de lo que se paga; marcadas
+  como caché, releerlas cuesta una décima parte.
+- **El tope lo pone la aplicación, no la consola.** `CHATBOT_TOPE_MENSUAL_USD_CENTAVOS`
+  (en centavos: `500` = US$5) corta de verdad — pasado el límite el bot avisa
+  y responde sin llamar a la API. Al 80% manda un aviso, una sola vez. El
+  admin puede preguntar "¿cuánto llevo gastado?" cuando quiera.
+
+> **Si cambias `CHATBOT_MODELO`, cambia también `CHATBOT_PRECIO_ENTRADA` y
+> `CHATBOT_PRECIO_SALIDA`.** El medidor no sabe qué modelo está corriendo: usa
+> esos dos números para convertir tokens en plata, y si quedan desfasados el
+> tope deja de valer. Los valores por millón de tokens están en el
+> `.env.example`.
+
+**Para que el negocio ponga su propia tarjeta:** que cree una cuenta en
+`console.anthropic.com`, cargue saldo, active la recarga automática con su
+límite de gasto y genere una API key. Esa key va en `ANTHROPIC_API_KEY` y el
+consumo se le cobra a él directamente. Conviene dejar además el tope de la
+aplicación en un valor cómodo: es el que avisa por WhatsApp antes de que la
+tarjeta se entere.
 
 ## Pruebas
 
 ```bash
-cd api && php artisan test          # 42 pruebas
+cd api && php artisan test          # 136 pruebas
 cd web && npx tsc --noEmit && npx eslint src
 ```
 
 Las pruebas cubren lo que duele si se rompe: el ajuste de stock (donde está la
-plata), la separación entre productos y servicios, y la seguridad del webhook
-(firma, lista blanca, deduplicación).
+plata), la separación entre productos y servicios, la seguridad del webhook
+(firma, número reservado, deduplicación), el armado de kits por chat —incluido
+que el bot pregunte en vez de adivinar cuando hay varias fotos esperando— y el
+tope de gasto.
 
 ## Despliegue
 

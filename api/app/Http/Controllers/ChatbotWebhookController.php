@@ -15,10 +15,10 @@ use Illuminate\Support\Facades\Log;
  *
  *   1. Firma HMAC del cuerpo crudo con el secreto de la app: demuestra que el
  *      mensaje viene de Meta y que nadie lo alteró en el camino.
- *   2. Lista blanca de números: solo los administradores configurados pueden
- *      darle órdenes al bot. Un mensaje de cualquier otro número se ignora en
- *      silencio (sin responder: contestar "no estás autorizado" le confirma a
- *      un desconocido que este número es un bot de administración).
+ *   2. Un único número reservado: solo el del dueño puede darle órdenes al
+ *      bot. Un mensaje de cualquier otro número se ignora en silencio (sin
+ *      responder: contestar "no estás autorizado" le confirma a un
+ *      desconocido que este número es un bot de administración).
  *   3. Límite de tasa por remitente (ver AppServiceProvider), porque cada
  *      respuesta gasta tokens de la API de Claude.
  */
@@ -151,13 +151,25 @@ class ChatbotWebhookController extends Controller
     /** @param array{id: string, de: string, texto: string, foto: ?string} $mensaje */
     private function encolar(array $mensaje): void
     {
-        $admins = (array) config('tienda.chatbot.admins');
+        // Se comparan dígitos contra dígitos. Meta manda el remitente en
+        // E.164 sin "+", pero el número configurado pudo haberse copiado de
+        // la agenda del celular con "+", espacios o guiones, y una diferencia
+        // así dejaba al dueño mudo sin decir por qué.
+        $de = self::soloDigitos($mensaje['de']);
+        $admin = (string) config('tienda.chatbot.admin');
 
         // Silencio deliberado ante un número no autorizado: ver el comentario
-        // de la clase.
-        if (! in_array($mensaje['de'], $admins, true)) {
+        // de la clase. El `$admin === ''` va primero porque sin número
+        // configurado hash_equals('', '') daría true y abriría el bot a
+        // cualquiera que le escriba.
+        if ($admin === '' || ! hash_equals($admin, $de)) {
             Log::info('Chatbot: mensaje de un número no autorizado', [
-                'de' => substr($mensaje['de'], -4),
+                'de' => substr($de, -4),
+                // Sin esto, quien administraba desde un segundo número al
+                // pasar a número único se queda sin respuesta y sin pista de
+                // qué cambió.
+                'administraba_antes' => in_array($de, (array) config('tienda.chatbot.admins_jubilados'), true),
+                'sin_numero_configurado' => $admin === '',
             ]);
 
             return;
@@ -170,6 +182,18 @@ class ChatbotWebhookController extends Controller
             return;
         }
 
-        ResponderMensajeChatbot::dispatch($mensaje['de'], $mensaje['texto'], $mensaje['foto']);
+        ResponderMensajeChatbot::dispatch($de, $mensaje['texto'], $mensaje['foto']);
+    }
+
+    /**
+     * Deja un teléfono en puros dígitos para poder compararlo.
+     *
+     * Es pública porque el número normalizado es también la llave de la
+     * memoria de la conversación y de la cola de fotos: si cada lado
+     * normalizara a su manera, el mismo admin tendría dos historiales.
+     */
+    public static function soloDigitos(string $telefono): string
+    {
+        return preg_replace('/\D+/', '', $telefono) ?? '';
     }
 }

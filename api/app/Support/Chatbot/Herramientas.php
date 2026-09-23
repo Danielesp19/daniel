@@ -3,9 +3,11 @@
 namespace App\Support\Chatbot;
 
 use App\Models\Categoria;
+use App\Models\ConsumoChatbot;
+use App\Models\KitPieza;
 use App\Models\Producto;
 use App\Models\Sede;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -58,6 +60,13 @@ class Herramientas
                 'name' => 'resumen_inventario',
                 'description' => 'Panorama del inventario: cuántas bolsas hay en total, qué está agotado '
                     .'y qué está por acabarse. Úsala para preguntas generales como "¿cómo vamos?" o "¿qué falta pedir?".',
+                'inputSchema' => ['type' => 'object', 'properties' => (object) []],
+            ],
+            [
+                'name' => 'consumo_del_mes',
+                'description' => 'Cuánto lleva gastado el bot en lo que va del mes y cuánto le queda de tope. '
+                    .'Úsala cuando el admin pregunte por el costo, el gasto o el saldo del chat. '
+                    .'No tiene nada que ver con las ventas ni con el inventario.',
                 'inputSchema' => ['type' => 'object', 'properties' => (object) []],
             ],
             [
@@ -115,7 +124,8 @@ class Herramientas
                 'name' => 'crear_producto',
                 'description' => 'Agrega un producto nuevo al catálogo. Pide siempre categoría, nombre y precio '
                     .'antes de llamarla; el resto se puede completar después. '
-                    .'Para un servicio (asesoría, clase, barra para eventos) pon controla_stock en false.',
+                    .'Para un servicio (asesoría, clase, barra para eventos) pon controla_stock en false. '
+                    .'Si lo que va a crear es un KIT —algo que trae varias cosas adentro— usa crear_kit, no esta.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
@@ -125,9 +135,19 @@ class Herramientas
                         'descripcion' => ['type' => 'string'],
                         'gramos' => ['type' => 'integer', 'description' => 'Peso de la bolsa. Usa 0 en servicios.'],
                         'stock' => ['type' => 'integer', 'description' => 'Bolsas disponibles ahora.'],
+                        'stock_minimo' => [
+                            'type' => 'integer',
+                            'description' => 'A partir de cuántas bolsas avisar que se está acabando. Por defecto 3.',
+                        ],
                         'controla_stock' => [
                             'type' => 'boolean',
                             'description' => 'false para servicios: se agendan, no se cuentan ni se agotan.',
+                        ],
+                        'es_cafe' => [
+                            'type' => 'boolean',
+                            'description' => 'true si es un café. Es lo que hace que la página le pinte la ficha de origen '
+                                .'(finca, región, altura, variedad, proceso, puntaje). Un molino o una prensa van en false: '
+                                .'sin esto la ficha sale vacía. Si mandas datos de finca o región, esto tiene que ir en true.',
                         ],
                         'finca' => ['type' => 'string'],
                         'productor' => ['type' => 'string'],
@@ -161,6 +181,22 @@ class Herramientas
                         'descripcion' => ['type' => 'string'],
                         'categoria_id' => ['type' => 'integer', 'description' => 'Para mover el producto de categoría.'],
                         'gramos' => ['type' => 'integer'],
+                        'stock_minimo' => [
+                            'type' => 'integer',
+                            'description' => 'A partir de cuántas bolsas avisar que se está acabando.',
+                        ],
+                        'es_cafe' => [
+                            'type' => 'boolean',
+                            'description' => 'true prende la ficha de origen en la página. Ponlo en true si le estás '
+                                .'agregando finca, región, variedad o proceso a un producto que no la tenía.',
+                        ],
+                        'componentes' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'integer'],
+                            'description' => 'Ids de los productos del catálogo que vienen dentro, si es un kit. '
+                                .'Reemplaza la lista completa: manda TODOS los que debe traer, no solo los nuevos. '
+                                .'Una lista vacía le quita todos los componentes.',
+                        ],
                         'finca' => ['type' => 'string'],
                         'productor' => ['type' => 'string'],
                         'region' => ['type' => 'string'],
@@ -179,15 +215,107 @@ class Herramientas
             ],
             [
                 'name' => 'asignar_foto',
-                'description' => 'Le pone al producto la última foto que envió el admin por el chat. '
-                    .'Solo sirve si acaba de mandar una imagen; si no, avísale que la envíe primero. '
-                    .'La foto anterior del producto se reemplaza.',
+                'description' => 'Toma una de las fotos que el admin mandó por el chat y la pone donde digas: '
+                    .'de portada de un producto, como foto adicional de su galería, o en una pieza de un kit. '
+                    .'Solo sirve si hay fotos esperando; si no, avísale que la envíe primero. '
+                    .'La foto se consume: queda usada y sale de la cola.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
-                        'producto_id' => ['type' => 'integer', 'description' => 'A qué producto ponérsela.'],
+                        'producto_id' => [
+                            'type' => 'integer',
+                            'description' => 'El producto. Si es para una pieza, el id del KIT que la contiene.',
+                        ],
+                        'numero_foto' => [
+                            'type' => 'integer',
+                            'description' => 'Cuál de las fotos en espera, contando desde 1 por orden de llegada. '
+                                .'Se puede omitir SOLO si hay una sola esperando. Con varias es obligatorio: '
+                                .'míralas con fotos_pendientes y pregúntale al admin si no está claro.',
+                        ],
+                        'pieza' => [
+                            'type' => 'string',
+                            'description' => 'Nombre de la pieza del kit a la que va la foto ("filtros", "cuchara"). '
+                                .'Solo para kits. Si se omite, la foto va al producto.',
+                        ],
+                        'modo' => [
+                            'type' => 'string',
+                            'enum' => ['portada', 'agregar'],
+                            'description' => 'portada (por defecto) la pone de primera y reemplaza la imagen que '
+                                .'estaba de portada; agregar la suma al final de la galería sin quitar ninguna. '
+                                .'Usa agregar cuando el admin mande varias fotos del mismo producto.',
+                        ],
                     ],
                     'required' => ['producto_id'],
+                ],
+            ],
+            [
+                'name' => 'fotos_pendientes',
+                'description' => 'Qué fotos mandó el admin y siguen sin asignar, en orden de llegada con su número '
+                    .'y la hora. Úsala cuando haya más de una esperando y necesites preguntarle cuál va dónde.',
+                'inputSchema' => ['type' => 'object', 'properties' => (object) []],
+            ],
+
+            // ── Kits ─────────────────────────────────────────────────────────
+            [
+                'name' => 'crear_kit',
+                'description' => 'Crea un kit: un producto que se vende como una sola cosa pero trae varias adentro. '
+                    .'Las PIEZAS son cosas que solo existen dentro del kit y no se venden sueltas (filtros, cuchara '
+                    .'medidora): van por nombre. Los COMPONENTES son productos que ya están en el catálogo y también '
+                    .'vienen adentro: van por id. Crea el kit primero y pídele las fotos de las piezas después.',
+                'inputSchema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'categoria_id' => ['type' => 'integer', 'description' => 'Id de la categoría (ver listar_categorias).'],
+                        'nombre' => ['type' => 'string'],
+                        'precio_cop' => ['type' => 'integer', 'description' => 'Precio del kit completo, en pesos enteros.'],
+                        'descripcion' => ['type' => 'string'],
+                        'piezas' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'string'],
+                            'description' => 'Nombres de las piezas que no se venden sueltas: ["filtros de papel", '
+                                .'"cuchara medidora"]. Máximo 12.',
+                        ],
+                        'componentes' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'integer'],
+                            'description' => 'Ids de productos del catálogo que vienen dentro. Búscalos antes con '
+                                .'buscar_productos; nunca inventes un id. Máximo 12.',
+                        ],
+                        'stock' => ['type' => 'integer', 'description' => 'Cuántos kits hay armados y listos.'],
+                        'sede' => [
+                            'type' => 'string',
+                            'description' => 'Sede donde están esos kits armados. Igual que en ajustar_stock: si hay '
+                                .'varias sedes y no dijo cuál, pregúntale.',
+                        ],
+                    ],
+                    'required' => ['categoria_id', 'nombre', 'precio_cop'],
+                ],
+            ],
+            [
+                'name' => 'editar_piezas_kit',
+                'description' => 'Agrega, quita o renombra las piezas de un kit que ya existe. Trabaja de a una cosa '
+                    .'por llamada. Renombrar conserva la foto de la pieza; quitar la borra.',
+                'inputSchema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'producto_id' => ['type' => 'integer', 'description' => 'El kit.'],
+                        'accion' => [
+                            'type' => 'string',
+                            'enum' => ['agregar', 'quitar', 'renombrar'],
+                        ],
+                        'piezas' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'string'],
+                            'description' => 'Para agregar: los nombres de las piezas nuevas.',
+                        ],
+                        'pieza' => [
+                            'type' => 'string',
+                            'description' => 'Para quitar o renombrar: el nombre de la pieza actual. '
+                                .'Puede ser parcial mientras no calce con dos.',
+                        ],
+                        'nombre_nuevo' => ['type' => 'string', 'description' => 'Para renombrar.'],
+                    ],
+                    'required' => ['producto_id', 'accion'],
                 ],
             ],
 
@@ -195,16 +323,16 @@ class Herramientas
             [
                 'name' => 'crear_categoria',
                 'description' => 'Crea una sección nueva del catálogo. '
-                    .'modo_vitrina decide cómo se ve: "grid" es la grilla normal, "carrusel" es una fila que se '
-                    .'corre de lado (buena cuando hay muchos productos), "vertical" son filas grandes '
-                    .'alternadas (para lo más especial) y "horizontal" muestra uno a la vez para pasarlo '
-                    .'deslizando (buena para videos).',
+                    .'modo_vitrina decide cómo se acomoda lo que va dentro: "carrusel" es una fila que se corre '
+                    .'de lado (buena cuando hay muchos productos), "dos" los pone de a dos por fila y "bandas" '
+                    .'son franjas anchas de lado a lado (para lo más especial). '
+                    .'Si el admin no pide nada en particular, deja carrusel.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
                         'nombre' => ['type' => 'string'],
                         'descripcion' => ['type' => 'string', 'description' => 'Se muestra bajo el título de la sección.'],
-                        'modo_vitrina' => ['type' => 'string', 'enum' => ['grid', 'carrusel', 'vertical', 'horizontal']],
+                        'modo_vitrina' => ['type' => 'string', 'enum' => ['carrusel', 'dos', 'bandas']],
                         'orden' => ['type' => 'integer', 'description' => 'Posición de la sección en la página: 0 va primero. Para bajar una sección al final, ponle un número más alto que el de todas las demás.'],
                     ],
                     'required' => ['nombre'],
@@ -220,7 +348,7 @@ class Herramientas
                         'categoria_id' => ['type' => 'integer'],
                         'nombre' => ['type' => 'string'],
                         'descripcion' => ['type' => 'string'],
-                        'modo_vitrina' => ['type' => 'string', 'enum' => ['grid', 'carrusel', 'vertical', 'horizontal']],
+                        'modo_vitrina' => ['type' => 'string', 'enum' => ['carrusel', 'dos', 'bandas']],
                         'orden' => ['type' => 'integer', 'description' => 'Posición de la sección en la página: 0 va primero. Sirve para subir o bajar una sección sin tocar las demás.'],
                         'activa' => ['type' => 'boolean'],
                     ],
@@ -248,9 +376,13 @@ class Herramientas
                 'ajustar_stock' => self::ajustarStock($input),
                 'crear_producto' => self::crearProducto($input),
                 'editar_producto' => self::editarProducto($input),
+                'crear_kit' => self::crearKit($input),
+                'editar_piezas_kit' => self::editarPiezasKit($input),
                 'asignar_foto' => self::asignarFoto($input, $de),
+                'fotos_pendientes' => self::fotosPendientes($de),
                 'crear_categoria' => self::crearCategoria($input),
                 'editar_categoria' => self::editarCategoria($input),
+                'consumo_del_mes' => self::consumoDelMes(),
                 default => ['error' => "No existe una herramienta llamada {$nombre}."],
             };
 
@@ -459,12 +591,23 @@ class Herramientas
 
     // ── Productos ───────────────────────────────────────────────────────────
 
-    /** Campos que el modelo puede escribir en un producto. */
+    /**
+     * Campos que el modelo puede escribir en un producto.
+     *
+     * `stock` NO está, y es a propósito: es la suma de las sedes, y escribirlo
+     * directo descuadra el desglose. Para moverlo está ajustar_stock.
+     * `es_kit` tampoco: lo pone crear_kit, porque un kit sin piezas ni
+     * componentes es solo un producto con una bandera que no significa nada.
+     */
     private const CAMPOS_PRODUCTO = [
         'nombre', 'descripcion', 'precio_cop', 'gramos', 'controla_stock',
+        'stock_minimo', 'es_cafe',
         'finca', 'productor', 'region', 'altitud_msnm', 'variedad', 'proceso',
         'tueste', 'notas', 'puntaje_sca', 'activo', 'destacado', 'orden',
     ];
+
+    /** Tope de piezas y de componentes de un kit, el mismo que usa el panel. */
+    private const MAX_PIEZAS = 12;
 
     /** @param array<string, mixed> $input */
     private static function crearProducto(array $input): array
@@ -538,7 +681,19 @@ class Herramientas
             $cambios['categoria_id'] = (int) $input['categoria_id'];
         }
 
-        if (! $cambios) {
+        // Los componentes no son una columna, así que van por su lado. Solo
+        // se tocan si el campo viene: sin eso, cambiarle el precio a un kit
+        // le vaciaría lo que trae adentro.
+        $componentes = null;
+        if (array_key_exists('componentes', $input)) {
+            $componentes = self::idsDeComponentes($input['componentes'], $producto->id);
+
+            if (isset($componentes['error'])) {
+                return $componentes;
+            }
+        }
+
+        if (! $cambios && $componentes === null) {
             return ['error' => 'No mandaste ningún campo para cambiar.'];
         }
         if ($error = self::validar($cambios)) {
@@ -546,18 +701,41 @@ class Herramientas
         }
 
         $antes = $producto->only(array_keys($cambios));
-        $producto->update($cambios);
 
-        return [
+        if ($cambios) {
+            $producto->update($cambios);
+        }
+
+        if ($componentes !== null) {
+            $producto->componentes()->sync(array_combine(
+                $componentes,
+                array_map(static fn (int $i) => ['orden' => $i], array_keys($componentes)),
+            ));
+
+            // Con algo adentro es un kit; sin nada, deja de serlo. Así la
+            // bandera no se queda mintiendo después de vaciarle los
+            // componentes a un producto que además no tiene piezas.
+            $producto->update([
+                'es_kit' => $componentes !== [] || $producto->piezas()->exists(),
+            ]);
+        }
+
+        $resultado = [
             'ok' => true,
             'producto' => $producto->nombre,
             'antes' => $antes,
             'despues' => $producto->fresh()->only(array_keys($cambios)),
         ];
+
+        if ($componentes !== null) {
+            $resultado['componentes_ahora'] = $producto->componentes()->pluck('nombre')->all();
+        }
+
+        return $resultado;
     }
 
     /**
-     * Engancha al producto la última foto que llegó por el chat.
+     * Engancha una de las fotos que están haciendo fila.
      *
      * @param  array<string, mixed>  $input
      */
@@ -568,24 +746,85 @@ class Herramientas
             return ['error' => 'No existe un producto con ese id. Búscalo primero con buscar_productos.'];
         }
 
-        $llave = Asistente::llaveFotoDe($de);
-        $ruta = Cache::get($llave);
-
-        if (! $ruta) {
-            return ['error' => 'No hay ninguna foto reciente en el chat. Pídele que la envíe y vuelve a intentarlo.'];
+        $enEspera = ColaDeFotos::cuantas($de);
+        if ($enEspera === 0) {
+            return ['error' => 'No hay ninguna foto esperando. Pídele que la envíe y vuelve a intentarlo.'];
         }
 
-        // La foto entra de primera: pasa a ser la portada, que es lo que
-        // espera quien la manda por WhatsApp diciendo "ponle esta".
+        $numero = isset($input['numero_foto']) ? (int) $input['numero_foto'] : null;
+
+        // Con varias fotos en espera y sin número, la cola devuelve null en
+        // vez de elegir una: adivinar aquí es ponerle al café la foto del
+        // molino, y eso no se nota hasta que un cliente abre la página.
+        if ($numero === null && $enEspera > 1) {
+            return [
+                'error' => "Hay {$enEspera} fotos esperando y no dijiste cuál. Mira fotos_pendientes y "
+                    .'pregúntale al admin cuál va aquí.',
+                'fotos_en_espera' => $enEspera,
+            ];
+        }
+
+        if ($numero !== null && ($numero < 1 || $numero > $enEspera)) {
+            return ['error' => "No hay una foto número {$numero}. En espera hay {$enEspera}."];
+        }
+
+        // Si va a una pieza, se resuelve ANTES de sacar la foto de la cola:
+        // una pieza mal nombrada no puede costarle al admin volver a mandar
+        // la imagen.
+        $pieza = null;
+        if ($nombrePieza = trim((string) ($input['pieza'] ?? ''))) {
+            $pieza = self::buscarPieza($producto, $nombrePieza);
+
+            if (! $pieza instanceof KitPieza) {
+                return $pieza;
+            }
+        }
+
+        $ruta = ColaDeFotos::tomar($de, $numero);
+        if ($ruta === null) {
+            return ['error' => 'Esa foto ya no está en la cola. Pídele que la reenvíe.'];
+        }
+
+        return $pieza
+            ? self::fotoAPieza($pieza, $producto, $ruta)
+            : self::fotoAProducto($producto, $ruta, (string) ($input['modo'] ?? 'portada'));
+    }
+
+    /** @return array<string, mixed> */
+    private static function fotoAProducto(Producto $producto, string $ruta, string $modo): array
+    {
+        // El tope del panel, respetado también por acá: más medios de los que
+        // el formulario puede editar dejaría fotos que solo se ven en la
+        // página y que no hay cómo quitar sin entrar a la base.
+        if ($producto->medios()->count() >= 8) {
+            Storage::disk('public')->delete($ruta);
+
+            return ['error' => "\"{$producto->nombre}\" ya tiene 8 fotos, que es el máximo. "
+                .'Hay que quitarle alguna desde el panel antes de agregar otra.'];
+        }
+
+        if ($modo === 'agregar') {
+            $producto->medios()->create([
+                'tipo' => 'imagen',
+                'ruta' => $ruta,
+                'orden' => (int) $producto->medios()->max('orden') + 1,
+            ]);
+
+            return [
+                'ok' => true,
+                'producto' => $producto->nombre,
+                'mensaje' => 'Foto agregada a la galería, al final.',
+                'fotos_ahora' => $producto->medios()->count(),
+            ];
+        }
+
+        // Portada: entra de primera, que es lo que espera quien manda una
+        // foto diciendo "ponle esta".
         $anterior = $producto->medios()->where('tipo', 'imagen')->orderBy('orden')->first();
         $producto->medios()->create(['tipo' => 'imagen', 'ruta' => $ruta, 'orden' => -1]);
         foreach ($producto->medios()->orderBy('orden')->get()->values() as $i => $m) {
             $m->update(['orden' => $i]);
         }
-
-        // La foto se consume: si no, un "ponle esta misma al otro" seguido de
-        // un descuido dejaría la misma imagen en media docena de productos.
-        Cache::forget($llave);
 
         // La imagen vieja ya no la referencia nadie. Borrarla evita que el
         // disco crezca sin control a punta de fotos reemplazadas.
@@ -597,7 +836,360 @@ class Herramientas
         return [
             'ok' => true,
             'producto' => $producto->nombre,
-            'mensaje' => 'Foto actualizada.',
+            'mensaje' => $anterior ? 'Foto de portada reemplazada.' : 'Foto de portada puesta.',
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private static function fotoAPieza(KitPieza $pieza, Producto $kit, string $ruta): array
+    {
+        $anterior = $pieza->imagen;
+        $pieza->update(['imagen' => $ruta]);
+
+        if ($anterior && $anterior !== $ruta) {
+            Storage::disk('public')->delete($anterior);
+        }
+
+        // Las piezas cuelgan del kit, y guardarlas no dispara la regeneración
+        // del sitio —esa vive en Producto—, así que se toca el kit para que
+        // la foto nueva se vea sin esperar el minuto del caché.
+        $kit->touch();
+
+        return [
+            'ok' => true,
+            'kit' => $kit->nombre,
+            'pieza' => $pieza->nombre,
+            'mensaje' => $anterior ? 'Foto de la pieza reemplazada.' : 'Foto puesta a la pieza.',
+        ];
+    }
+
+    /** Lo que sigue esperando, numerado como lo cuenta el admin. */
+    private static function fotosPendientes(string $de): array
+    {
+        $cola = ColaDeFotos::pendientes($de);
+
+        if ($cola === []) {
+            return ['fotos' => [], 'mensaje' => 'No hay fotos esperando.'];
+        }
+
+        return [
+            'fotos' => array_map(
+                static fn (int $i, array $foto) => ['numero' => $i + 1, 'recibida' => $foto['recibida']],
+                array_keys($cola),
+                $cola,
+            ),
+            'mensaje' => 'Van en orden de llegada. No se puede ver qué muestra cada una: '
+                .'si no sabes cuál es cuál, pregúntale al admin por la hora o por el orden en que las mandó.',
+        ];
+    }
+
+    // ── Kits ────────────────────────────────────────────────────────────────
+
+    /** @param array<string, mixed> $input */
+    private static function crearKit(array $input): array
+    {
+        $categoria = Categoria::find($input['categoria_id'] ?? null);
+        if (! $categoria) {
+            return ['error' => 'No existe esa categoría. Míralas con listar_categorias.'];
+        }
+
+        $nombre = trim((string) ($input['nombre'] ?? ''));
+        if ($nombre === '') {
+            return ['error' => 'Falta el nombre del kit.'];
+        }
+
+        $piezas = self::nombresDePiezas($input['piezas'] ?? []);
+        if (count($piezas) > self::MAX_PIEZAS) {
+            return ['error' => 'Un kit no puede tener más de '.self::MAX_PIEZAS.' piezas.'];
+        }
+
+        $componentes = self::idsDeComponentes($input['componentes'] ?? []);
+        if (is_array($componentes) && isset($componentes['error'])) {
+            return $componentes;
+        }
+
+        if ($piezas === [] && $componentes === []) {
+            return ['error' => 'Un kit sin piezas ni componentes es un producto normal. '
+                .'Pregúntale al admin qué trae adentro, o créalo con crear_producto.'];
+        }
+
+        $datos = array_intersect_key($input, array_flip(self::CAMPOS_PRODUCTO));
+        $datos['nombre'] = $nombre;
+        $datos['es_kit'] = true;
+        // Igual que en crear_producto: nace en cero y el stock inicial entra
+        // después como movimiento de sede, para que el total siempre tenga
+        // bolsas de verdad detrás.
+        $datos['stock'] = 0;
+
+        if ($error = self::validar($datos)) {
+            return ['error' => $error];
+        }
+
+        $inicial = max(0, (int) ($input['stock'] ?? 0));
+        $sede = null;
+
+        // Se resuelve antes de crear nada: si hay que preguntar en qué sede,
+        // mejor preguntarlo sobre un kit que todavía no existe que dejar uno
+        // a medias y que el modelo lo cree dos veces al reintentar.
+        if ($inicial > 0) {
+            $sede = self::resolverSede($input['sede'] ?? null);
+
+            if (! $sede instanceof Sede) {
+                return $sede;
+            }
+        }
+
+        $kit = DB::transaction(function () use ($categoria, $datos, $piezas, $componentes) {
+            $kit = $categoria->productos()->create($datos);
+
+            $kit->piezas()->createMany(array_map(
+                static fn (string $pieza, int $i) => ['nombre' => $pieza, 'orden' => $i],
+                $piezas,
+                array_keys($piezas),
+            ));
+
+            if ($componentes !== []) {
+                $kit->componentes()->sync(array_combine(
+                    $componentes,
+                    array_map(static fn (int $i) => ['orden' => $i], array_keys($componentes)),
+                ));
+            }
+
+            return $kit;
+        });
+
+        if ($sede) {
+            $kit->ajustarStockSede($sede, 'fijar', $inicial);
+        }
+
+        return [
+            'ok' => true,
+            'creado' => self::resumir($kit->fresh(['categoria', 'piezas', 'componentes'])),
+            'aviso' => $piezas === []
+                ? 'Queda sin foto. Mándame una imagen y te la asigno.'
+                : 'Las piezas quedaron sin foto. Mándame las imágenes y dime cuál es cuál.',
+        ];
+    }
+
+    /** @param array<string, mixed> $input */
+    private static function editarPiezasKit(array $input): array
+    {
+        $kit = Producto::find($input['producto_id'] ?? null);
+        if (! $kit) {
+            return ['error' => 'No existe un producto con ese id. Búscalo primero con buscar_productos.'];
+        }
+
+        $accion = (string) ($input['accion'] ?? '');
+
+        return match ($accion) {
+            'agregar' => self::agregarPiezas($kit, $input),
+            'quitar' => self::quitarPieza($kit, $input),
+            'renombrar' => self::renombrarPieza($kit, $input),
+            default => ['error' => 'La acción debe ser agregar, quitar o renombrar.'],
+        };
+    }
+
+    /** @param array<string, mixed> $input */
+    private static function agregarPiezas(Producto $kit, array $input): array
+    {
+        $nuevas = self::nombresDePiezas($input['piezas'] ?? []);
+        if ($nuevas === []) {
+            return ['error' => 'No dijiste qué piezas agregar.'];
+        }
+
+        $tiene = $kit->piezas()->count();
+        if ($tiene + count($nuevas) > self::MAX_PIEZAS) {
+            return ['error' => "El kit ya tiene {$tiene} piezas y el máximo es ".self::MAX_PIEZAS.'.'];
+        }
+
+        $kit->piezas()->createMany(array_map(
+            static fn (string $pieza, int $i) => ['nombre' => $pieza, 'orden' => $tiene + $i],
+            $nuevas,
+            array_keys($nuevas),
+        ));
+
+        // Un producto con piezas es un kit aunque no lo hubiera sido antes.
+        if (! $kit->es_kit) {
+            $kit->update(['es_kit' => true]);
+        } else {
+            $kit->touch();
+        }
+
+        return [
+            'ok' => true,
+            'kit' => $kit->nombre,
+            'agregadas' => $nuevas,
+            'piezas_ahora' => $kit->piezas()->pluck('nombre')->all(),
+            'aviso' => 'Quedaron sin foto. Mándame las imágenes cuando quieras y te las asigno.',
+        ];
+    }
+
+    /** @param array<string, mixed> $input */
+    private static function quitarPieza(Producto $kit, array $input): array
+    {
+        $pieza = self::buscarPieza($kit, trim((string) ($input['pieza'] ?? '')));
+
+        if (! $pieza instanceof KitPieza) {
+            return $pieza;
+        }
+
+        $nombre = $pieza->nombre;
+
+        // La foto se va con ella: si no, queda ocupando disco sin que nadie
+        // pueda volver a verla ni borrarla.
+        if ($pieza->imagen) {
+            Storage::disk('public')->delete($pieza->imagen);
+        }
+        $pieza->delete();
+        $kit->touch();
+
+        return [
+            'ok' => true,
+            'kit' => $kit->nombre,
+            'quitada' => $nombre,
+            'piezas_ahora' => $kit->piezas()->pluck('nombre')->all(),
+        ];
+    }
+
+    /** @param array<string, mixed> $input */
+    private static function renombrarPieza(Producto $kit, array $input): array
+    {
+        $nuevo = trim((string) ($input['nombre_nuevo'] ?? ''));
+        if ($nuevo === '') {
+            return ['error' => 'Falta el nombre nuevo de la pieza.'];
+        }
+
+        $pieza = self::buscarPieza($kit, trim((string) ($input['pieza'] ?? '')));
+
+        if (! $pieza instanceof KitPieza) {
+            return $pieza;
+        }
+
+        $antes = $pieza->nombre;
+        // Solo el nombre: la foto se queda donde estaba, que es lo que espera
+        // quien solo quería corregir cómo se llama.
+        $pieza->update(['nombre' => $nuevo]);
+        $kit->touch();
+
+        return ['ok' => true, 'kit' => $kit->nombre, 'antes' => $antes, 'despues' => $nuevo];
+    }
+
+    /**
+     * Encuentra una pieza por su nombre, aunque venga a medias.
+     *
+     * Devuelve la pieza, o el arreglo de error que el modelo debe leer para
+     * volver a preguntar. Nunca elige entre dos que calcen: borrar la pieza
+     * equivocada de un kit no tiene deshacer.
+     *
+     * @return KitPieza|array<string, mixed>
+     */
+    private static function buscarPieza(Producto $kit, string $nombre): KitPieza|array
+    {
+        $piezas = $kit->piezas()->get();
+
+        if ($piezas->isEmpty()) {
+            return ['error' => "\"{$kit->nombre}\" no tiene piezas. "
+                .'Si es un kit y deberían existir, agrégalas con editar_piezas_kit.'];
+        }
+
+        if ($nombre === '') {
+            return [
+                'error' => 'Falta decir cuál pieza.',
+                'piezas' => $piezas->pluck('nombre')->all(),
+            ];
+        }
+
+        $calzan = $piezas->filter(
+            static fn (KitPieza $p) => mb_stripos($p->nombre, $nombre) !== false
+        )->values();
+
+        if ($calzan->isEmpty()) {
+            return [
+                'error' => "\"{$kit->nombre}\" no tiene ninguna pieza que se parezca a \"{$nombre}\".",
+                'piezas' => $piezas->pluck('nombre')->all(),
+            ];
+        }
+
+        if ($calzan->count() > 1) {
+            return [
+                'error' => "\"{$nombre}\" calza con más de una pieza. Pregúntale al admin a cuál se refiere.",
+                'piezas' => $calzan->pluck('nombre')->all(),
+            ];
+        }
+
+        return $calzan->first();
+    }
+
+    /**
+     * Limpia una lista de nombres de piezas.
+     *
+     * @return array<int, string>
+     */
+    private static function nombresDePiezas(mixed $piezas): array
+    {
+        if (! is_array($piezas)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            static fn ($pieza) => is_string($pieza) ? trim($pieza) : '',
+            $piezas,
+        )));
+    }
+
+    /**
+     * Valida los ids de los componentes de un kit.
+     *
+     * @return array<int, int>|array{error: string}
+     */
+    private static function idsDeComponentes(mixed $componentes, ?int $excluir = null): array
+    {
+        if (! is_array($componentes)) {
+            return [];
+        }
+
+        $ids = array_values(array_unique(array_filter(array_map(
+            static fn ($id) => (int) $id,
+            $componentes,
+        ))));
+
+        // Un kit dentro de sí mismo deja la ficha dando vueltas al pintarse.
+        if ($excluir !== null) {
+            $ids = array_values(array_filter($ids, static fn (int $id) => $id !== $excluir));
+        }
+
+        if (count($ids) > self::MAX_PIEZAS) {
+            return ['error' => 'Un kit no puede traer más de '.self::MAX_PIEZAS.' productos adentro.'];
+        }
+
+        $existen = Producto::whereIn('id', $ids)->pluck('id')->all();
+        $faltan = array_diff($ids, $existen);
+
+        if ($faltan !== []) {
+            return ['error' => 'Estos ids no existen en el catálogo: '.implode(', ', $faltan)
+                .'. Búscalos con buscar_productos en vez de inventarlos.'];
+        }
+
+        return $ids;
+    }
+
+    // ── Gasto ───────────────────────────────────────────────────────────────
+
+    /** Lo que lleva gastado el chat este mes. */
+    private static function consumoDelMes(): array
+    {
+        $consumo = ConsumoChatbot::delMes();
+        $tope = (int) config('tienda.chatbot.tope_mensual_centavos');
+
+        return [
+            'mes' => $consumo->mes,
+            'gastado_usd' => $consumo->dolares(),
+            'mensajes_atendidos' => $consumo->mensajes,
+            'tope_usd' => $tope > 0 ? number_format($tope / 100, 2) : null,
+            'queda_usd' => $tope > 0 ? number_format(max(0, $tope - $consumo->costo_centavos) / 100, 2) : null,
+            'nota' => $tope > 0
+                ? 'Pasado el tope el bot deja de responder hasta el mes siguiente.'
+                : 'No hay tope configurado: el gasto es libre.',
         ];
     }
 
@@ -669,6 +1261,9 @@ class Herramientas
         if (isset($datos['gramos']) && (int) $datos['gramos'] < 0) {
             return 'El peso no puede ser negativo.';
         }
+        if (isset($datos['stock_minimo']) && (int) $datos['stock_minimo'] < 0) {
+            return 'El mínimo de bolsas no puede ser negativo.';
+        }
         if (isset($datos['puntaje_sca'])) {
             $puntaje = (float) $datos['puntaje_sca'];
             if ($puntaje < 0 || $puntaje > 100) {
@@ -691,7 +1286,7 @@ class Herramientas
     /** @return array<string, mixed> */
     private static function resumir(Producto $p): array
     {
-        return [
+        $resumen = [
             'id' => $p->id,
             'nombre' => $p->nombre,
             'categoria' => $p->categoria?->nombre,
@@ -712,9 +1307,28 @@ class Herramientas
             'tiene_foto' => $p->medios()->where('tipo', 'imagen')->exists(),
             'activo' => (bool) $p->activo,
             'destacado' => (bool) $p->destacado,
+            'es_cafe' => (bool) $p->es_cafe,
             'finca' => $p->finca,
             'region' => $p->region,
         ];
+
+        // Lo que trae adentro solo se manda cuando es un kit. En un catálogo
+        // de diez resultados, agregarle dos listas vacías a cada café sería
+        // ruido que se paga por token en cada vuelta.
+        if ($p->esKit()) {
+            $resumen['es_kit'] = true;
+            // Con la foto de cada pieza, que es lo que le permite al modelo
+            // saber a cuál le falta imagen sin volver a preguntar.
+            $resumen['piezas'] = $p->piezas()->get()
+                ->map(static fn (KitPieza $z) => [
+                    'nombre' => $z->nombre,
+                    'tiene_foto' => $z->imagen !== null,
+                ])->all();
+            $resumen['componentes'] = $p->componentes()->get()
+                ->map(static fn (Producto $c) => ['id' => $c->id, 'nombre' => $c->nombre])->all();
+        }
+
+        return $resumen;
     }
 
     /** Contexto fijo del catálogo: se arma una vez y se mete al system prompt. */
