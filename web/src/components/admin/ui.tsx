@@ -339,6 +339,9 @@ export function Boton({
   tono?: TonoBoton;
   chico?: boolean;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  // Solo lo usa el tono de peligro; los demás no cambian al pasar por encima.
+  const [encima, setEncima] = useState(false);
+
   const base: CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
@@ -359,12 +362,27 @@ export function Boton({
   const tonos: Record<TonoBoton, CSSProperties> = {
     solido: { background: COLOR.tinta, color: "#FFF" },
     linea: { background: "transparent", borderColor: COLOR.linea, color: COLOR.tinta },
-    peligro: { background: "transparent", borderColor: "transparent", color: COLOR.peligro },
+    // EN GRIS, no en rojo. El "Borrar" de cada fila iba siempre encendido, y
+    // en una lista de veinticinco productos eso son veinticinco señales rojas
+    // llevándose la mirada hacia la única acción que no tiene deshacer. Se
+    // pone rojo al pasar por encima: cuando ya se está yendo hacia él.
+    peligro: {
+      background: "transparent",
+      borderColor: "transparent",
+      color: encima ? COLOR.peligro : COLOR.suave,
+    },
     plano: { background: "transparent", borderColor: "transparent", color: COLOR.suave },
   };
 
   return (
-    <button {...props} style={{ ...base, ...tonos[tono], ...props.style }}>
+    <button
+      {...props}
+      onMouseEnter={(e) => { setEncima(true); props.onMouseEnter?.(e); }}
+      onMouseLeave={(e) => { setEncima(false); props.onMouseLeave?.(e); }}
+      onFocus={(e) => { setEncima(true); props.onFocus?.(e); }}
+      onBlur={(e) => { setEncima(false); props.onBlur?.(e); }}
+      style={{ ...base, ...tonos[tono], ...props.style }}
+    >
       {children}
     </button>
   );
@@ -468,15 +486,19 @@ export function Flechas({
       disabled={bloqueada}
       title={dir === "up" ? "Subir" : "Bajar"}
       style={{
-        width: 28,
-        height: 24,
+        width: 22,
+        height: 16,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         border: "none",
         background: "transparent",
-        color: bloqueada ? "#D2CFCB" : COLOR.suave,
+        // Gris claro y no el gris del texto: son controles que hay que tener
+        // a mano pero que no se usan casi nunca, y repetidos en cada fila de
+        // una lista larga competían con los nombres.
+        color: bloqueada ? "#E2DFDB" : "#B8B4AF",
         cursor: bloqueada ? "default" : "pointer",
+        padding: 0,
       }}
     >
       {/* SVG y no el carácter ↑↓: ese cambia de grosor según la fuente del
@@ -493,19 +515,13 @@ export function Flechas({
     </button>
   );
 
+  // SIN caja alrededor. La llevaba —borde, esquinas redondeadas y fondo
+  // blanco—, y en una lista de veinticinco productos eso son veinticinco
+  // controles enmarcados peleando con los nombres. Sueltas y en gris claro
+  // se leen como lo que son: algo que está ahí si hace falta.
   return (
-    <div
-      style={{
-        display: "inline-flex",
-        flexDirection: "column",
-        border: `1px solid ${COLOR.linea}`,
-        borderRadius: 8,
-        overflow: "hidden",
-        background: COLOR.papel,
-      }}
-    >
+    <div style={{ display: "inline-flex", flexDirection: "column", flexShrink: 0 }}>
       {boton("up", onSubir, arribaBloqueada)}
-      <div style={{ height: 1, background: COLOR.linea }} />
       {boton("down", onBajar, abajoBloqueada)}
     </div>
   );

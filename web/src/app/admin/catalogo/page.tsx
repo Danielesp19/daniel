@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   listarCategorias,
@@ -36,6 +36,24 @@ const VITRINAS: { valor: ModoVitrina; texto: string }[] = [
   { valor: "bandas", texto: "Vertical — bandas a lo ancho, como servicios" },
 ];
 
+/**
+ * Un color por altura del árbol.
+ *
+ * Las tres alturas se veían casi iguales —filas blancas separadas por una
+ * raya de un píxel— y con una sección abierta había que leer con atención
+ * para saber de quién colgaba cada cosa. Ahora cada nivel tiene su barra y su
+ * fondo, así que la estructura se entiende de un vistazo, sin leer.
+ *
+ * Terracota para las secciones (es el acento de la marca en el sitio) y azul
+ * apagado para las subcategorías: dos tonos que se distinguen sin pelearse.
+ * Los productos van en blanco, que es lo que los deja ser el contenido y no
+ * otra carpeta más.
+ */
+const NIVEL = {
+  seccion: { barra: "#C67139", fondo: "#FBF5F0" },
+  subcategoria: { barra: "#4E7A8C", fondo: "#F1F6F8" },
+} as const;
+
 /** Los modos viejos, para poder nombrarlos en la lista de secciones. */
 const VITRINAS_VIEJAS: Record<string, string> = {
   grid: "Grilla de tarjetas (modo antiguo)",
@@ -55,11 +73,7 @@ export default function CatalogoAdmin() {
   const router = useRouter();
   const [categorias, setCategorias] = useState<AdminCategoria[]>([]);
   const [productos, setProductos] = useState<AdminProducto[]>([]);
-  // La navegación: null y null es la lista de secciones. Es un camino, no un
-  // conjunto de abiertas — se entra a un sitio a la vez, como en cualquier
-  // explorador de archivos.
-  const [enSeccion, setEnSeccion] = useState<number | null>(null);
-  const [enSubcategoria, setEnSubcategoria] = useState<number | null>(null);
+  const [abiertas, setAbiertas] = useState<Set<number>>(new Set());
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -79,6 +93,9 @@ export default function CatalogoAdmin() {
       setCategorias(cs);
       setProductos(ps);
       setError("");
+      // La primera vez se abre todo: con tres secciones, verlas cerradas
+      // obliga a un clic para saber qué hay.
+      setAbiertas((previas) => (previas.size === 0 ? new Set(cs.map((c) => c.id)) : previas));
     } catch (e) {
       if (e instanceof SesionVencida) {
         router.replace("/admin/login");
@@ -187,11 +204,206 @@ export default function CatalogoAdmin() {
     return <p style={{ color: COLOR.suave, fontSize: 14 }}>Cargando el catálogo…</p>;
   }
 
-  // Los dos formularios en hoja flotante. Van en una variable porque los tres
-  // niveles de la navegación terminan pintándolos igual, y repetirlos era
-  // garantía de que uno se quedara viejo.
-  const formularios = (
+  return (
     <>
+      <Cabecera
+        titulo="Catálogo"
+        bajada="Las secciones se dibujan en la página en este mismo orden, y los productos dentro de cada una también."
+      >
+        <Boton tono="solido" onClick={() => setCreandoCategoria(null)}>
+          + Sección
+        </Boton>
+      </Cabecera>
+
+      {error && (
+        <div style={{ marginBottom: 16 }}>
+          <Aviso>{error}</Aviso>
+        </div>
+      )}
+
+      <div style={{ display: "grid", gap: 14 }}>
+        {secciones.map((c, i) => {
+          const suyos = deLaCategoria(c.id);
+          const estantes = subcategoriasDe(c.id);
+          const abierta = abiertas.has(c.id);
+          const cuantos = suyos.length + estantes.reduce((n, sub) => n + deLaCategoria(sub.id).length, 0);
+
+          return (
+            <section
+              key={c.id}
+              style={{
+                background: COLOR.papel,
+                border: `1px solid ${COLOR.linea}`,
+                borderRadius: 12,
+                overflow: "hidden",
+              }}
+            >
+              {/* La cabecera de la sección va sobre fondo gris y con una barra
+                  de tinta a la izquierda. Antes las tres alturas —sección,
+                  subcategoría y producto— eran filas casi blancas separadas por
+                  una raya de un píxel, y con la sección abierta no se veía
+                  dónde terminaba una y empezaba la otra. La barra se pone
+                  ámbar si la sección está oculta: se nota de un vistazo, sin
+                  tener que leer el rótulo. */}
+              <header
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "14px 16px",
+                  background: NIVEL.seccion.fondo,
+                  // Ámbar si está oculta: se nota de un vistazo sin leer el
+                  // rótulo.
+                  borderLeft: `3px solid ${c.activa ? NIVEL.seccion.barra : COLOR.aviso}`,
+                }}
+              >
+                <Flechas
+                  onSubir={() => moverCategoria(secciones, i, -1)}
+                  onBajar={() => moverCategoria(secciones, i, 1)}
+                  arribaBloqueada={i === 0}
+                  abajoBloqueada={i === secciones.length - 1}
+                />
+
+                <button
+                  onClick={() =>
+                    setAbiertas((s) => {
+                      const n = new Set(s);
+                      if (n.has(c.id)) n.delete(c.id);
+                      else n.add(c.id);
+                      return n;
+                    })
+                  }
+                  style={{ flex: 1, minWidth: 0, textAlign: "left", border: "none", background: "none", cursor: "pointer", padding: 0 }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Punta abierta={abierta} />
+                    <span style={{ fontFamily: "var(--font-serif)", fontSize: 19 }}>{c.nombre}</span>
+                    {!c.activa && (
+                      <span style={{ ...rotulo, marginBottom: 0, color: COLOR.aviso }}>oculta</span>
+                    )}
+                  </div>
+                </button>
+
+                <Boton chico onClick={() => setProductoEnEdicion({ producto: null, categoriaId: c.id })}>
+                  + Producto
+                </Boton>
+                {/* Un kit es un producto más de la sección, solo que se arma
+                    con otro formulario: por eso se crea desde acá. */}
+                <Boton chico tono="plano" onClick={() => setProductoEnEdicion({ producto: null, categoriaId: c.id, kit: true })}>
+                  + Kit
+                </Boton>
+                <Boton chico tono="plano" onClick={() => setCreandoCategoria(c.id)}>
+                  + Subcategoría
+                </Boton>
+                <Boton chico tono="plano" onClick={() => setEditandoCategoria(c)}>
+                  Editar
+                </Boton>
+              </header>
+
+              {abierta && (
+                <div style={{ borderTop: `1px solid ${COLOR.linea}` }}>
+                  {cuantos === 0 && estantes.length === 0 && (
+                    <p style={{ margin: 0, padding: "14px 16px", fontSize: 13, color: COLOR.suave }}>
+                      Esta sección está vacía.{" "}
+                      <button
+                        onClick={() => quitarCategoria(c)}
+                        style={{ border: "none", background: "none", color: COLOR.peligro, cursor: "pointer", padding: 0, fontSize: 13 }}
+                      >
+                        Borrarla
+                      </button>
+                    </p>
+                  )}
+
+                  {/* Primero lo que cuelga directo de la sección: en la página
+                      también va arriba y sin subtítulo. */}
+                  {suyos.map((p, j) => (
+                    <FilaProducto
+                      key={p.id}
+                      producto={p}
+                      primera={j === 0}
+                      arribaBloqueada={j === 0}
+                      abajoBloqueada={j === suyos.length - 1}
+                      onSubir={() => moverProducto(c.id, j, -1)}
+                      onBajar={() => moverProducto(c.id, j, 1)}
+                      onEditar={() => setProductoEnEdicion({ producto: p, categoriaId: c.id })}
+                      onBorrar={() => quitarProducto(p)}
+                    />
+                  ))}
+
+                  {/* Y después cada estante, con su propia cabecera. */}
+                  {estantes.map((sub, k) => {
+                    const deEste = deLaCategoria(sub.id);
+
+                    return (
+                      <div key={sub.id} style={{ borderTop: `1px solid ${COLOR.linea}` }}>
+                        {/* La subcategoría cuelga de la sección: va sangrada y
+                            con una línea vertical que la ata a su madre, en vez
+                            de ser otra banda del mismo ancho. */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            padding: "10px 16px 10px 22px",
+                            marginLeft: 12,
+                            borderLeft: `3px solid ${sub.activa ? NIVEL.subcategoria.barra : COLOR.aviso}`,
+                            background: NIVEL.subcategoria.fondo,
+                          }}
+                        >
+                          <Flechas
+                            onSubir={() => moverCategoria(estantes, k, -1)}
+                            onBajar={() => moverCategoria(estantes, k, 1)}
+                            arribaBloqueada={k === 0}
+                            abajoBloqueada={k === estantes.length - 1}
+                          />
+
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ ...rotulo, marginBottom: 0 }}>Subcategoría</span>
+                              <span style={{ fontFamily: "var(--font-serif)", fontSize: 15 }}>{sub.nombre}</span>
+                              {!sub.activa && (
+                                <span style={{ ...rotulo, marginBottom: 0, color: COLOR.aviso }}>oculta</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <Boton chico onClick={() => setProductoEnEdicion({ producto: null, categoriaId: sub.id })}>
+                            + Producto
+                          </Boton>
+                          <Boton chico tono="plano" onClick={() => setEditandoCategoria(sub)}>
+                            Editar
+                          </Boton>
+                          {deEste.length === 0 && (
+                            <Boton chico tono="peligro" onClick={() => quitarCategoria(sub)}>
+                              Borrar
+                            </Boton>
+                          )}
+                        </div>
+
+                        {deEste.map((p, j) => (
+                          <FilaProducto
+                            key={p.id}
+                            producto={p}
+                            primera={false}
+                            sangrada
+                            arribaBloqueada={j === 0}
+                            abajoBloqueada={j === deEste.length - 1}
+                            onSubir={() => moverProducto(sub.id, j, -1)}
+                            onBajar={() => moverProducto(sub.id, j, 1)}
+                            onEditar={() => setProductoEnEdicion({ producto: p, categoriaId: sub.id })}
+                            onBorrar={() => quitarProducto(p)}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          );
+        })}
+      </div>
+
       {(creandoCategoria !== false || editandoCategoria) && (
         <FormularioCategoria
           categoria={editandoCategoria}
@@ -223,346 +435,6 @@ export default function CatalogoAdmin() {
         />
       )}
     </>
-  );
-
-  // Dónde estoy parado. null = la lista de secciones; con sección = adentro
-  // de ella; con las dos = adentro de una subcategoría.
-  const seccion = secciones.find((c) => c.id === enSeccion) ?? null;
-  const subcategoria = categorias.find((c) => c.id === enSubcategoria) ?? null;
-
-  if (cargando) {
-    return <p style={{ color: COLOR.suave, fontSize: 14 }}>Cargando el catálogo…</p>;
-  }
-
-  const avisoError = error && (
-    <div style={{ marginBottom: 16 }}>
-      <Aviso>{error}</Aviso>
-    </div>
-  );
-
-  // ── Nivel 3: los productos de una subcategoría ──────────────────────────
-  if (subcategoria && seccion) {
-    const suyos = deLaCategoria(subcategoria.id);
-
-    return (
-      <>
-        <Migas
-          pasos={[
-            { texto: "Catálogo", ir: () => { setEnSeccion(null); setEnSubcategoria(null); } },
-            { texto: seccion.nombre, ir: () => setEnSubcategoria(null) },
-          ]}
-          titulo={subcategoria.nombre}
-          oculta={!subcategoria.activa}
-        >
-          <Boton tono="solido" onClick={() => setProductoEnEdicion({ producto: null, categoriaId: subcategoria.id })}>
-            + Producto
-          </Boton>
-          <Boton tono="plano" onClick={() => setProductoEnEdicion({ producto: null, categoriaId: subcategoria.id, kit: true })}>
-            + Kit
-          </Boton>
-          <Boton tono="plano" onClick={() => setEditandoCategoria(subcategoria)}>Editar</Boton>
-        </Migas>
-
-        {avisoError}
-
-        <Lista vacia="Esta subcategoría no tiene productos todavía.">
-          {suyos.map((prod, i) => (
-            <FilaProducto
-              key={prod.id}
-              producto={prod}
-              primera={i === 0}
-              arribaBloqueada={i === 0}
-              abajoBloqueada={i === suyos.length - 1}
-              onSubir={() => moverProducto(subcategoria.id, i, -1)}
-              onBajar={() => moverProducto(subcategoria.id, i, 1)}
-              onEditar={() => setProductoEnEdicion({ producto: prod, categoriaId: subcategoria.id })}
-              onBorrar={() => quitarProducto(prod)}
-            />
-          ))}
-        </Lista>
-
-        {suyos.length === 0 && (
-          <BotonBorrar onClick={() => { quitarCategoria(subcategoria); setEnSubcategoria(null); }}>
-            Borrar esta subcategoría
-          </BotonBorrar>
-        )}
-
-        {formularios}
-      </>
-    );
-  }
-
-  // ── Nivel 2: lo que hay dentro de una sección ───────────────────────────
-  if (seccion) {
-    const estantes = subcategoriasDe(seccion.id);
-    const sueltos = deLaCategoria(seccion.id);
-
-    return (
-      <>
-        <Migas
-          pasos={[{ texto: "Catálogo", ir: () => setEnSeccion(null) }]}
-          titulo={seccion.nombre}
-          oculta={!seccion.activa}
-        >
-          <Boton tono="solido" onClick={() => setProductoEnEdicion({ producto: null, categoriaId: seccion.id })}>
-            + Producto
-          </Boton>
-          <Boton tono="plano" onClick={() => setProductoEnEdicion({ producto: null, categoriaId: seccion.id, kit: true })}>
-            + Kit
-          </Boton>
-          <Boton tono="plano" onClick={() => setCreandoCategoria(seccion.id)}>+ Subcategoría</Boton>
-          <Boton tono="plano" onClick={() => setEditandoCategoria(seccion)}>Editar</Boton>
-        </Migas>
-
-        {avisoError}
-
-        {/* Las subcategorías primero: son carpetas, y una carpeta se abre
-            antes de ponerse a mirar los papeles sueltos. */}
-        {estantes.length > 0 && (
-          <>
-            <h3 style={rotuloSeccion}>Subcategorías</h3>
-            <Lista>
-              {estantes.map((sub, i) => (
-                <FilaCarpeta
-                  key={sub.id}
-                  nombre={sub.nombre}
-                  activa={sub.activa}
-                  primera={i === 0}
-                  arribaBloqueada={i === 0}
-                  abajoBloqueada={i === estantes.length - 1}
-                  onSubir={() => moverCategoria(estantes, i, -1)}
-                  onBajar={() => moverCategoria(estantes, i, 1)}
-                  onAbrir={() => setEnSubcategoria(sub.id)}
-                />
-              ))}
-            </Lista>
-          </>
-        )}
-
-        {/* Y después lo que cuelga directo de la sección, que en la página
-            también va arriba y sin subtítulo. */}
-        {sueltos.length > 0 && (
-          <>
-            <h3 style={rotuloSeccion}>{estantes.length > 0 ? "Productos sueltos" : "Productos"}</h3>
-            <Lista>
-              {sueltos.map((prod, i) => (
-                <FilaProducto
-                  key={prod.id}
-                  producto={prod}
-                  primera={i === 0}
-                  arribaBloqueada={i === 0}
-                  abajoBloqueada={i === sueltos.length - 1}
-                  onSubir={() => moverProducto(seccion.id, i, -1)}
-                  onBajar={() => moverProducto(seccion.id, i, 1)}
-                  onEditar={() => setProductoEnEdicion({ producto: prod, categoriaId: seccion.id })}
-                  onBorrar={() => quitarProducto(prod)}
-                />
-              ))}
-            </Lista>
-          </>
-        )}
-
-        {estantes.length === 0 && sueltos.length === 0 && (
-          <>
-            <Lista vacia="Esta sección está vacía." />
-            <BotonBorrar onClick={() => { quitarCategoria(seccion); setEnSeccion(null); }}>
-              Borrar esta sección
-            </BotonBorrar>
-          </>
-        )}
-
-        {formularios}
-      </>
-    );
-  }
-
-  // ── Nivel 1: las secciones ──────────────────────────────────────────────
-  return (
-    <>
-      <Cabecera
-        titulo="Catálogo"
-        bajada="Las secciones se dibujan en la página en este mismo orden. Entra en una para ver lo que tiene adentro."
-      >
-        <Boton tono="solido" onClick={() => setCreandoCategoria(null)}>+ Sección</Boton>
-      </Cabecera>
-
-      {avisoError}
-
-      <Lista vacia="Todavía no hay secciones. Crea la primera con «+ Sección».">
-        {secciones.map((c, i) => (
-          <FilaCarpeta
-            key={c.id}
-            nombre={c.nombre}
-            activa={c.activa}
-            primera={i === 0}
-            grande
-            arribaBloqueada={i === 0}
-            abajoBloqueada={i === secciones.length - 1}
-            onSubir={() => moverCategoria(secciones, i, -1)}
-            onBajar={() => moverCategoria(secciones, i, 1)}
-            onAbrir={() => setEnSeccion(c.id)}
-          />
-        ))}
-      </Lista>
-
-      {formularios}
-    </>
-  );
-}
-
-/** El rótulo que separa las subcategorías de los productos sueltos. */
-const rotuloSeccion: CSSProperties = {
-  ...rotulo,
-  margin: "22px 0 8px",
-};
-
-/**
- * La caja blanca que envuelve una lista de filas.
- *
- * Con `vacia`, dice eso en vez de dibujar un marco sin nada adentro: una caja
- * vacía se lee como algo que no cargó.
- */
-function Lista({ children, vacia }: { children?: React.ReactNode; vacia?: string }) {
-  const hayAlgo = Array.isArray(children) ? children.length > 0 : Boolean(children);
-
-  return (
-    <div style={{ background: COLOR.papel, border: `1px solid ${COLOR.linea}`, borderRadius: 12, overflow: "hidden" }}>
-      {hayAlgo ? children : (
-        <p style={{ margin: 0, padding: "18px 16px", fontSize: 13.5, color: COLOR.suave }}>{vacia}</p>
-      )}
-    </div>
-  );
-}
-
-/**
- * La cabecera de adentro: por dónde vine, dónde estoy y qué puedo hacer acá.
- *
- * El camino de vuelta va arriba y en chico; el nombre del sitio donde estoy,
- * grande. Es el orden en que se lee: primero "¿dónde estoy?", y solo si me
- * equivoqué busco cómo volver.
- */
-function Migas({
-  pasos,
-  titulo,
-  oculta,
-  children,
-}: {
-  pasos: { texto: string; ir: () => void }[];
-  titulo: string;
-  oculta?: boolean;
-  children?: React.ReactNode;
-}) {
-  return (
-    <header style={{ marginBottom: 18 }}>
-      <nav style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, fontSize: 13 }}>
-        {pasos.map((paso, i) => (
-          <span key={paso.texto} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {i > 0 && <span style={{ color: COLOR.rotulo }}>/</span>}
-            <button
-              onClick={paso.ir}
-              style={{ border: "none", background: "none", padding: 0, cursor: "pointer", color: COLOR.suave, font: "inherit" }}
-            >
-              {i === 0 ? `← ${paso.texto}` : paso.texto}
-            </button>
-          </span>
-        ))}
-      </nav>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0, fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 400 }}>{titulo}</h2>
-        {oculta && <span style={{ ...rotulo, marginBottom: 0, color: COLOR.aviso }}>oculta</span>}
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>{children}</div>
-      </div>
-    </header>
-  );
-}
-
-/**
- * Una carpeta: una sección o una subcategoría. Se entra con un clic.
- *
- * NO dice cuántos productos tiene ni muestra su descripción. Ese recuento
- * llenaba la fila de un dato que no ayuda a decidir a cuál entrar —quien
- * administra busca por nombre— y la descripción es texto largo que empujaba
- * las filas al doble de alto.
- */
-function FilaCarpeta({
-  nombre,
-  activa,
-  primera,
-  grande = false,
-  arribaBloqueada,
-  abajoBloqueada,
-  onSubir,
-  onBajar,
-  onAbrir,
-}: {
-  nombre: string;
-  activa: boolean;
-  primera: boolean;
-  /** Las secciones van un punto más grandes que las subcategorías. */
-  grande?: boolean;
-  arribaBloqueada: boolean;
-  abajoBloqueada: boolean;
-  onSubir: () => void;
-  onBajar: () => void;
-  onAbrir: () => void;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: grande ? "14px 16px" : "12px 16px",
-        borderTop: primera ? "none" : `1px solid ${COLOR.linea}`,
-      }}
-    >
-      <Flechas onSubir={onSubir} onBajar={onBajar} arribaBloqueada={arribaBloqueada} abajoBloqueada={abajoBloqueada} />
-
-      {/* Toda la fila entra, no solo una flechita al final: es el gesto que
-          espera quien viene de cualquier explorador de archivos. */}
-      <button
-        onClick={onAbrir}
-        style={{
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          textAlign: "left",
-          border: "none",
-          background: "none",
-          cursor: "pointer",
-          padding: 0,
-          font: "inherit",
-          color: "inherit",
-        }}
-      >
-        <span style={{ fontFamily: "var(--font-serif)", fontSize: grande ? 19 : 16 }}>{nombre}</span>
-        {!activa && <span style={{ ...rotulo, marginBottom: 0, color: COLOR.aviso }}>oculta</span>}
-        <span style={{ marginLeft: "auto", color: COLOR.rotulo, fontSize: 18, lineHeight: 1 }}>›</span>
-      </button>
-    </div>
-  );
-}
-
-/** El borrar de una categoría vacía: suelto y abajo, lejos del resto. */
-function BotonBorrar({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        marginTop: 14,
-        border: "none",
-        background: "none",
-        color: COLOR.peligro,
-        cursor: "pointer",
-        padding: 0,
-        fontSize: 13,
-      }}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -619,8 +491,8 @@ function FilaProducto({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 12,
-          padding: "10px 16px",
+          gap: 10,
+          padding: "7px 16px",
           paddingLeft: sangrada ? 34 : 16,
           background: abierto ? COLOR.fondo : sangrada ? COLOR.papel : undefined,
         }}
@@ -657,10 +529,10 @@ function FilaProducto({
 
           <div
             style={{
-              width: 42,
-              height: 42,
+              width: 36,
+              height: 36,
               flexShrink: 0,
-              borderRadius: 8,
+              borderRadius: 7,
               background: COLOR.fondo,
               border: `1px solid ${COLOR.linea}`,
               overflow: "hidden",
