@@ -193,6 +193,25 @@ function normalizar(p: AdminProducto): AdminProducto {
 /** Se lanza cuando la sesión venció o el token dejó de servir. */
 export class SesionVencida extends Error {}
 
+/**
+ * El backend puede hacer la operación, pero quiere que se confirme antes:
+ * borrar una sede con inventario, borrar un producto que está dentro de un
+ * kit. Trae el motivo ya redactado y el detalle de qué se rompería.
+ *
+ * Es una clase y no un texto a propósito. Antes esto se detectaba buscando
+ * una palabra dentro del mensaje ("unidades"), así que bastaba con reescribir
+ * el aviso en el backend para que el panel dejara de ofrecer la confirmación
+ * —sin que fallara nada visible—.
+ */
+export class NecesitaConfirmacion extends Error {
+  readonly usos: Record<string, string[]>;
+
+  constructor(mensaje: string, usos: Record<string, string[]> = {}) {
+    super(mensaje);
+    this.usos = usos;
+  }
+}
+
 async function pedir<T>(ruta: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${ruta}`, init);
 
@@ -212,7 +231,13 @@ async function pedir<T>(ruta: string, init: RequestInit = {}): Promise<T> {
     const primero = json.errors
       ? (Object.values(json.errors as Record<string, string[]>)[0]?.[0] ?? null)
       : null;
-    throw new Error(primero ?? json.error ?? json.message ?? `Error ${res.status}`);
+    const mensaje = primero ?? json.error ?? json.message ?? `Error ${res.status}`;
+
+    if (json.necesita_confirmacion) {
+      throw new NecesitaConfirmacion(mensaje, json.usos ?? {});
+    }
+
+    throw new Error(mensaje);
   }
 
   return json as T;
@@ -273,8 +298,12 @@ export const editarProducto = (id: number, datos: FormData) => {
   }).then(normalizar);
 };
 
-export const borrarProducto = (id: number) =>
-  pedir<null>(`/productos/${id}`, { method: "DELETE", headers: cabeceras() });
+/** `confirmar` es necesario cuando el producto está dentro de un kit o lo usa una receta. */
+export const borrarProducto = (id: number, confirmar = false) =>
+  pedir<null>(`/productos/${id}${confirmar ? "?confirmar=1" : ""}`, {
+    method: "DELETE",
+    headers: cabeceras(),
+  });
 
 export const reordenarProductos = (ids: number[]) =>
   pedir<{ ok: boolean }>("/productos/reordenar", {

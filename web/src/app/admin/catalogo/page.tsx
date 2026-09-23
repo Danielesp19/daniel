@@ -11,6 +11,7 @@ import {
   reordenarCategorias,
   reordenarProductos,
   borrarProducto,
+  NecesitaConfirmacion,
   SesionVencida,
   type AdminCategoria,
   type AdminProducto,
@@ -163,6 +164,20 @@ export default function CatalogoAdmin() {
       await borrarProducto(p.id);
       cargar();
     } catch (e) {
+      // El producto puede estar dentro de un kit o ser el café de una receta.
+      // El backend no lo borra de una: dice dónde está enganchado y espera
+      // que se confirme, para que el kit no amanezca con una pieza menos sin
+      // que nadie se haya enterado.
+      if (e instanceof NecesitaConfirmacion) {
+        if (!confirm(`${e.message}\n\n¿Borrarlo de todos modos?`)) return;
+        try {
+          await borrarProducto(p.id, true);
+          cargar();
+        } catch (e2) {
+          setError(e2 instanceof Error ? e2.message : "No se pudo borrar");
+        }
+        return;
+      }
       setError(e instanceof Error ? e.message : "No se pudo borrar");
     }
   }
@@ -196,8 +211,32 @@ export default function CatalogoAdmin() {
           const cuantos = suyos.length + estantes.reduce((n, sub) => n + deLaCategoria(sub.id).length, 0);
 
           return (
-            <section key={c.id} style={{ background: COLOR.papel, border: `1px solid ${COLOR.linea}`, borderRadius: 12 }}>
-              <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px" }}>
+            <section
+              key={c.id}
+              style={{
+                background: COLOR.papel,
+                border: `1px solid ${COLOR.linea}`,
+                borderRadius: 12,
+                overflow: "hidden",
+              }}
+            >
+              {/* La cabecera de la sección va sobre fondo gris y con una barra
+                  de tinta a la izquierda. Antes las tres alturas —sección,
+                  subcategoría y producto— eran filas casi blancas separadas por
+                  una raya de un píxel, y con la sección abierta no se veía
+                  dónde terminaba una y empezaba la otra. La barra se pone
+                  ámbar si la sección está oculta: se nota de un vistazo, sin
+                  tener que leer el rótulo. */}
+              <header
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "14px 16px",
+                  background: COLOR.fondo,
+                  borderLeft: `3px solid ${c.activa ? COLOR.tinta : COLOR.aviso}`,
+                }}
+              >
                 <Flechas
                   onSubir={() => moverCategoria(secciones, i, -1)}
                   onBajar={() => moverCategoria(secciones, i, 1)}
@@ -216,13 +255,15 @@ export default function CatalogoAdmin() {
                   }
                   style={{ flex: 1, minWidth: 0, textAlign: "left", border: "none", background: "none", cursor: "pointer", padding: 0 }}
                 >
+                  <span style={{ ...rotulo, marginBottom: 3 }}>Sección</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Punta abierta={abierta} />
                     <span style={{ fontFamily: "var(--font-serif)", fontSize: 19 }}>{c.nombre}</span>
                     {!c.activa && (
                       <span style={{ ...rotulo, marginBottom: 0, color: COLOR.aviso }}>oculta</span>
                     )}
                   </div>
-                  <div style={{ marginTop: 2, fontSize: 12.5, color: COLOR.suave }}>
+                  <div style={{ marginTop: 2, marginLeft: 17, fontSize: 12.5, color: COLOR.suave }}>
                     {cuantos} {cuantos === 1 ? "producto" : "productos"}
                     {estantes.length > 0 &&
                       ` en ${estantes.length} ${estantes.length === 1 ? "subcategoría" : "subcategorías"}`}{" "}
@@ -284,8 +325,21 @@ export default function CatalogoAdmin() {
                     const deEste = deLaCategoria(sub.id);
 
                     return (
-                      <div key={sub.id} style={{ borderTop: `1px solid ${COLOR.linea}`, background: COLOR.fondo }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px" }}>
+                      <div key={sub.id} style={{ borderTop: `1px solid ${COLOR.linea}` }}>
+                        {/* La subcategoría cuelga de la sección: va sangrada y
+                            con una línea vertical que la ata a su madre, en vez
+                            de ser otra banda del mismo ancho. */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            padding: "10px 16px 10px 22px",
+                            marginLeft: 12,
+                            borderLeft: `2px solid ${COLOR.linea}`,
+                            background: COLOR.papel,
+                          }}
+                        >
                           <Flechas
                             onSubir={() => moverCategoria(estantes, k, -1)}
                             onBajar={() => moverCategoria(estantes, k, 1)}
@@ -294,6 +348,7 @@ export default function CatalogoAdmin() {
                           />
 
                           <div style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ ...rotulo, marginBottom: 3 }}>Subcategoría</span>
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               <span style={{ fontFamily: "var(--font-serif)", fontSize: 15 }}>{sub.nombre}</span>
                               {!sub.activa && (
@@ -406,70 +461,289 @@ function FilaProducto({
   onEditar: () => void;
   onBorrar: () => void;
 }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "10px 16px",
-        paddingLeft: sangrada ? 34 : 16,
-        borderTop: primera ? "none" : `1px solid ${COLOR.linea}`,
-        background: sangrada ? COLOR.papel : undefined,
-      }}
-    >
-      <Flechas
-        onSubir={onSubir}
-        onBajar={onBajar}
-        arribaBloqueada={arribaBloqueada}
-        abajoBloqueada={abajoBloqueada}
-      />
+  const [abierto, setAbierto] = useState(false);
 
+  // El desglose por sede solo vale la pena si el inventario está repartido.
+  const conStock = p.stock_por_sede.filter((s) => s.stock > 0);
+
+  const ficha: [string, string][] = [];
+  if (p.finca) ficha.push(["Finca", p.finca]);
+  if (p.productor) ficha.push(["Productor", p.productor]);
+  if (p.region) ficha.push(["Región", p.region]);
+  if (p.altitud_msnm) ficha.push(["Altura", `${p.altitud_msnm.toLocaleString("es-CO")} msnm`]);
+  if (p.variedad) ficha.push(["Variedad", p.variedad]);
+  if (p.proceso) ficha.push(["Proceso", p.proceso]);
+  if (p.tueste) ficha.push(["Tueste", p.tueste]);
+  if (p.puntaje_sca) ficha.push(["Puntaje SCA", String(p.puntaje_sca)]);
+  if (p.es_cafe && p.gramos > 0) ficha.push(["Peso", `${p.gramos} g`]);
+  if (p.controla_stock) ficha.push(["Avisar bajo", `${p.stock_minimo} u.`]);
+
+  return (
+    <div style={{ borderTop: primera ? "none" : `1px solid ${COLOR.linea}` }}>
       <div
         style={{
-          width: 42,
-          height: 42,
-          flexShrink: 0,
-          borderRadius: 8,
-          background: COLOR.fondo,
-          border: `1px solid ${COLOR.linea}`,
-          overflow: "hidden",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "10px 16px",
+          paddingLeft: sangrada ? 34 : 16,
+          background: abierto ? COLOR.fondo : sangrada ? COLOR.papel : undefined,
         }}
       >
-        {p.imagen_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.imagen_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        )}
+        <Flechas
+          onSubir={onSubir}
+          onBajar={onBajar}
+          arribaBloqueada={arribaBloqueada}
+          abajoBloqueada={abajoBloqueada}
+        />
+
+        {/* Todo lo que describe al producto abre la ficha; los botones de la
+            derecha siguen haciendo lo suyo. Antes había que abrir el formulario
+            entero —un modal— solo para recordar de qué finca era un café. */}
+        <button
+          onClick={() => setAbierto((v) => !v)}
+          aria-expanded={abierto}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            textAlign: "left",
+            border: "none",
+            background: "none",
+            cursor: "pointer",
+            padding: 0,
+            font: "inherit",
+            color: "inherit",
+          }}
+        >
+          <Punta abierta={abierto} />
+
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              flexShrink: 0,
+              borderRadius: 8,
+              background: COLOR.fondo,
+              border: `1px solid ${COLOR.linea}`,
+              overflow: "hidden",
+            }}
+          >
+            {p.imagen_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={p.imagen_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            )}
+          </div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 14, fontWeight: 500 }}>{p.nombre}</span>
+              {p.es_kit && <span style={{ ...rotulo, marginBottom: 0 }}>kit</span>}
+              {!p.activo && <span style={{ ...rotulo, marginBottom: 0, color: COLOR.aviso }}>oculto</span>}
+              {p.destacado && <span style={{ ...rotulo, marginBottom: 0 }}>destacado</span>}
+            </div>
+            <div style={{ marginTop: 2, fontSize: 12.5, color: COLOR.suave, fontFamily: "var(--font-mono)" }}>
+              ${p.precio_cop.toLocaleString("es-CO")}
+              {p.controla_stock ? (
+                <>
+                  {" · "}
+                  <span style={{ color: p.agotado ? COLOR.peligro : p.por_acabarse ? COLOR.aviso : COLOR.bien }}>
+                    {p.agotado ? "agotado" : `${p.stock} u.`}
+                  </span>
+                </>
+              ) : (
+                " · servicio"
+              )}
+            </div>
+          </div>
+        </button>
+
+        <Boton chico tono="plano" onClick={onEditar}>
+          Editar
+        </Boton>
+        <Boton chico tono="peligro" onClick={onBorrar}>
+          Borrar
+        </Boton>
       </div>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 14, fontWeight: 500 }}>{p.nombre}</span>
-          {!p.activo && <span style={{ ...rotulo, marginBottom: 0, color: COLOR.aviso }}>oculto</span>}
-          {p.destacado && <span style={{ ...rotulo, marginBottom: 0 }}>destacado</span>}
-        </div>
-        <div style={{ marginTop: 2, fontSize: 12.5, color: COLOR.suave, fontFamily: "var(--font-mono)" }}>
-          ${p.precio_cop.toLocaleString("es-CO")}
-          {p.controla_stock ? (
-            <>
-              {" · "}
-              <span style={{ color: p.agotado ? COLOR.peligro : p.por_acabarse ? COLOR.aviso : COLOR.bien }}>
-                {p.agotado ? "agotado" : `${p.stock} u.`}
-              </span>
-            </>
+      {abierto && (
+        <div
+          style={{
+            padding: "2px 16px 16px",
+            paddingLeft: sangrada ? 34 + 26 : 16 + 26,
+            background: COLOR.fondo,
+            display: "grid",
+            gap: 14,
+          }}
+        >
+          {p.descripcion ? (
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: COLOR.suave, maxWidth: 620 }}>
+              {p.descripcion}
+            </p>
           ) : (
-            " · servicio"
+            <p style={{ margin: 0, fontSize: 13, color: COLOR.rotulo, fontStyle: "italic" }}>
+              Sin descripción.
+            </p>
+          )}
+
+          {ficha.length > 0 && (
+            <div>
+              <span style={rotulo}>{p.es_cafe ? "Ficha de origen" : "Datos"}</span>
+              <dl
+                style={{
+                  margin: 0,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+                  gap: "8px 18px",
+                }}
+              >
+                {ficha.map(([clave, valor]) => (
+                  <div key={clave}>
+                    <dt style={{ fontSize: 11, color: COLOR.rotulo }}>{clave}</dt>
+                    <dd style={{ margin: 0, fontSize: 13, fontFamily: "var(--font-mono)" }}>{valor}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+
+          {p.notas.length > 0 && (
+            <div>
+              <span style={rotulo}>Notas de cata</span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {p.notas.map((n) => (
+                  <span
+                    key={n}
+                    style={{
+                      fontSize: 12,
+                      padding: "3px 9px",
+                      borderRadius: 999,
+                      background: COLOR.papel,
+                      border: `1px solid ${COLOR.linea}`,
+                    }}
+                  >
+                    {n}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* El total que se ve arriba no dice dónde están las unidades, y esa
+              es justo la pregunta cuando hay que despachar. */}
+          {p.controla_stock && (
+            <div>
+              <span style={rotulo}>Inventario por sede</span>
+              {conStock.length === 0 ? (
+                <p style={{ margin: 0, fontSize: 13, color: COLOR.peligro }}>Sin unidades en ninguna sede.</p>
+              ) : (
+                <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontFamily: "var(--font-mono)", fontSize: 13 }}>
+                  {conStock.map((s) => (
+                    <span key={s.sede}>
+                      {s.sede}: <strong style={{ fontWeight: 600 }}>{s.stock}</strong>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {(p.componentes.length > 0 || p.piezas.length > 0) && (
+            <div>
+              <span style={rotulo}>Qué trae adentro</span>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: COLOR.suave, lineHeight: 1.7 }}>
+                {p.componentes.map((c) => (
+                  <li key={`c${c.id}`}>{c.nombre}</li>
+                ))}
+                {/* Las piezas no se venden sueltas: se marcan para que no se
+                    confundan con los productos del catálogo que sí. */}
+                {p.piezas.map((z) => (
+                  <li key={`z${z.id}`}>
+                    {z.nombre}{" "}
+                    <span style={{ color: COLOR.rotulo, fontSize: 12 }}>
+                      — pieza{!z.imagen_url && ", sin foto"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {p.medios.length > 1 && (
+            <div>
+              <span style={rotulo}>
+                {p.medios.length} {p.medios.length === 1 ? "archivo" : "archivos"}
+              </span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {p.medios.map((m) => (
+                  <div
+                    key={m.id}
+                    style={{
+                      width: 46,
+                      height: 46,
+                      borderRadius: 6,
+                      overflow: "hidden",
+                      border: `1px solid ${COLOR.linea}`,
+                      background: COLOR.papel,
+                      position: "relative",
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={m.tipo === "video" ? (m.poster_url ?? "") : m.url}
+                      alt=""
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                    {m.tipo === "video" && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          display: "grid",
+                          placeItems: "center",
+                          background: "rgba(0,0,0,.35)",
+                          color: "#FFF",
+                          fontSize: 14,
+                        }}
+                      >
+                        ▶
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
-      </div>
-
-      <Boton chico tono="plano" onClick={onEditar}>
-        Editar
-      </Boton>
-      <Boton chico tono="peligro" onClick={onBorrar}>
-        Borrar
-      </Boton>
+      )}
     </div>
+  );
+}
+
+/**
+ * La puntita que gira: cerrada apunta a la derecha, abierta hacia abajo.
+ *
+ * Es lo único que le dice a quien mira que la fila se puede abrir. Sin ella el
+ * clic existía pero nadie lo encontraba.
+ */
+function Punta({ abierta }: { abierta: boolean }) {
+  return (
+    <svg
+      width="9"
+      height="9"
+      viewBox="0 0 10 10"
+      aria-hidden="true"
+      style={{
+        flexShrink: 0,
+        transform: abierta ? "rotate(90deg)" : "none",
+        transition: "transform .18s ease",
+        color: COLOR.rotulo,
+      }}
+    >
+      <path d="M3 1l5 4-5 4z" fill="currentColor" />
+    </svg>
   );
 }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Producto;
+use App\Models\Receta;
 use App\Models\Sede;
 use App\Support\ImageOptimizer;
 use App\Support\Sitio;
@@ -114,11 +115,31 @@ class ProductoAdminController extends Controller
     }
 
     /**
-     * Baja de producto. Se lleva también sus archivos: sin esto el disco se
-     * llena de fotos y videos de productos que ya nadie puede ver.
+     * Baja de producto.
+     *
+     * Un producto no vive solo: puede ir dentro de un kit, ser el café que
+     * recomienda una receta o el molino que esa receta usa. Todas esas
+     * referencias están en cascada, así que borrarlo las limpiaba EN SILENCIO
+     * —el kit amanecía con una pieza menos y nadie se enteraba hasta que un
+     * cliente abría la ficha—. Ahora se avisa qué se va a romper y se pide
+     * confirmación; con `confirmar` se procede.
+     *
+     * Se lleva también sus archivos: sin esto el disco se llena de fotos y
+     * videos de productos que ya nadie puede ver.
      */
-    public function destroy(Producto $producto)
+    public function destroy(Request $request, Producto $producto)
     {
+        $ataduras = $this->dondeSeUsa($producto);
+
+        if ($ataduras !== [] && ! $request->boolean('confirmar')) {
+            return response()->json([
+                'error' => "«{$producto->nombre}» ".$this->frase($ataduras)
+                    .' Si lo borras, desaparece de ahí también.',
+                'necesita_confirmacion' => true,
+                'usos' => $ataduras,
+            ], 422);
+        }
+
         foreach ($producto->medios as $medio) {
             Storage::disk('public')->delete($medio->ruta);
             if ($medio->poster) {
@@ -126,9 +147,89 @@ class ProductoAdminController extends Controller
             }
         }
 
+        // Las piezas se van solas por la cascada, pero sus imágenes no: sin
+        // esto quedaban ocupando disco para siempre, sin fila que las nombre.
+        foreach ($producto->piezas as $pieza) {
+            if ($pieza->imagen) {
+                Storage::disk('public')->delete($pieza->imagen);
+            }
+        }
+
         $producto->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Dónde está enganchado este producto, para poder avisarlo por su nombre.
+     *
+     * Devuelve algo como ['kits' => ['Kit V60'], 'recetas' => ['Chemex']].
+     * Vacío si no lo usa nadie.
+     *
+     * @return array<string, array<int, string>>
+     */
+    private function dondeSeUsa(Producto $producto): array
+    {
+        $usos = [];
+
+        // Kits que lo traen adentro. La relación inversa de `componentes`.
+        $kits = Producto::whereHas(
+            'componentes',
+            fn ($q) => $q->where('producto_componentes.componente_id', $producto->id),
+        )->pluck('nombre')->all();
+        if ($kits !== []) {
+            $usos['kits'] = $kits;
+        }
+
+        // Recetas que lo recomiendan como el café a usar. Esta referencia se
+        // pone en null al borrar, así que la receta sobrevive pero se queda
+        // sin su café.
+        $recetas = Receta::where('producto_id', $producto->id)->pluck('nombre')->all();
+        if ($recetas !== []) {
+            $usos['recetas'] = $recetas;
+        }
+
+        // Recetas que lo listan como artefacto (el molino, la prensa).
+        $artefactoDe = Receta::whereHas(
+            'artefactos',
+            fn ($q) => $q->where('receta_artefactos.producto_id', $producto->id),
+        )->pluck('nombre')->all();
+        if ($artefactoDe !== []) {
+            $usos['recetas_que_lo_usan'] = $artefactoDe;
+        }
+
+        return $usos;
+    }
+
+    /**
+     * Arma la frase del aviso a partir de los usos encontrados.
+     *
+     * En castellano corrido y no como una lista de claves: quien administra
+     * lee "está dentro del kit «Kit V60»", no "usos.kits: [Kit V60]".
+     *
+     * @param  array<string, array<int, string>>  $usos
+     */
+    private function frase(array $usos): string
+    {
+        $partes = [];
+
+        $comillas = static fn (array $nombres) => '«'.implode('», «', $nombres).'»';
+
+        if (isset($usos['kits'])) {
+            $partes[] = (count($usos['kits']) === 1 ? 'está dentro del kit ' : 'está dentro de los kits ')
+                .$comillas($usos['kits']);
+        }
+        if (isset($usos['recetas'])) {
+            $partes[] = 'es el café de la receta '.$comillas($usos['recetas']);
+        }
+        if (isset($usos['recetas_que_lo_usan'])) {
+            $partes[] = 'lo usa la receta '.$comillas($usos['recetas_que_lo_usan']);
+        }
+
+        // "a, b y c" — con la y antes del último, como se dice.
+        $ultimo = array_pop($partes);
+
+        return ($partes === [] ? $ultimo : implode(', ', $partes).' y '.$ultimo).'.';
     }
 
     /** Reordena los productos de una sección: llegan los ids en el orden deseado. */

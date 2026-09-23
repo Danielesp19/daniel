@@ -7,6 +7,7 @@ import {
   crearSede,
   editarSede,
   borrarSede,
+  NecesitaConfirmacion,
   SesionVencida,
   type AdminSede,
 } from "@/lib/admin-api";
@@ -57,7 +58,7 @@ export default function SedesAdmin() {
       // El backend pide confirmación aparte cuando la sede todavía tiene
       // inventario: perder esas unidades no puede pasar por un solo clic.
       const mensaje = e instanceof Error ? e.message : "No se pudo borrar";
-      if (mensaje.includes("unidades") && confirm(`${mensaje}\n\n¿Borrarla de todos modos?`)) {
+      if (e instanceof NecesitaConfirmacion && confirm(`${mensaje}\n\n¿Borrarla de todos modos?`)) {
         try {
           await borrarSede(s.id, true);
           cargar();

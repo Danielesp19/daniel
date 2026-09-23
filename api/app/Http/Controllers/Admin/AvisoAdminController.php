@@ -29,7 +29,12 @@ class AvisoAdminController extends Controller
             'titulo' => 'required|string|max:255',
             'texto' => 'sometimes|nullable|string|max:500',
             'cta_texto' => 'sometimes|nullable|string|max:60',
-            'cta_url' => 'sometimes|nullable|string|max:500',
+            // Enlace de verdad y solo http/https. Se pinta como href con
+            // target=_blank en la página pública, así que un "javascript:..."
+            // acá era un guion que se ejecutaba en el navegador de quien
+            // visitara el sitio. `url:http,https` descarta ese esquema y
+            // cualquier otro raro (data:, file:).
+            'cta_url' => 'sometimes|nullable|url:http,https|max:500',
             'activo' => 'sometimes|boolean',
         ]);
 

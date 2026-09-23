@@ -8,6 +8,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -29,25 +30,48 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         // Red de seguridad: si a algún endpoint admin se le escapa una
-        // violación de restricción única/foránea sin validar antes (como pasó
-        // con categorías duplicadas), que el usuario vea un mensaje claro en
-        // vez de un 500 genérico. La validación específica en el controller
-        // sigue siendo lo ideal (mejor mensaje); esto es el respaldo.
+        // violación de integridad sin validar antes, que el usuario vea un
+        // mensaje claro en vez de un 500 genérico. La validación específica en
+        // el controller sigue siendo lo ideal (mejor mensaje); esto es el
+        // respaldo.
         $exceptions->render(function (QueryException $e, Request $request) {
             if (! $request->is('api/*')) {
                 return null;
             }
 
-            // SQLSTATE 23000 = violación de restricción de integridad (única o
-            // foránea). El código es el mismo en MySQL, Postgres y SQLite —a
-            // diferencia del código numérico del driver, que varía entre ellos—
-            // así que basta este chequeo para cubrir los tres motores.
-            if ($e->getCode() === '23000') {
-                return response()->json([
-                    'error' => 'Ya existe un registro con esos datos.',
-                ], 422);
+            // La clase 23 de SQLSTATE es "violación de restricción de
+            // integridad". SE COMPARAN LOS DOS PRIMEROS CARACTERES Y NO EL
+            // CÓDIGO COMPLETO, que es donde estaba el error: SQLite y MySQL
+            // devuelven '23000' para todas, pero Postgres usa un código por
+            // cada tipo —23505 única, 23503 foránea, 23502 nulo— y ninguno de
+            // ellos es '23000'. En local (SQLite) la red atrapaba el caso y en
+            // producción (Postgres) lo dejaba pasar como 500, que es
+            // justamente donde se veía el error.
+            $sqlstate = (string) $e->getCode();
+
+            if (! str_starts_with($sqlstate, '23')) {
+                return null; // cualquier otro problema de base lo maneja Laravel
             }
 
-            return null; // deja que Laravel maneje cualquier otro caso normalmente
+            $mensaje = match (true) {
+                // Postgres nombra el tipo; SQLite y MySQL lo dicen en el texto.
+                $sqlstate === '23503',
+                str_contains($e->getMessage(), 'FOREIGN KEY'),
+                str_contains($e->getMessage(), 'foreign key') => 'No se puede hacer eso porque el registro '
+                    .'está siendo usado por otro. Quítalo de donde está antes de borrarlo.',
+
+                $sqlstate === '23502',
+                str_contains($e->getMessage(), 'NOT NULL'),
+                str_contains($e->getMessage(), 'not-null') => 'Falta un dato obligatorio.',
+
+                default => 'Ya existe un registro con esos datos.',
+            };
+
+            Log::warning('Violación de integridad servida como 422', [
+                'sqlstate' => $sqlstate,
+                'ruta' => $request->path(),
+            ]);
+
+            return response()->json(['error' => $mensaje], 422);
         });
     })->create();
