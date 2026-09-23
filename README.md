@@ -77,9 +77,9 @@ Los datos del negocio están centralizados; no hay que buscarlos por el código.
 | Contraseña del panel | `ADMIN_PASSWORD` (en el `.env` del sitio) |
 | Productos, precios y fotos reales | Desde el panel — el seeder trae datos de ejemplo |
 
-> **Los teléfonos son provisionales.** Todo apunta a `573222248487`, un número
-> de pruebas, mientras se consigue la línea de WhatsApp Business. Hay que
-> cambiarlo en `marca.ts` (o vía `NEXT_PUBLIC_WHATSAPP`).
+> **El WhatsApp de los pedidos es `573227323425`**, el número de Daniel. Vive
+> en `marca.ts` y se puede pisar con `NEXT_PUBLIC_WHATSAPP`; si esa variable
+> está puesta en el servidor, es la que manda.
 
 > El palmarés en `marca.ts` tiene **tres** logros (Nacional Arte Latte 2025 y
 > 2024, Reto 4V 2024). En el Instagram hay un cuarto que empieza por "Ranci…"

@@ -13,14 +13,16 @@ export const MARCA = {
   ciudad: "Pitalito, Huila",
 
   /**
-   * PROVISIONAL: número de pruebas mientras se consigue la línea de WhatsApp
-   * Business. Los pedidos que salgan del sitio llegan acá, así que hay que
-   * cambiarlo por el número real antes de publicar.
+   * El número de Daniel. Acá llegan los pedidos que salen del sitio.
    *
    * Formato internacional sin "+", sin espacios y sin guiones: es como lo
-   * espera wa.me.
+   * espera wa.me. El 57 es Colombia.
+   *
+   * La variable de entorno gana sobre esto, así que si en el servidor quedó
+   * puesto el número viejo, el sitio seguirá usando ese: hay que cambiarlo
+   * también allá (o quitarlo y dejar que mande este valor).
    */
-  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP ?? "573222248487",
+  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP ?? "573227323425",
 
   instagram: "https://www.instagram.com/danielbuitron.barista/",
   threads: "https://www.threads.com/@danielbuitron.barista",

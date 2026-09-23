@@ -25,7 +25,7 @@ class ContenidoSeeder extends Seeder
             'titulo' => 'Barra en vivo en la Feria del Café',
             'texto' => 'Del 12 al 14 de septiembre estoy en Pitalito preparando filtrados y mostrando arte latte. Entrada libre.',
             'cta_texto' => 'Quiero ir',
-            'cta_url' => 'https://wa.me/573222248487',
+            'cta_url' => 'https://wa.me/573227323425',
         ]);
 
         // Las recetas, en el orden en que se aprenden: primero los filtrados,

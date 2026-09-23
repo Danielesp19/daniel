@@ -251,7 +251,7 @@ class CatalogoSeeder extends Seeder
             'direccion' => 'Calle 8 # 5-42',
             'ciudad' => 'Neiva',
             'barrio' => 'Centro',
-            'whatsapp' => '573222248487',
+            'whatsapp' => '573227323425',
             'horario' => 'Lun a Sáb 7:00 a.m. – 8:00 p.m. · Dom 9:00 a.m. – 2:00 p.m.',
             'principal' => true,
             'orden' => 0,
@@ -262,7 +262,7 @@ class CatalogoSeeder extends Seeder
             'direccion' => 'Carrera 7 # 34-18',
             'ciudad' => 'Neiva',
             'barrio' => 'Las Ceibas',
-            'whatsapp' => '573222248488',
+            'whatsapp' => '573227323425',
             'horario' => 'Lun a Sáb 8:00 a.m. – 7:00 p.m.',
             'orden' => 1,
         ]);
@@ -272,7 +272,7 @@ class CatalogoSeeder extends Seeder
             'direccion' => 'Carrera 13 # 55-30',
             'ciudad' => 'Bogotá',
             'barrio' => 'Chapinero',
-            'whatsapp' => '573222248489',
+            'whatsapp' => '573227323425',
             'horario' => 'Mar a Dom 9:00 a.m. – 8:00 p.m.',
             'orden' => 2,
         ]);
