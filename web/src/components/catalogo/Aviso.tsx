@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import type { Aviso as AvisoDatos } from "@/lib/catalogo";
 
 /**
@@ -11,44 +8,21 @@ import type { Aviso as AvisoDatos } from "@/lib/catalogo";
  * y empujaba la página entera hacia abajo; acá aparece cuando el visitante ya
  * sabe dónde está.
  *
- * Se puede cerrar, y queda cerrada en ese navegador. La marca se guarda contra
- * el TEXTO del aviso y no contra su id: el panel edita siempre la misma fila,
- * así que un aviso nuevo reusa el id del anterior y quien ya había cerrado uno
- * no volvería a ver ninguno nunca más.
+ * NO SE PUEDE CERRAR, a propósito. Llevaba una equis que lo ocultaba y dejaba
+ * la marca en `localStorage` de ese navegador. El problema es para quién
+ * trabaja el aviso: es el único sitio donde el negocio anuncia algo con fecha
+ * —una feria el sábado, que no hay despachos esta semana— y quien lo cierra
+ * de un manotazo el lunes ya no se entera del aviso del jueves. Se quita
+ * desde el panel cuando deja de aplicar, que es quien sabe cuándo deja de
+ * aplicar.
  *
- * Nace oculto y aparece con un efecto al montar. Es a propósito: en el HTML
- * del servidor no se sabe si este visitante ya lo cerró, y pintarlo para
- * quitarlo un instante después empuja la página entera hacia arriba.
+ * Sin esa equis desaparecieron el estado, el efecto y la lectura de
+ * `localStorage`, así que esto volvió a ser un componente de servidor: llega
+ * pintado en el HTML en vez de aparecer un instante después del montaje,
+ * empujando la página.
  */
 export default function Aviso({ aviso }: { aviso: AvisoDatos | null }) {
-  const [visible, setVisible] = useState(false);
-
-  const firma = aviso ? `${aviso.titulo}|${aviso.texto ?? ""}` : "";
-
-  useEffect(() => {
-    if (!aviso) return;
-    try {
-      // localStorage no existe durante el render del servidor: si este
-      // visitante ya lo cerró solo se puede saber ya montados.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (localStorage.getItem("aviso-cerrado") !== firma) setVisible(true);
-    } catch {
-      // Sin acceso a localStorage (modo privado, permisos): se muestra. Un
-      // aviso de más molesta menos que uno que nunca aparece.
-      setVisible(true);
-    }
-  }, [aviso, firma]);
-
-  if (!aviso || !visible) return null;
-
-  const cerrar = () => {
-    setVisible(false);
-    try {
-      localStorage.setItem("aviso-cerrado", firma);
-    } catch {
-      // Si no se puede recordar, se cierra igual por esta visita.
-    }
-  };
+  if (!aviso) return null;
 
   return (
     <aside className="aviso-caja">
@@ -75,10 +49,6 @@ export default function Aviso({ aviso }: { aviso: AvisoDatos | null }) {
             {aviso.cta_texto}
           </a>
         )}
-
-        <button type="button" className="aviso-cerrar" onClick={cerrar} aria-label="Cerrar el aviso">
-          ✕
-        </button>
       </div>
     </aside>
   );

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { enlaceWhatsApp, MARCA } from "@/lib/marca";
 import IconoRed, { type Red } from "./IconoRed";
 import FondoBotanico from "./FondoBotanico";
+import Taza from "./Taza";
 
 /**
  * El video de portada y su primer cuadro.
@@ -193,10 +194,10 @@ export default function Hero() {
           que es lo que la despega del fondo. */}
       <div className="hero-barra">
         <a href="#hero" className="hero-marca">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M17 8h1a4 4 0 0 1 0 8h-1" />
-            <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z" />
-          </svg>
+          {/* La misma taza de la cabecera. Antes acá había otra —la genérica
+              de vaso para llevar— y las dos se veían a la vez al bajar la
+              página: dos tazas distintas para una sola marca. */}
+          <Taza />
           <span>{MARCA.nombre}</span>
         </a>
 

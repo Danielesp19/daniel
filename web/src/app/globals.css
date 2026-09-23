@@ -457,78 +457,184 @@ body {
   background: #0B0B0B;
 }
 
-/* ── El fondo: ramas de café grabadas ── */
+/* ── El fondo: ramas de café en las esquinas ──────────────────────────────
+   Geometría tomada del diseño "hero v final", que está dibujado sobre un
+   lienzo fijo de 1440. Acá no puede ser fija: todo se deriva de --rama, que
+   es el ancho de la rama de arriba, para que el conjunto conserve sus
+   proporciones desde un portátil hasta un monitor ancho. 22.9vw da los 330px
+   del diseño justo a 1440. */
 .hero-fondo {
+  --rama: clamp(210px, 22.9vw, 430px);
   position: absolute;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  /* El radial que sostiene todo: un marrón muy oscuro que se apaga hacia los
-     bordes. Sin él, el negro plano deja las ramas flotando. */
-  background: radial-gradient(120% 68% at 50% 16%, #19120E 0%, #0E0A09 48%, #060505 100%);
+  /* El radial que sostiene todo. Centrado y bajo (45 %), no arriba: el diseño
+     apoya la luz en el medio de la composición, donde está el medallón. */
+  background: radial-gradient(90% 80% at 50% 45%, #15100D 0%, #0A0908 55%, #050404 100%);
 }
 
-/* El lienzo de definiciones no ocupa sitio: solo guarda la rama para que las
-   cuatro esquinas la referencien con <use>. */
-.hero-defs { position: absolute; width: 0; height: 0; }
-
-/* Una rama por esquina, con tamaño propio. El diseño trae un solo SVG a
-   sangre sobre un lienzo de celular (448x860); recortado a una pantalla ancha,
-   ese dibujo se ampliaba hasta dejar una hoja del tamaño de media portada. Con
-   una rama por esquina el grabado conserva su escala en cualquier ventana. */
+/* El marco de cada esquina: no dibuja nada, solo se mece. Pivota desde su
+   propia esquina para que la rama parezca colgar de fuera del encuadre. */
 .hero-rama {
   position: absolute;
-  width: clamp(190px, 26vw, 340px);
-  height: auto;
-  color: #E8D5BD;
-  overflow: visible;
-}
-/* Se mecen con tiempos distintos para que no vayan a compás: a la vez se lee
-   como un GIF, desfasadas se lee como aire. Cada esquina es la de arriba a la
-   izquierda, reflejada. */
-.hero-rama-a { top: 0; left: 0; opacity: .48; animation: heroMece1 19s ease-in-out infinite; }
-.hero-rama-b { top: 0; right: 0; opacity: .42; transform: scaleX(-1); animation: heroMece2 23s ease-in-out infinite; }
-.hero-rama-c { bottom: 0; left: 0; opacity: .40; transform: scaleY(-1); animation: heroMece2 21s ease-in-out infinite; }
-.hero-rama-d { bottom: 0; right: 0; opacity: .36; transform: scale(-1); animation: heroMece1 25s ease-in-out infinite; }
-
-/* El vaivén va en `rotate`/`translate` propios y NO en `transform`, que ya lo
-   usa cada esquina para reflejarse: si la animación lo escribiera, el reflejo
-   se perdería a medio ciclo. */
-@keyframes heroMece1 {
-  0%, 100% { rotate: -1.2deg; translate: 0 0; }
-  50%      { rotate: 1.4deg; translate: 0 -8px; }
-}
-@keyframes heroMece2 {
-  0%, 100% { rotate: 1deg; translate: 0 0; }
-  50%      { rotate: -1.6deg; translate: 0 6px; }
+  width: var(--rama);
+  opacity: .4;
 }
 
-/* El halo cálido va detrás del medallón: es lo que lo despega del fondo sin
-   tener que ponerle un borde. */
+/* El dibujo. Va como máscara y no como <img>: el archivo es de un solo color
+   con todo el trazo en el alfa, así que guardando solo ese canal pesa 42 KB
+   en vez de 445 KB — y el color vuelve a decidirse acá. */
+.hero-rama-dibujo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 594 / 921;
+  background-color: #E8D5BD;
+  -webkit-mask: url(/rama-cafe.webp) no-repeat center / contain;
+  mask: url(/rama-cafe.webp) no-repeat center / contain;
+}
+
+/* Las dos de arriba cuelgan de las esquinas superiores, mordiendo el borde. */
+.hero-rama-a {
+  top: calc(var(--rama) * -.09);
+  left: calc(var(--rama) * -.09);
+  transform-origin: 0% 0%;
+  animation: brisa 9s ease-in-out infinite;
+}
+.hero-rama-b {
+  top: calc(var(--rama) * -.09);
+  right: calc(var(--rama) * -.09);
+  transform-origin: 100% 0%;
+  animation: brisaB 11s ease-in-out -3s infinite;
+}
+.hero-rama-b .hero-rama-dibujo { transform: scale(-1, 1); }
+
+/* Las de abajo son la misma ilustración acostada. El marco es más ancho que
+   alto y el dibujo va girado un cuarto de vuelta dentro de él: así la rama
+   entra desde el lado y no desde abajo, que es como se ve en el diseño. */
+.hero-rama-c,
+.hero-rama-d {
+  width: calc(var(--rama) * 1.394);
+  height: calc(var(--rama) * .909);
+}
+.hero-rama-c {
+  bottom: calc(var(--rama) * -.09);
+  left: calc(var(--rama) * -.09);
+  transform-origin: 0% 100%;
+  animation: brisaB 10s ease-in-out -5s infinite;
+}
+.hero-rama-d {
+  bottom: calc(var(--rama) * -.09);
+  right: calc(var(--rama) * -.09);
+  transform-origin: 100% 100%;
+  animation: brisa 12s ease-in-out -7s infinite;
+}
+.hero-rama-c .hero-rama-dibujo,
+.hero-rama-d .hero-rama-dibujo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--rama) * .909);
+  margin-left: calc(var(--rama) * -.4545);
+  margin-top: calc(var(--rama) * -.697);
+}
+.hero-rama-c .hero-rama-dibujo { transform: rotate(-90deg); }
+.hero-rama-d .hero-rama-dibujo { transform: scaleX(-1) rotate(-90deg); }
+
+/* El vaivén. Dos compases: uno con un punto de quiebre asimétrico y algo de
+   cizalla, que es lo que hace que la hoja parezca doblarse y no solo girar, y
+   otro más simple para alternar. Los retrasos negativos de arriba los
+   desfasan; si arrancaran juntas se leerían como un bucle. */
+@keyframes brisa {
+  0%, 100% { transform: rotate(0deg) skewX(0deg); }
+  20%      { transform: rotate(1.8deg) skewX(-1deg); }
+  35%      { transform: rotate(-.6deg) skewX(.6deg); }
+  55%      { transform: rotate(2.6deg) skewX(-1.4deg); }
+  75%      { transform: rotate(.4deg) skewX(.3deg); }
+}
+@keyframes brisaB {
+  0%, 100% { transform: rotate(0deg); }
+  30%      { transform: rotate(-2.2deg); }
+  50%      { transform: rotate(.8deg); }
+  70%      { transform: rotate(-1.4deg); }
+}
+
+/* El halo cálido: detrás del medallón, a la derecha del centro, que es donde
+   lo pone el diseño en escritorio. No parpadea — el latido que tenía antes no
+   está en el diseño y competía con el movimiento de las ramas. */
 .hero-halo-calido {
   position: absolute;
-  top: -16%;
-  left: 50%;
-  width: 520px;
-  height: 520px;
-  margin-left: -260px;
+  top: 50%;
+  left: 66%;
+  width: min(760px, 53vw);
+  aspect-ratio: 1;
+  translate: -50% -50%;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(198,113,57,.26) 0%, rgba(198,113,57,.07) 46%, rgba(198,113,57,0) 72%);
-  animation: heroBrilla 14s ease-in-out infinite;
-}
-@keyframes heroBrilla {
-  0%, 100% { opacity: .55; transform: scale(1); }
-  50%      { opacity: .85; transform: scale(1.06); }
+  background: radial-gradient(circle, rgba(198,113,57,.2) 0%, rgba(198,113,57,.05) 48%, rgba(198,113,57,0) 72%);
 }
 
-.hero-halo-hoja {
-  position: absolute;
-  bottom: -20%;
-  left: -24%;
-  width: 420px;
-  height: 420px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(122,138,94,.18) 0%, rgba(122,138,94,0) 70%);
+/* El verde hoja es solo de celular: en escritorio el diseño deja un único
+   halo y este ensuciaba la esquina donde entra la rama. */
+.hero-halo-hoja { display: none; }
+
+/* ── Celular ──────────────────────────────────────────────────────────────
+   El diseño cambia de verdad acá, no solo de tamaño: quedan dos ramas en vez
+   de cuatro, la de arriba baja para no chocar con la barra, y la de abajo se
+   voltea en vez de acostarse. */
+@media (max-width: 899px) {
+  .hero-fondo {
+    /* Más grandes que en el diseño (que las deja en 214px sobre 390): en una
+       pantalla de mano las ramas quedaban tímidas contra el titular, y el
+       grabado necesita tamaño para que se lean las nervaduras y las cerezas
+       en vez de una mancha. */
+    --rama: clamp(190px, 66vw, 290px);
+    background: radial-gradient(120% 60% at 50% 30%, #15100D 0%, #0A0908 55%, #050404 100%);
+  }
+
+  /* Cuatro ramas en 390 px de ancho no dejan sitio para el titular. */
+  .hero-rama-a,
+  .hero-rama-d { display: none; }
+
+  .hero-rama-b {
+    top: calc(var(--rama) * .234);
+    right: calc(var(--rama) * -.112);
+  }
+
+  .hero-rama-c {
+    width: var(--rama);
+    height: auto;
+    bottom: calc(var(--rama) * -.112);
+    left: calc(var(--rama) * -.112);
+    animation-duration: 11s;
+    animation-delay: -6s;
+  }
+  /* Acá no va acostada sino volteada de arriba abajo: la rama entra desde el
+     pie de la pantalla. */
+  .hero-rama-c .hero-rama-dibujo {
+    position: static;
+    width: 100%;
+    margin: 0;
+    transform: scale(1, -1);
+  }
+
+  .hero-halo-calido {
+    top: 120px;
+    left: 50%;
+    width: min(460px, 118vw);
+    translate: -50% 0;
+    background: radial-gradient(circle, rgba(198,113,57,.18) 0%, rgba(198,113,57,0) 68%);
+  }
+
+  .hero-halo-hoja {
+    display: block;
+    position: absolute;
+    bottom: -140px;
+    left: -160px;
+    width: 440px;
+    height: 440px;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(122,138,94,.13) 0%, rgba(122,138,94,0) 70%);
+  }
 }
 
 .hero-velo {
@@ -569,7 +675,19 @@ body {
   text-decoration: none;
 }
 /* La taza en el cereza de la marca: es el único color de la barra. */
-.hero-marca svg { flex-shrink: 0; width: clamp(22px, 2vw, 28px); height: clamp(22px, 2vw, 28px); color: #C67139; }
+/* La misma taza de la cabecera, pero acá va más grande y en el naranja de la
+   marca: la barra de la portada es blanca sobre una escena oscura y el icono
+   tiene que aguantar ese contraste. El dibujo no se repite — vive en Taza.tsx
+   y cada sitio le pone su tamaño y su color. */
+.hero-marca .marca-taza {
+  flex-shrink: 0;
+  width: clamp(22px, 2vw, 28px);
+  height: clamp(22px, 2vw, 28px);
+  color: #C67139;
+}
+/* El vapor sube al pasar el mouse, igual que en la cabecera. La regla de allá
+   cuelga de `.marca`, que acá no existe. */
+.hero-marca:hover .marca-vapor { opacity: .75; animation: marcaVapor 2.4s ease-in-out infinite; }
 .hero-marca span {
   font-family: var(--font-serif);
   font-size: clamp(17px, 1.7vw, 22px);
@@ -626,7 +744,18 @@ body {
   /* En mayúsculas como el resto de los rótulos del sitio: el epígrafe llega
      del panel en minúscula y ahí lo aplica la clase, acá hay que decirlo. */
   text-transform: uppercase;
-  fill: rgba(255, 255, 255, .42);
+  fill: rgba(255, 255, 255, .62);
+  /* El texto gira por el borde del medallón, justo donde el video todavía no
+     se ha apagado del todo: sobre la leche —que es lo más claro de la escena—
+     la crema clara contra el blanco no se leía. Con `paint-order` el trazo se
+     pinta ANTES que el relleno, así que cada letra queda con su propia sombra
+     oscura pegada al contorno. Oscurece solo donde hace falta, sin meter un
+     anillo alrededor del video: los anillos ya se habían probado y no
+     gustaron. */
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, .62);
+  stroke-width: 1.1px;
+  stroke-linejoin: round;
 }
 @keyframes heroOrbita { to { transform: rotate(360deg); } }
 
@@ -1392,7 +1521,6 @@ body {
 
 /* La sede sin unidades se apaga pero NO se esconde: saber dónde no hay evita
    el viaje en vano, que es justo lo que este bloque viene a resolver. */
-.sede-agotada { opacity: 0.55; }
 
 .sede-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
@@ -1410,37 +1538,9 @@ body {
 .sedes-oscuro .sede-dato { color: rgba(255, 255, 255, 0.62); }
 
 /* La ficha del número: es el ancla visual de toda la fila. */
-.sede-stock {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  min-width: 62px;
-  padding: 7px 10px;
-  border: 1px solid var(--color-linea);
-  border-radius: 10px;
-  background: var(--color-fondo);
-  text-align: center;
-}
-.seccion-oscura .sede-stock,
-.sedes-oscuro .sede-stock { border-color: rgba(255, 255, 255, 0.16); background: rgba(255, 255, 255, 0.06); }
 
-.sede-stock-cifra { font-size: 21px; line-height: 1; }
-.sede-stock-unidad,
-.sede-stock-agotado {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-rotulo);
-}
-.sedes-oscuro .sede-stock-unidad,
-.sedes-oscuro .sede-stock-agotado { color: rgba(255, 255, 255, 0.6); }
 /* La agotada no lleva número: la ficha se queda con la palabra sola, más baja,
    para que la fila con stock resalte al lado. */
-.sede-agotada .sede-stock { padding-block: 11px; }
 
 /* ─── Cortina de entrada: la rosetta ────────────────────────────────────────
    Entra la taza, sale el vapor y la rosetta se arma pétalo por pétalo. La forma
@@ -1987,21 +2087,6 @@ body {
 }
 .aviso-boton:hover { transform: translateY(-2px); background: #F0EAE0; color: var(--color-tinta); }
 
-.aviso-cerrar {
-  position: relative;
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 50%;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background .2s ease, color .2s ease, border-color .2s ease;
-}
-.aviso-cerrar:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255,255,255,0.4); color: #FFF; }
-
 /* ─── Recetas ───────────────────────────────────────────────────────────────
    Un riel horizontal por método y la receta completa en hoja flotante. Es la
    única sección que no vende nada: enseña, y por eso va al final. */
@@ -2519,7 +2604,8 @@ body {
   /* El vapor de la taza sube en bucle y el nombre se corre al pasar el mouse:
      los dos se quedan quietos. */
   .marca:hover .marca-nombre { transform: none; }
-  .marca:hover .marca-vapor { animation: none; }
+  .marca:hover .marca-vapor,
+  .hero-marca:hover .marca-vapor { animation: none; }
   .aviso-punto { opacity: 1; }
   .tarjeta .tesela::after { display: none; }
 
