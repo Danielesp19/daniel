@@ -1,51 +1,63 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 /**
- * Referencia de molienda a tamaño real, dentro de la receta.
+ * Referencia de molienda, dentro de la receta.
  *
  * El error más común preparando café en casa es la molienda, y no hay forma de
  * describirla con palabras: "medio" no significa lo mismo en dos molinos. Esto
- * la muestra al tamaño que tiene de verdad, para poner los granos al lado de la
- * pantalla y comparar.
+ * la muestra dibujada, con las cinco al lado para compararlas entre sí, y cada
+ * una comparada con algo que ya está en la cocina.
  *
- * Va DENTRO de la receta y no como un bloque suelto al final de la sección: la
- * molienda no es una duda general, es la primera decisión de esa preparación
- * concreta. La receta llega con la suya marcada —la que puso Daniel al
- * escribirla— y quien la lee puede tocar las demás para ver en qué se
- * diferencian.
+ * ANTES ESTO PEDÍA UNA REGLA. Dibujaba los granos a tamaño físico real, y como
+ * un navegador no sabe cuánto mide su propia pantalla, había que calibrarla:
+ * poner una regla contra el monitor y arrastrar un control hasta que una barra
+ * midiera cinco centímetros. Era preciso y nadie lo iba a hacer — y quien no
+ * lo hacía veía una muestra con hasta un 30 % de error creyendo que era
+ * exacta, que es peor que no tener la guía.
  *
- * EL PROBLEMA: un navegador no sabe cuánto mide físicamente su propia pantalla.
- * El píxel CSS es una unidad relativa y la relación con el milímetro cambia
- * entre un celular y un monitor. Estimarla sale mal —el error pasa del 30 %— y
- * en una guía de molienda eso es peor que no tenerla.
+ * AHORA LA ESCALA ES COMPARATIVA. Los cinco discos guardan entre sí la misma
+ * proporción que en la vida real —la gruesa es cuatro veces la fina, y se
+ * nota— pero no pretenden medir nada en la pantalla de nadie. Lo que ancla el
+ * tamaño es la comparación con la sal o el azúcar: eso lo tiene cualquiera a
+ * mano y no cambia de un teléfono a otro.
  *
- * LA SALIDA: que calibre el usuario, una sola vez, con una regla de verdad.
- * Ajusta la barra hasta que mida 5 cm y de ahí sale cuántos píxeles hay en un
- * milímetro. Se calibra con 5 cm y no con 1 mm —que es la medida que importa—
- * porque el error de apreciación se reparte entre cincuenta milímetros en vez
- * de caer entero sobre uno.
+ * El calibre queda escrito en milímetros, que es la unidad en la que se habla
+ * de molienda. En milímetros y no en pulgadas porque estas van de 0,25 a 1 mm:
+ * en pulgadas saldrían números como 0,01", que no le dicen nada a nadie.
  */
 
-/** Píxeles CSS por milímetro en una pantalla de 96 ppp: el punto de partida. */
-const PX_POR_MM_ESTANDAR = 96 / 25.4;
+/**
+ * Cuántos píxeles se dibuja un milímetro de café.
+ *
+ * Es una escala de lectura, NO una medida: sirve para que los cinco discos se
+ * comparen entre sí, no para poner la pantalla al lado del molino. A este
+ * valor la gruesa se lee como un puñado de piedritas y la fina como polvo,
+ * que es la diferencia que hay que entender; más alto, la gruesa quedaba en
+ * tres bloques y parecía otra cosa.
+ */
+const PX_POR_MM = 10;
 
-const LLAVE = "altura:px-por-mm";
+/** La misma escala, agrandada, para la muestra del detalle. */
+const PX_POR_MM_GRANDE = 17;
 
 /**
- * Los cinco puntos de molienda, en micrones. Mil micrones son un milímetro:
- * es la equivalencia que pidió el cliente que quedara explícita.
+ * Los cinco puntos de molienda. `micras` es el calibre del grano.
+ *
+ * Cada uno va con algo de la cocina al lado. Es como se enseña la molienda en
+ * cualquier barra, y es lo único que funciona sin instrumentos: quien tiene
+ * dudas abre el cajón de la sal y compara.
  *
  * Son los mismos cinco que ofrece el panel al escribir una receta, así que la
  * recomendación siempre cae en uno de estos discos.
  */
 const MOLIENDAS = [
-  { micras: 1000, nombre: "Gruesa", para: "Prensa francesa · cold brew" },
-  { micras: 800, nombre: "Media gruesa", para: "Chemex" },
-  { micras: 600, nombre: "Media", para: "V60 · goteo" },
-  { micras: 400, nombre: "Media fina", para: "Moka · aeropress" },
-  { micras: 250, nombre: "Fina", para: "Espresso" },
+  { micras: 1000, mm: "1 mm", nombre: "Gruesa", como: "Como sal marina gruesa", para: "Prensa francesa · cold brew" },
+  { micras: 800, mm: "0,8 mm", nombre: "Media gruesa", como: "Como arena de playa", para: "Chemex" },
+  { micras: 600, mm: "0,6 mm", nombre: "Media", como: "Como azúcar común", para: "V60 · goteo" },
+  { micras: 400, mm: "0,4 mm", nombre: "Media fina", como: "Como sal de mesa", para: "Moka · aeropress" },
+  { micras: 250, mm: "0,25 mm", nombre: "Fina", como: "Como azúcar pulverizada", para: "Espresso" },
 ] as const;
 
 /**
@@ -94,16 +106,15 @@ const GRANOS = (() => {
 const TONOS = ["#33200F", "#4B2F1A", "#6B4526"] as const;
 
 /**
- * Una muestra de café molido dibujada a tamaño real.
+ * Una muestra de café molido.
  *
  * Los granos no son círculos: llevan un `border-radius` de cuatro esquinas
  * distintas y un giro propio, que es lo que los hace ver partidos y no
- * fabricados. Cuanto más fina la molienda, más granos caben —y eso también es
- * cierto en la taza—.
+ * fabricados. Cuanto más fina la molienda, más granos caben — y eso también es
+ * cierto en la taza.
  */
-function Muestra({ micras, escala, grande = false }: { micras: number; escala: number; grande?: boolean }) {
-  // Micrones → milímetros → píxeles de esta pantalla.
-  const diametro = (micras / 1000) * escala;
+function Muestra({ micras, grande = false }: { micras: number; grande?: boolean }) {
+  const diametro = (micras / 1000) * (grande ? PX_POR_MM_GRANDE : PX_POR_MM);
 
   // Una molienda fina se ve como polvo denso y una gruesa como piedritas
   // sueltas: a igual cantidad de café, cuanto más fino más partículas. La
@@ -134,84 +145,17 @@ function Muestra({ micras, escala, grande = false }: { micras: number; escala: n
 }
 
 export default function Molienda({ recomendada = null }: { recomendada?: number | null }) {
-  const [pxPorMm, setPxPorMm] = useState(PX_POR_MM_ESTANDAR);
-  const [calibrando, setCalibrando] = useState(false);
-  const [listo, setListo] = useState(false);
-
   // Arranca en la molienda de la receta. Sin recomendación, en la media, que es
   // el punto del que se sale para los dos lados.
-  const [elegida, setElegida] = useState<number>(
-    recomendada ?? MOLIENDAS[2].micras,
-  );
+  const [elegida, setElegida] = useState<number>(recomendada ?? MOLIENDAS[2].micras);
 
-  useEffect(() => {
-    // La calibración es de esta pantalla, así que vive en el navegador y no en
-    // la base: la misma persona en el celular y en el computador necesita dos
-    // valores distintos.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setListo(true);
-    try {
-      const guardado = Number(localStorage.getItem(LLAVE));
-      if (Number.isFinite(guardado) && guardado > 0) setPxPorMm(guardado);
-    } catch {
-      // Modo incógnito o almacenamiento bloqueado: se queda con el estándar.
-    }
-  }, []);
-
-  const guardar = (valor: number) => {
-    setPxPorMm(valor);
-    try {
-      localStorage.setItem(LLAVE, String(valor));
-    } catch {
-      // Si no se puede guardar, la calibración vale para esta visita y ya.
-    }
-  };
-
-  // Hasta que el efecto lea el almacenamiento se dibuja con el estándar; sin
-  // esto el primer pintado del servidor y el del navegador no coinciden.
-  const escala = listo ? pxPorMm : PX_POR_MM_ESTANDAR;
   const actual = MOLIENDAS.find((m) => m.micras === elegida) ?? MOLIENDAS[2];
 
   return (
     <section className="molienda">
       <div className="molienda-cabeza">
         <span className="rotulo">Molienda</span>
-        <button type="button" className="molienda-calibrar-boton" onClick={() => setCalibrando((v) => !v)}>
-          {calibrando ? "Listo" : "Calibrar pantalla"}
-        </button>
       </div>
-
-      {calibrando && (
-        <div className="molienda-calibrar">
-          <p className="molienda-instruccion">
-            Pon una regla contra la pantalla y mueve el control hasta que esta barra mida
-            exactamente <strong>5 centímetros</strong>.
-          </p>
-
-          <div className="molienda-regla" style={{ width: `${50 * escala}px` }}>
-            {/* Las marcas de cada centímetro dan una segunda forma de acertar:
-                si las rayas caen sobre los números de la regla, está bien. */}
-            {[1, 2, 3, 4].map((cm) => (
-              <span key={cm} style={{ left: `${cm * 20}%` }} />
-            ))}
-            <span className="molienda-regla-texto">5 cm</span>
-          </div>
-
-          <input
-            type="range"
-            min={2}
-            max={12}
-            step={0.05}
-            value={escala}
-            onChange={(e) => guardar(Number(e.target.value))}
-            aria-label="Calibrar el tamaño de la pantalla"
-          />
-
-          <button type="button" className="molienda-calibrar-boton" onClick={() => guardar(PX_POR_MM_ESTANDAR)}>
-            Volver al valor por defecto
-          </button>
-        </div>
-      )}
 
       {/* Los cinco puntos, redondos y del tamaño de un botón para el dedo. El
           de la receta va marcado; tocar otro cambia la muestra grande. */}
@@ -229,7 +173,7 @@ export default function Molienda({ recomendada = null }: { recomendada?: number 
                 onClick={() => setElegida(m.micras)}
                 title={esLaDeLaReceta ? `${m.nombre} — la de esta receta` : m.nombre}
               >
-                <Muestra micras={m.micras} escala={escala} />
+                <Muestra micras={m.micras} />
                 <span className="molienda-opcion-nombre">{m.nombre}</span>
                 {esLaDeLaReceta && (
                   <span className="molienda-sello" aria-label="La molienda de esta receta">
@@ -243,19 +187,18 @@ export default function Molienda({ recomendada = null }: { recomendada?: number 
       </ul>
 
       <div className="molienda-detalle">
-        <Muestra micras={actual.micras} escala={escala} grande />
+        <Muestra micras={actual.micras} grande />
 
         <div className="molienda-detalle-texto">
           <span className="molienda-detalle-nombre">
             {actual.nombre}
             {actual.micras === recomendada && <em className="molienda-etiqueta">la de esta receta</em>}
           </span>
-          <span className="cifra molienda-micras">{actual.micras} µm</span>
+          {/* La comparación manda sobre el número: es lo que se puede verificar
+              sin instrumentos. El milímetro va al lado, para quien lo quiera. */}
+          <span className="molienda-como">{actual.como}</span>
+          <span className="cifra molienda-micras">{actual.mm}</span>
           <span className="molienda-para">{actual.para}</span>
-          <p className="molienda-nota">
-            A tamaño real. Si no coincide con tu café, calibra la pantalla: cada una tiene una
-            densidad distinta y el navegador no sabe cuál es la tuya.
-          </p>
         </div>
       </div>
     </section>

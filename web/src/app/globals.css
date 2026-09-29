@@ -749,7 +749,11 @@ body {
   align-items: center;
   justify-content: center;
   gap: clamp(22px, 4vh, 40px);
-  padding: clamp(86px, 12vh, 116px) clamp(22px, 6vw, 64px) clamp(104px, 15vh, 128px);
+  /* El hueco de arriba tiene que dejar pasar DOS cosas, no una: la barra
+     flotante y los 13 % que la órbita sobresale por encima del medallón. Con
+     el valor de antes el texto que gira se metía debajo de la barra en
+     pantallas de 400 px o más, donde el medallón llega a su tope. */
+  padding: clamp(118px, 16vh, 132px) clamp(22px, 6vw, 64px) clamp(104px, 15vh, 128px);
   color: #FAF5EC;
 }
 
@@ -895,7 +899,9 @@ body {
   /* El lado sale de lo que sobra: alto de la portada menos lo que ocupa el
      texto. Con una medida fija, en una ventana baja el titular subía y se le
      montaba encima. */
-  width: clamp(150px, min(42vh, 70vw), 440px);
+  /* 58vw y no 70vw: a 70 el medallón se comía el ancho entero de un teléfono
+     y su órbita terminaba tocando la barra de arriba. */
+  width: clamp(150px, min(36vh, 58vw), 440px);
   aspect-ratio: 1;
   order: -1;
 }
@@ -1118,20 +1124,6 @@ body {
 .molienda-cabeza { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .molienda-cabeza .rotulo { margin: 0; }
 
-.molienda-calibrar-boton {
-  padding: 0;
-  border: none;
-  border-bottom: 1px solid currentColor;
-  background: transparent;
-  color: var(--color-suave);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color .18s ease;
-}
-.molienda-calibrar-boton:hover { color: var(--color-tinta); }
 
 /* ── La muestra: un disco con granos dibujados a escala ── */
 .molienda-disco {
@@ -1239,51 +1231,18 @@ body {
   color: var(--color-rotulo);
 }
 
+/* La comparación con algo de la cocina es lo que de verdad ancla el tamaño,
+   así que pesa más que el número: va en la serif del sitio y no en el gris
+   pequeño de los datos. */
+.molienda-como {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13.5px;
+  color: var(--color-tinta);
+}
 .molienda-micras { font-size: 11px; color: var(--color-suave); }
 .molienda-para { font-size: 12px; color: var(--color-suave); }
-.molienda-nota { margin: 6px 0 0; font-size: 10.5px; line-height: 1.5; color: var(--color-rotulo); }
 
-/* ── Calibración ── */
-.molienda-calibrar {
-  margin-top: 12px;
-  padding: 12px;
-  border: 1px dashed var(--color-linea);
-  border-radius: 10px;
-}
-.molienda-instruccion { margin: 0 0 10px; font-size: 12px; line-height: 1.55; color: var(--color-suave); }
-.molienda-instruccion strong { color: var(--color-tinta); font-weight: 500; }
-
-.molienda-regla {
-  position: relative;
-  height: 22px;
-  max-width: 100%;
-  margin-bottom: 10px;
-  border: 1px solid var(--color-tinta);
-  background: var(--color-papel);
-}
-.molienda-regla span { position: absolute; top: 0; width: 1px; height: 7px; background: var(--color-tinta); }
-.molienda-regla-texto {
-  position: absolute;
-  top: 50% !important;
-  left: 50%;
-  width: auto !important;
-  height: auto !important;
-  transform: translate(-50%, -50%);
-  background: transparent !important;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  color: var(--color-suave);
-}
-.molienda-calibrar input[type="range"] { width: 100%; margin-bottom: 8px; }
-
-@media (max-width: 420px) {
-  /* En pantalla angosta los cinco discos no caben en una fila: se corren de
-     lado en vez de partirse en dos líneas desiguales. */
-  .molienda-opciones { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
-  .molienda-opcion { flex-shrink: 0; }
-  .molienda-detalle { flex-direction: column; align-items: flex-start; }
-}
 
 /* ─── Bandas de servicio ────────────────────────────────────────────────────
    Un servicio por fila, a lo ancho, con su video o su foto de fondo y el texto
@@ -2220,15 +2179,22 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+/* En columna y no lado a lado. Con `space-between` el botón quedaba pegado al
+   borde derecho y su posición cambiaba según lo largo que fuera el dato de la
+   izquierda, así que en una fila de recetas ninguno caía a la misma altura ni
+   en el mismo sitio. */
 .receta-tarjeta-pie {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
   margin-top: auto;
-  padding-top: 10px;
+  padding-top: 12px;
 }
 .receta-tarjeta-dato { font-size: 11px; color: var(--color-rotulo); }
+/* El "Ver receta" ocupa el ancho de la tarjeta: es la única acción que tiene,
+   así que no hay nada con qué competir por el sitio. */
+.receta-tarjeta-pie .vermas { align-self: stretch; justify-content: center; }
 
 /* ─── La receta abierta ─────────────────────────────────────────────────── */
 /* Hereda el fondo y el marco de `.ficha`: es la misma hoja del producto. */

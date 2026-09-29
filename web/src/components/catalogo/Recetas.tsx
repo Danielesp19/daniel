@@ -306,11 +306,14 @@ function TarjetaReceta({ receta, onAbrir }: { receta: Receta; onAbrir: () => voi
         {receta.resumen && <p className="receta-tarjeta-resumen">{receta.resumen}</p>}
 
         <div className="receta-tarjeta-pie">
-          <span className="cifra receta-tarjeta-dato">
-            {[receta.duracion, receta.ratio ? `1:${conComa(receta.ratio)}` : null, receta.molienda]
-              .filter(Boolean)
-              .join(" · ")}
-          </span>
+          {/* Solo el tiempo. Llevaba además la proporción ("1:16") y la
+              molienda, tres datos en una línea de once píxeles: el 1:16 no
+              dice nada a quien no prepara café por peso, y la molienda ya
+              está adentro con su muestra al lado. El tiempo es lo único que
+              sirve para decidir cuál abrir. */}
+          {receta.duracion && (
+            <span className="cifra receta-tarjeta-dato">{receta.duracion}</span>
+          )}
           <button type="button" className="vermas" onClick={onAbrir}>
             Ver receta
           </button>

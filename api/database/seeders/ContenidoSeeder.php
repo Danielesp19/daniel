@@ -35,7 +35,7 @@ class ContenidoSeeder extends Seeder
             [
                 'nombre' => 'V60 para uno',
                 'metodo' => 'Filtrado',
-                'resumen' => '15 g · 250 ml · 2:45',
+                'resumen' => 'Filtrado limpio, para una taza',
                 'detalle' => '15 g café · 250 ml agua a 94 °C',
                 'cafe_g' => 15,
                 'agua_g' => 250,
@@ -53,7 +53,7 @@ class ContenidoSeeder extends Seeder
             [
                 'nombre' => 'Chemex para dos',
                 'metodo' => 'Filtrado',
-                'resumen' => '30 g · 500 ml · 4:00',
+                'resumen' => 'Filtrado para compartir',
                 'detalle' => '30 g café · 500 ml agua a 93 °C',
                 'cafe_g' => 30,
                 'agua_g' => 500,
@@ -71,7 +71,7 @@ class ContenidoSeeder extends Seeder
             [
                 'nombre' => 'Prensa francesa',
                 'metodo' => 'Inmersión',
-                'resumen' => '30 g · 500 ml · 4:00',
+                'resumen' => 'Cuerpo y aceites, sin filtro de papel',
                 'detalle' => '30 g café · 500 ml agua a 92 °C',
                 'cafe_g' => 30,
                 'agua_g' => 500,
@@ -88,7 +88,7 @@ class ContenidoSeeder extends Seeder
             [
                 'nombre' => 'Cold brew de un día',
                 'metodo' => 'Inmersión',
-                'resumen' => '100 g · 1 L · 14 h',
+                'resumen' => 'Extracción en frío, toda la noche',
                 'detalle' => '100 g café · 1 L agua fría · 14 horas',
                 'cafe_g' => 100,
                 'agua_g' => 1000,
@@ -105,7 +105,7 @@ class ContenidoSeeder extends Seeder
             [
                 'nombre' => 'Espresso en casa',
                 'metodo' => 'Espresso',
-                'resumen' => '18 g · 36 g · 28 s',
+                'resumen' => 'La base de todo lo que lleva leche',
                 'detalle' => '18 g dentro · 36 g en taza',
                 'cafe_g' => 18,
                 'agua_g' => 36,
@@ -122,7 +122,7 @@ class ContenidoSeeder extends Seeder
             [
                 'nombre' => 'Moka italiana',
                 'metodo' => 'Espresso',
-                'resumen' => '16 g · 150 ml · 3:30',
+                'resumen' => 'Presión suave, rápida de limpiar',
                 'detalle' => '16 g café · agua caliente al nivel de la válvula',
                 'cafe_g' => 16,
                 'agua_g' => 150,
@@ -139,7 +139,7 @@ class ContenidoSeeder extends Seeder
             [
                 'nombre' => 'Latte con leche texturizada',
                 'metodo' => 'Con leche',
-                'resumen' => '36 g · 180 ml leche',
+                'resumen' => 'Leche texturizada sobre espresso',
                 'detalle' => '36 g espresso · 180 ml leche entera fría',
                 'cafe_g' => 36,
                 'agua_g' => 180,
