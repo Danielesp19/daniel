@@ -21,19 +21,22 @@ export default function Destacado({ producto }: { producto: Producto }) {
   const peso = gramos(producto.gramos);
 
   return (
+    // `seccion-oscura` es el mecanismo del proyecto para decir "esta región va
+    // en negro": de ahí lo toman las tarjetas, los sellos y los botones que
+    // caen adentro. El panel pintaba el fondo y el texto a mano pero SIN la
+    // clase, así que sus descendientes seguían creyéndose sobre papel blanco
+    // y el "Ver más" salía en negro sobre negro — invisible.
     <article
-      className="revelar"
+      className="revelar seccion-oscura"
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
-        background: "var(--color-tinta)",
-        color: "#FFF",
         overflow: "hidden",
       }}
     >
-      <div className="tesela" style={{ minHeight: 240, background: "var(--color-tesela-o)" }}>
+      <div className="tesela" style={{ minHeight: 240 }}>
         <TeselaFoto producto={producto} sizes="(max-width: 800px) 100vw, 590px" />
-        <span className="sello" style={{ top: 12, left: 12, background: "#FFF", color: "var(--color-tinta)" }}>
+        <span className="sello" style={{ top: 12, left: 12 }}>
           Destacado
         </span>
       </div>

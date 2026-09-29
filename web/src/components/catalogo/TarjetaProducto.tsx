@@ -40,7 +40,7 @@ export default function TarjetaProducto({ producto }: { producto: Producto }) {
         {sello && <span className="sello">{sello}</span>}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: 14 }}>
+      <div className="tarjeta-cuerpo">
         {producto.finca && (
           <span className="rotulo" style={{ fontSize: 8.5 }}>
             {producto.finca}
@@ -60,7 +60,7 @@ export default function TarjetaProducto({ producto }: { producto: Producto }) {
         {/* `auto` empuja el precio y el botón al fondo: en una fila de la
             grilla quedan a la misma altura aunque los nombres ocupen distinto. */}
         <div style={{ marginTop: "auto", paddingTop: 14 }}>
-          <div className="cifra" style={{ fontSize: 15 }}>
+          <div className="cifra tarjeta-precio">
             ${pesos(producto.precio_cop)}
             {peso && (
               <span style={{ marginLeft: 7, fontSize: 10, fontWeight: 400, color: "var(--color-rotulo)" }}>

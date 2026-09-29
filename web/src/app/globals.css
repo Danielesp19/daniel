@@ -323,6 +323,16 @@ body {
 .seccion-oscura .tarjeta:hover { border-color: #FFF; background: rgba(255, 255, 255, 0.05); }
 
 /* La tesela de foto. En oscuro el fondo del hueco también cambia. */
+/* El cuerpo de la tarjeta: lo que va debajo de la foto. Vive acá y no en el
+   JSX porque en celular, con dos tarjetas por fila, tiene que apretarse. */
+.tarjeta-cuerpo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 14px;
+}
+.tarjeta-precio { font-size: 15px; }
+
 .tesela { position: relative; overflow: hidden; background: var(--color-tesela); }
 .seccion-oscura .tesela { background: var(--color-tesela-o); }
 .tesela img, .tesela video { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -399,12 +409,32 @@ body {
   margin-bottom: clamp(10px, 2vw, 18px);
 }
 
-/* En celular TODO va a ancho completo: una tarjeta a media pantalla deja el
-   nombre del café en tres renglones y la foto del tamaño de una estampilla. */
+/* En celular, DOS POR FILA.
+   Iban a ancho completo, y así una sola tarjeta ocupaba unos 560 px de los
+   844 de alto de un teléfono: se veía un producto y medio por pantalla y
+   recorrer una sección de ocho cafés eran cinco deslizadas. De a dos entran
+   cuatro, que es lo que deja comparar precios sin scroll.
+
+   Los DESTACADOS no entran acá: viven en `.destacados`, a ancho completo,
+   así que lo que el negocio quiere lucir se sigue viendo en grande. Esa es
+   justo la diferencia que la casilla de destacado tenía que hacer.
+
+   Los videos sí siguen de a uno: una tarjeta de video a 174 px no deja ver
+   qué pasa en la escena, que es todo lo que esa tarjeta viene a mostrar. */
 @media (max-width: 640px) {
   .grilla-productos,
-  .grilla-videos,
-  .grilla-dos { grid-template-columns: 1fr; }
+  .grilla-dos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grilla-videos { grid-template-columns: 1fr; }
+
+  /* A media pantalla la tarjeta tiene ~146 px útiles de texto, así que todo
+     lo de adentro baja un punto. Sin esto el nombre se parte en tres
+     renglones y el precio y el botón no caben en una línea. */
+  .tarjeta .nombre { font-size: 16px; line-height: 1.15; }
+  .tarjeta .notas { font-size: 12px; line-height: 1.35; }
+  .tarjeta-cuerpo { padding: 11px; }
+  .tarjeta-precio { font-size: 13px; }
+  .tarjeta .boton-vermas { padding: 9px 10px; font-size: 12px; gap: 4px; }
+  .tarjeta .boton-vermas::after { font-size: 10px; }
 
   /* El carrusel también, pero dejando un asomo de la siguiente: es lo único
      que dice que hay más hacia el lado. A ancho completo exacto, el carrusel
