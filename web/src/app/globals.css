@@ -436,10 +436,12 @@ body {
   .tarjeta .boton-vermas { padding: 9px 10px; font-size: 12px; gap: 4px; }
   .tarjeta .boton-vermas::after { font-size: 10px; }
 
-  /* El carrusel también, pero dejando un asomo de la siguiente: es lo único
-     que dice que hay más hacia el lado. A ancho completo exacto, el carrusel
-     se ve idéntico a una lista y nadie desliza. */
-  .tira-item { flex-basis: 86vw; }
+  /* El carrusel, a la medida de la grilla de al lado: dos tarjetas y el
+     asomo de la tercera. A 86vw se veía una sola tarjeta enorme por pantalla
+     —idéntica a una lista, y nadie deslizaba— y además no pegaba con las
+     secciones vecinas, que ya van de a dos. El asomo es lo único que dice
+     que hay más hacia el lado, así que se conserva. */
+  .tira-item { flex-basis: 43vw; }
 }
 
 /* Filas que se pasan deslizando, sin barra de scroll visible. */
