@@ -620,8 +620,13 @@ class ProductoAdminController extends Controller
             'por_acabarse' => $p->porAcabarse(),
             // El desglose por sede: el total no dice dónde están las
             // unidades, y esa es la pregunta cuando hay que despachar.
+            // Con el id de la sede, no solo su nombre: la pantalla de
+            // inventario mueve unidades desde la misma fila, y para eso tiene
+            // que poder nombrar la sede sin adivinarla por el texto —dos sedes
+            // pueden llamarse igual en ciudades distintas—.
             'stock_por_sede' => $p->controla_stock
                 ? $p->disponibilidad($sedes)->map(fn (array $f) => [
+                    'sede_id' => $f['sede']->id,
                     'sede' => $f['sede']->nombre,
                     'stock' => $f['stock'],
                 ])->all()

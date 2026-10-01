@@ -27,6 +27,8 @@ export interface AdminCategoria {
 }
 
 export interface StockDeSede {
+  /** Para poder mover unidades sin adivinar la sede por su nombre. */
+  sede_id: number;
   sede: string;
   stock: number;
 }
