@@ -249,6 +249,11 @@ export default function CatalogoAdmin() {
                 style={{
                   display: "flex",
                   alignItems: "center",
+                  // Se parte en dos líneas cuando no cabe. Sin esto, en un
+                  // teléfono el nombre de la sección quedaba IMPRESO ENCIMA
+                  // del botón "+ Producto": los botones no se encogen, así
+                  // que se montaban unos sobre otros en vez de bajar.
+                  flexWrap: "wrap",
                   gap: 12,
                   padding: "14px 16px",
                   background: NIVEL.seccion.fondo,
@@ -273,7 +278,10 @@ export default function CatalogoAdmin() {
                       return n;
                     })
                   }
-                  style={{ flex: 1, minWidth: 0, textAlign: "left", border: "none", background: "none", cursor: "pointer", padding: 0 }}
+                  // `140px` de base: en escritorio todo entra en una línea, y
+                  // en un teléfono el nombre se queda solo en la primera y los
+                  // botones bajan completos a la segunda.
+                  style={{ flex: "1 1 140px", minWidth: 0, textAlign: "left", border: "none", background: "none", cursor: "pointer", padding: 0 }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <Punta abierta={abierta} />
@@ -343,6 +351,10 @@ export default function CatalogoAdmin() {
                           style={{
                             display: "flex",
                             alignItems: "center",
+                            // Igual que la cabecera de la sección: en un
+                            // teléfono los botones bajan en vez de montarse
+                            // sobre el nombre.
+                            flexWrap: "wrap",
                             gap: 10,
                             padding: "10px 16px 10px 22px",
                             marginLeft: 12,
@@ -357,7 +369,7 @@ export default function CatalogoAdmin() {
                             abajoBloqueada={k === estantes.length - 1}
                           />
 
-                          <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ flex: "1 1 140px", minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               <span style={{ ...rotulo, marginBottom: 0 }}>Subcategoría</span>
                               <span style={{ fontFamily: "var(--font-serif)", fontSize: 15 }}>{sub.nombre}</span>

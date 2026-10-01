@@ -3,9 +3,9 @@
  *
  * Todo pasa por el proxy del Next (`/api-tienda` → Laravel), así que el
  * navegador nunca le pega directo al backend y no hay CORS que resolver. El
- * token sale de `sessionStorage`: lo puso el login al cambiar la contraseña por
- * él en /api/admin-auth. En sessionStorage y no en localStorage a propósito —
- * cerrar la pestaña cierra la sesión.
+ * token lo puso el login al cambiar la contraseña por él en /api/admin-auth, y
+ * vive en el navegador con fecha de vencimiento — ver la sección «La sesión»
+ * más abajo.
  */
 
 const BASE = "/api-tienda/admin";
@@ -158,8 +158,73 @@ export interface AdminConsulta {
   recibida: string | null;
 }
 
+/* ── La sesión ──────────────────────────────────────────────────────────────
+ *
+ * Vivía en `sessionStorage`, que se borra al cerrar la pestaña. Eso estaba
+ * bien cuando el panel se usaba desde un computador, pero desde que se
+ * instala en el teléfono deja de servir: el sistema cierra las apps de la
+ * memoria todo el tiempo, así que habría que escribir la contraseña varias
+ * veces al día — y quien tiene que hacer eso termina guardándola en el
+ * navegador, que es peor que cualquier cosa que esto evitaba.
+ *
+ * Ahora dura treinta días y se guarda con su fecha de vencimiento. No es
+ * "para siempre" a propósito: un teléfono se pierde y se presta, y una sesión
+ * sin caducidad es una puerta abierta de la que nadie se acuerda.
+ */
+
+const LLAVE_TOKEN = "admin_token";
+const LLAVE_VENCE = "admin_token_vence";
+const DIAS_DE_SESION = 30;
+
+/** Guarda la sesión recién abierta y le pone fecha de vencimiento. */
+export function guardarSesion(valor: string): void {
+  try {
+    localStorage.setItem(LLAVE_TOKEN, valor);
+    localStorage.setItem(
+      LLAVE_VENCE,
+      String(Date.now() + DIAS_DE_SESION * 24 * 60 * 60 * 1000),
+    );
+  } catch {
+    // Modo incógnito o almacenamiento bloqueado: la sesión vale para esta
+    // visita y ya. Es justo lo que hacía antes.
+  }
+}
+
+export function cerrarSesion(): void {
+  try {
+    localStorage.removeItem(LLAVE_TOKEN);
+    localStorage.removeItem(LLAVE_VENCE);
+  } catch {
+    // Si no se puede borrar, el token vencido se descarta igual al leerlo.
+  }
+}
+
+/**
+ * El token de la sesión, o cadena vacía si no hay o ya venció.
+ *
+ * La caducidad se comprueba al LEER y no con un temporizador: el panel puede
+ * estar meses sin abrirse, y lo que importa es que el token viejo no sirva
+ * cuando alguien vuelva, no que algo lo borre a medianoche.
+ */
 export function token(): string {
-  return typeof window !== "undefined" ? (sessionStorage.getItem("admin_token") ?? "") : "";
+  if (typeof window === "undefined") return "";
+
+  try {
+    const valor = localStorage.getItem(LLAVE_TOKEN);
+    if (!valor) return "";
+
+    const vence = Number(localStorage.getItem(LLAVE_VENCE));
+    // Sin fecha se trata como vencido: es una sesión de la versión anterior,
+    // y pedir la contraseña una vez es mejor que dejarla abierta sin plazo.
+    if (!Number.isFinite(vence) || Date.now() > vence) {
+      cerrarSesion();
+      return "";
+    }
+
+    return valor;
+  } catch {
+    return "";
+  }
 }
 
 function cabeceras(): HeadersInit {

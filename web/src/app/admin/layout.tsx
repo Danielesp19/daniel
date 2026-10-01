@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { MARCA } from "@/lib/marca";
 import { COLOR } from "@/components/admin/ui";
+import { token, cerrarSesion } from "@/lib/admin-api";
 
 const NAV = [
   { href: "/admin/catalogo", etiqueta: "Catálogo", icono: "☰" },
@@ -31,22 +32,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [listo, setListo] = useState(esLogin);
 
   useEffect(() => {
-    if (!esLogin && !sessionStorage.getItem("admin_token")) {
+    // `token()` además descarta la sesión si ya venció, así que esto cubre
+    // los dos casos: no haber entrado nunca y haber entrado hace demasiado.
+    if (!esLogin && !token()) {
       router.replace("/admin/login");
       return;
     }
-    // El token vive en sessionStorage, que no existe durante el render del
+    // El token vive en el navegador, que no existe durante el render del
     // servidor: la única forma de saber si hay sesión es preguntarlo ya
     // montados. De ahí este estado que se enciende desde el efecto.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setListo(true);
   }, [esLogin, router]);
 
-  if (esLogin) return <>{children}</>;
+  if (esLogin)
+    return (
+      <>
+        <CabezaInstalable />
+        {children}
+      </>
+    );
   if (!listo) return null;
 
   const salir = () => {
-    sessionStorage.removeItem("admin_token");
+    cerrarSesion();
     router.push("/admin/login");
   };
 
@@ -65,6 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div style={{ minHeight: "100dvh", background: COLOR.fondo, fontFamily: "var(--font-sans)" }}>
+      <CabezaInstalable />
       {/* Franja superior — solo en móvil: la barra lateral no cabe en una
           pantalla angosta. Pegajosa, para que con una lista larga de productos
           la navegación siga al alcance sin volver a subir del todo. */}
@@ -170,5 +180,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {children}
       </main>
     </div>
+  );
+}
+
+/**
+ * Lo que hace que el panel se pueda instalar en el teléfono.
+ *
+ * Con esto, abrir /admin en el celular ofrece "Añadir a pantalla de inicio",
+ * y desde ese icono el panel arranca a pantalla completa —sin barra de
+ * direcciones ni pestañas— como cualquier aplicación.
+ *
+ * Va acá dentro y NO en el layout raíz a propósito: el manifiesto tiene
+ * `scope: /admin`, así que solo se ofrece instalar el panel. Quien visita el
+ * catálogo no recibe ninguna invitación a instalar nada, que es lo último que
+ * necesita alguien que entró a mirar un café.
+ *
+ * React sube estas etiquetas al <head> aunque se escriban acá; no hace falta
+ * tocar el layout del sitio.
+ */
+function CabezaInstalable() {
+  return (
+    <>
+      <link rel="manifest" href="/panel.webmanifest" />
+      <meta name="theme-color" content="#0A0A0A" />
+      {/* Safari en iPhone ignora buena parte del manifiesto, así que el icono
+          y el modo de pantalla completa se le piden aparte. */}
+      <link rel="apple-touch-icon" href="/panel-apple.png" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-title" content="Panel" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    </>
   );
 }

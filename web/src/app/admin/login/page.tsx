@@ -4,11 +4,13 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { MARCA } from "@/lib/marca";
 import { COLOR, campo, rotulo, Aviso, Boton } from "@/components/admin/ui";
+import { guardarSesion } from "@/lib/admin-api";
 
 /**
  * Entrada al panel: una contraseña que el servidor cambia por el token del
- * backend. La contraseña nunca se guarda en el navegador; el token vive en
- * sessionStorage, así que cerrar la pestaña cierra la sesión.
+ * backend. La contraseña nunca se guarda en el navegador, solo el token — y
+ * con fecha de vencimiento (ver `guardarSesion`), para que el panel instalado
+ * en el teléfono no pida la clave en cada apertura.
  */
 export default function LoginPage() {
   const [password, setPassword] = useState("");
@@ -34,7 +36,7 @@ export default function LoginPage() {
         return;
       }
 
-      sessionStorage.setItem("admin_token", datos.token);
+      guardarSesion(datos.token);
       router.replace("/admin/catalogo");
     } catch {
       setError("No se pudo conectar. ¿Está corriendo el servidor?");
