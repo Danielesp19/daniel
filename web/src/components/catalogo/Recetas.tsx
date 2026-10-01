@@ -354,12 +354,17 @@ function HojaReceta({
     };
     window.addEventListener("keydown", alTeclear);
 
-    const overflow = document.body.style.overflow;
+    // Los dos, `html` y `body`: con solo `body` el fondo se seguía moviendo
+    // detrás de la hoja. Mismo caso que en la ficha del producto.
+    const raiz = document.documentElement;
+    const previos = { raiz: raiz.style.overflow, cuerpo: document.body.style.overflow };
+    raiz.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
 
     return () => {
       window.removeEventListener("keydown", alTeclear);
-      document.body.style.overflow = overflow;
+      raiz.style.overflow = previos.raiz;
+      document.body.style.overflow = previos.cuerpo;
       foco.current?.focus();
     };
   }, [receta, onCerrar]);

@@ -215,7 +215,15 @@ function leyenda(categoria: Categoria): string {
     "cafes-de-origen": "Un productor · un lote · una cosecha",
     "cafe-en-grano": "Para todos los días",
   };
-  return propias[categoria.slug] ?? `${String(categoria.productos.length).padStart(2, "0")} referencias`;
+  // Cuenta TAMBIÉN lo que está en las subcategorías. Contaba solo lo que
+  // cuelga directo de la sección, así que una sección que reparte todo en
+  // estantes —«Molinos» con siete, «Métodos de preparación» con dieciocho—
+  // anunciaba "00 referencias" encima de una pantalla llena de productos.
+  const cuantos =
+    categoria.productos.length +
+    (categoria.subcategorias ?? []).reduce((n, sub) => n + sub.productos.length, 0);
+
+  return propias[categoria.slug] ?? `${String(cuantos).padStart(2, "0")} referencias`;
 }
 
 

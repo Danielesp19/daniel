@@ -1375,6 +1375,28 @@ body {
 
 .ficha-foto { flex-shrink: 0; aspect-ratio: 4 / 3; }
 
+/* En celular la hoja es una lámina que sube desde abajo y se pega al borde.
+   Iba centrada y con aire alrededor, así que quedaba una franja del fondo
+   debajo del botón de "Agregar" —justo donde está el pulgar— y el botón se
+   leía como flotando sobre la página en vez de ser el pie de la hoja. */
+@media (max-width: 640px) {
+  .ficha-fondo {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .ficha {
+    max-width: none;
+    /* No llega hasta arriba: la franja de fondo que queda es lo que dice que
+       detrás sigue habiendo una página y que esto se cierra. */
+    max-height: 92dvh;
+    /* Sin borde. Pegada a los bordes de la pantalla no hay nada de qué
+       separarla, y el de arriba se leía como una línea blanca entre la barra
+       y la foto —el "margen blanquito"—. En escritorio sí se queda: ahí la
+       hoja flota sobre el velo y el borde es lo que la recorta. */
+    border: none;
+  }
+}
+
 .ficha-cerrar {
   position: absolute;
   top: 10px;

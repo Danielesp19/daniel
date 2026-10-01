@@ -46,12 +46,19 @@ export default function FichaProducto({
     window.addEventListener("keydown", alTeclear);
 
     // La página de atrás no se desplaza mientras la hoja está abierta.
-    const overflow = document.body.style.overflow;
+    //
+    // Se bloquean LOS DOS, `html` y `body`. Con solo `body` el fondo se
+    // seguía moviendo: quién de los dos es el elemento que desplaza depende
+    // del navegador y de la hoja de estilos, y acá resultaba ser `html`.
+    const raiz = document.documentElement;
+    const previos = { raiz: raiz.style.overflow, cuerpo: document.body.style.overflow };
+    raiz.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
 
     return () => {
       window.removeEventListener("keydown", alTeclear);
-      document.body.style.overflow = overflow;
+      raiz.style.overflow = previos.raiz;
+      document.body.style.overflow = previos.cuerpo;
       foco.current?.focus();
     };
   }, [producto, onCerrar]);
