@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   listarProductos,
@@ -37,7 +37,14 @@ export default function InventarioAdmin() {
   const [soloBajos, setSoloBajos] = useState(false);
   // Qué filas están esperando al servidor, para no dejar pulsar dos veces el
   // mismo botón antes de que vuelva la primera respuesta.
+  //
+  // Van por duplicado, y no es redundancia: el estado es para PINTAR (atenuar
+  // el control, deshabilitar los botones) y la referencia es para DECIDIR. Un
+  // doble clic impaciente dispara los dos manejadores antes de que React
+  // vuelva a pintar, así que los dos leerían el estado todavía vacío y los
+  // dos mandarían la petición. La referencia se escribe al instante.
   const [ocupados, setOcupados] = useState<Set<string>>(new Set());
+  const enVuelo = useRef<Set<string>>(new Set());
 
   const cargar = useCallback(async () => {
     try {
@@ -71,13 +78,14 @@ export default function InventarioAdmin() {
    */
   async function mover(p: AdminProducto, sedeId: number, paso: -1 | 1) {
     const llave = `${p.id}:${sedeId}`;
-    if (ocupados.has(llave)) return;
+    if (enVuelo.current.has(llave)) return;
 
     const fila = p.stock_por_sede.find((s) => s.sede_id === sedeId);
     // En cero no se baja más: el inventario es un conteo de cosas en un
     // estante y el servidor lo rechazaría igual.
     if (paso === -1 && (fila?.stock ?? 0) <= 0) return;
 
+    enVuelo.current.add(llave);
     setOcupados((s) => new Set(s).add(llave));
 
     try {
@@ -89,6 +97,13 @@ export default function InventarioAdmin() {
 
       // Se escribe lo que respondió el servidor, no lo que suponíamos: si otra
       // persona movió esa misma sede, el número que vale es el suyo.
+      //
+      // Y SE RECALCULAN LAS BANDERAS. `agotado` y `por_acabarse` vienen
+      // calculadas del servidor; al mover stock quedaban con el valor de la
+      // carga inicial, así que un producto agotado al que se le sumaba una
+      // unidad seguía pintando el total en cero y en rojo, y seguía contando
+      // en "por reponer". Son derivadas del total, así que se derivan acá con
+      // la misma regla del modelo.
       setProductos((ps) =>
         ps.map((x) =>
           x.id !== p.id
@@ -96,6 +111,8 @@ export default function InventarioAdmin() {
             : {
                 ...x,
                 stock: r.total,
+                agotado: r.total <= 0,
+                por_acabarse: r.total > 0 && r.total <= x.stock_minimo,
                 stock_por_sede: x.stock_por_sede.map((s) =>
                   s.sede_id === sedeId ? { ...s, stock: r.despues } : s,
                 ),
@@ -110,6 +127,7 @@ export default function InventarioAdmin() {
       }
       setError(e instanceof Error ? e.message : "No se pudo mover el inventario");
     } finally {
+      enVuelo.current.delete(llave);
       setOcupados((s) => {
         const n = new Set(s);
         n.delete(llave);
@@ -255,7 +273,7 @@ function Fila({
         <div style={{ textAlign: "right", minWidth: 58 }}>
           <span style={{ ...rotulo, marginBottom: 2 }}>Total</span>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 600, color }}>
-            {p.agotado ? "0" : p.stock}
+            {p.stock}
           </div>
         </div>
       </div>
