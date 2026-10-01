@@ -33,9 +33,16 @@ export default function BarraCarrito() {
         ` — $${pesos(l.cantidad * l.precio_cop)}`,
     );
 
-    // La última línea es una pregunta a propósito: la molienda ya no se elige
-    // en la página, y preguntarla acá abre la conversación en vez de mandar un
-    // pedido incompleto.
+    // La última línea es una pregunta a propósito: abre la conversación en vez
+    // de mandar un pedido cerrado. PERO depende de lo que vaya en el pedido:
+    // preguntar por la molienda cuando lo que se lleva es un molino o una
+    // gramera delata que el mensaje está escrito de antemano, y quien lo
+    // recibe tiene que arrancar corrigiendo.
+    const llevaCafe = carrito.lineas.some((l) => l.es_cafe);
+    const cierre = llevaCafe
+      ? "¿Me lo dejas en grano o molido? Te digo para qué método."
+      : "¿Me confirmas disponibilidad y cómo lo enviamos?";
+
     return [
       `Hola ${MARCA.nombre}, quiero pedir:`,
       "",
@@ -43,7 +50,7 @@ export default function BarraCarrito() {
       "",
       `Total: $${pesos(carrito.total)}`,
       "",
-      "¿Me lo dejas en grano o molido? Te digo para qué método.",
+      cierre,
     ].join("\n");
   }
 

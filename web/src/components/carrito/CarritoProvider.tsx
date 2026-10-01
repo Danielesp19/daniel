@@ -24,6 +24,12 @@ export interface Linea {
    * que sacarlo del pedido.
    */
   controla_stock: boolean;
+  /**
+   * Para saber si el pedido lleva café. El mensaje de WhatsApp cerraba
+   * SIEMPRE preguntando por la molienda, así que quien pedía un molino o una
+   * gramera recibía una pregunta que no venía al caso.
+   */
+  es_cafe: boolean;
 }
 
 interface Carrito {
@@ -117,6 +123,7 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
           gramos: producto.gramos,
           cantidad: 1,
           controla_stock: producto.controla_stock,
+          es_cafe: producto.es_cafe,
         },
       ];
     });

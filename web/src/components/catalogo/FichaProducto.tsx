@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import type { Producto } from "@/lib/catalogo";
 import { pesos, gramos, altitud } from "@/lib/formato";
 import { useCarrito } from "@/components/carrito/CarritoProvider";
+import { enlaceWhatsApp, MARCA } from "@/lib/marca";
 import TeselaFoto from "./TeselaFoto";
 import Disponibilidad from "./Disponibilidad";
 
@@ -161,6 +162,25 @@ export default function FichaProducto({
               </span>
             )}
           </div>
+
+          {/* Preguntar por ESTE, con el nombre ya escrito.
+              Hasta ahora la ficha solo dejaba agregar al pedido, así que quien
+              quería resolver una duda —si el molino sirve para espresso, si la
+              gramera trae pilas— tenía que salirse, buscar el botón flotante y
+              escribir de qué producto hablaba. Lo que llegaba al chat era
+              "quiero hacer un pedido" y arrancaba la conversación preguntando
+              por cuál. */}
+          <a
+            href={enlaceWhatsApp(
+              `Hola ${MARCA.nombre}, quiero preguntarte por: ${producto.nombre}.`,
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="boton boton-grande boton-linea"
+            style={{ flex: "0 1 auto" }}
+          >
+            Preguntar
+          </a>
 
           <button
             type="button"
