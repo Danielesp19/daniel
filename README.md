@@ -1,166 +1,181 @@
-# Daniel Buitrón · Barista — sitio y catálogo
+Sitio web y catálogo para un barista colombiano. El proyecto permite mostrar su trabajo, vender café de especialidad y ofrecer servicios como asesorías, clases de arte latte y barras para eventos.
 
-Sitio de un barista profesional colombiano que vende café de especialidad y
-presta servicios: asesoría para barras, clases de arte latte y barra para
-eventos. Los pedidos salen por WhatsApp y el catálogo se administra desde un
-panel propio.
+Los pedidos se realizan por WhatsApp y el catálogo se administra desde un panel privado.
 
-```
+Estructura
 .
-├── api/    # Laravel 13 — catálogo, inventario y panel admin
-└── web/    # Next.js 16 — el sitio público
-```
+├── api/    # Backend con Laravel
+└── web/    # Frontend con Next.js
+¿Qué tiene el proyecto?
 
-## La idea
+La página está pensada para presentar primero al barista y su trabajo, y después mostrar el catálogo.
 
-El sitio no vende un café anónimo: vende el criterio de alguien con nombre y
-con resultados. Por eso el orden es **portada → quién está detrás → catálogo**,
-y no al revés. Quien llega decide si confía en el barista antes de mirar
-precios, así que la sección de presentación lleva el palmarés como tabla de
-datos —año, competencia, puesto— en vez de una lista de adjetivos.
+Entre las principales funciones están:
 
-- **Catálogo con fichas técnicas.** Los datos duros del café son el diseño, no
-  un adorno: región, altura, variedad, proceso y puntaje SCA van en una rejilla
-  monoespaciada en cada tarjeta.
-- **Tres formas de mostrar una categoría**, que se eligen en el panel: grilla de
-  tarjetas, vitrina vertical (filas alternadas sobre foto fija) y vitrina de a
-  uno (se pasa deslizando, pensada para los videos de métodos).
-- **Productos y servicios conviven.** Un café se cuenta en bolsas y se agota;
-  una asesoría se agenda y nunca se agota. Lo distingue la bandera
-  `controla_stock`, y de ahí en adelante todo se comporta distinto: el botón
-  dice "Agendar" en vez de "Agregar", no aparece en los reportes de inventario
-  y no se le puede ajustar stock.
-- **Carrito que va a WhatsApp.** No hay pasarela de pago: se arma el mensaje
-  con el pedido y se abre el chat. Antes de abrirlo se revalida contra el
-  servidor qué sigue disponible, porque el catálogo se sirve cacheado.
-- **El inventario no se publica.** El cliente ve en qué sedes se consigue un
-  producto, con dirección y horario, pero nunca cuántas unidades hay. Eso vive
-  en el panel. Ver [El panel de administración](#el-panel-de-administración).
+Página de presentación y trayectoria.
+Catálogo de cafés de especialidad.
+Fichas con información del café: región, altura, variedad, proceso y puntaje.
+Diferentes formas de mostrar los productos dentro de una categoría.
+Servicios como asesorías, clases y barras para eventos.
+Carrito que genera el pedido y lo envía por WhatsApp.
+Manejo de inventario por sede.
+Información de las sedes, horarios y direcciones.
+Panel privado para administrar el contenido.
 
-## Levantar el proyecto
+Los servicios funcionan de forma diferente a los productos físicos. Por ejemplo, una bolsa de café puede tener existencias, mientras que una asesoría se agenda y no necesita control de inventario.
 
-Requisitos: PHP 8.3+, Composer, Node 20+. Opcional: `ffmpeg` para comprimir
-los videos que se suban.
-
-**Backend** (`http://localhost:8001`):
-
-```bash
+Instalación
+Requisitos
+PHP 8.3 o superior
+Composer
+Node.js 20 o superior
+Base de datos compatible con Laravel
+FFmpeg (opcional, para trabajar con videos)
+Backend
 cd api
+
 composer install
+
 cp .env.example .env
+
 php artisan key:generate
-touch database/database.sqlite
-php artisan migrate --seed     # crea un catálogo de ejemplo
+
+php artisan migrate --seed
+
 php artisan storage:link
+
 php artisan serve --port=8001
-```
 
-**Frontend** (`http://localhost:3000`):
+El backend quedará disponible en:
 
-```bash
+http://localhost:8001
+Frontend
+
+En otra terminal:
+
 cd web
+
 npm install
+
 npm run dev
-```
 
-El panel queda en `http://localhost:3000/admin`, con la contraseña de
-`ADMIN_PASSWORD` en `web/.env.local`.
+El sitio estará disponible en:
 
-## Qué falta poner antes de publicar
+http://localhost:3000
 
-Los datos del negocio están centralizados; no hay que buscarlos por el código.
+El panel administrativo se encuentra en:
 
-| Qué | Dónde |
-|---|---|
-| Nombre, logros, redes | `web/src/lib/marca.ts` |
-| Número de WhatsApp de pedidos | `NEXT_PUBLIC_WHATSAPP` |
-| Contraseña del panel | `ADMIN_PASSWORD` (en el `.env` del sitio) |
-| Productos, precios y fotos reales | Desde el panel — el seeder trae datos de ejemplo |
+http://localhost:3000/admin
 
-> **El WhatsApp de los pedidos es `573227323425`**, el número de Daniel. Vive
-> en `marca.ts` y se puede pisar con `NEXT_PUBLIC_WHATSAPP`; si esa variable
-> está puesta en el servidor, es la que manda.
+La configuración del acceso administrativo debe hacerse mediante las variables de entorno correspondientes. No se deben subir contraseñas, tokens ni archivos .env al repositorio.
 
-> El palmarés en `marca.ts` tiene **tres** logros (Nacional Arte Latte 2025 y
-> 2024, Reto 4V 2024). En el Instagram hay un cuarto que empieza por "Ranci…"
-> y no se alcanzó a leer completo — agrégalo cuando lo confirmes.
+Backend
 
-## Cómo está organizado
+Algunas de las rutas principales son:
 
-### Backend (`api/`)
+Método	Ruta	Descripción
+GET	/api/catalogo	Obtiene el catálogo
+GET	/api/catalogo/stock	Consulta disponibilidad de productos
+GET	/api/catalogo/sedes	Obtiene las sedes disponibles
+PATCH	/api/admin/productos/{id}/stock	Actualiza el inventario
+Algunas reglas del proyecto
 
-| Ruta | Para qué |
-|---|---|
-| `GET /api/catalogo` | Catálogo completo. Cacheado 60 s en el CDN. |
-| `GET /api/catalogo/stock` | Qué sigue disponible (sí/no), sin caché. Lo usa el carrito antes de enviar. |
-| `GET /api/catalogo/sedes` | Los puntos de venta con su dirección y horario. |
-| `PATCH /api/admin/productos/{id}/stock` | Movimiento de inventario. Token Bearer. |
+Los precios se manejan como valores enteros en pesos colombianos. Por ejemplo:
 
-Reglas del dominio que conviene conocer antes de tocar nada:
+48000
 
-- **La plata es entera.** `precio_cop` es un `BIGINT` en pesos: 48000, nunca
-  48000.00. Ningún decimal flotante toca un precio.
-- **El stock se cuenta en bolsas**, no en gramos: es como lo cuenta quien está
-  parado frente al estante.
-- **Agotado ≠ inactivo.** Un café sin stock se sigue mostrando con su sello de
-  AGOTADO porque es parte del portafolio; solo no se puede pedir. Inactivo sí
-  desaparece del catálogo.
-- **`controla_stock = false` es un servicio.** No se cuenta, no se agota, no
-  sale en los reportes de inventario y no se le puede ajustar stock por
-  ninguna vía.
-- **Los movimientos de stock piden la acción explícita** (`fijar`, `sumar`,
-  `restar`). "Llegaron 12" y "quedan 12" son cosas distintas, y quien llame
-  tiene que decir cuál de las dos entendió. Vive en `Producto::ajustarStockSede()`.
+y no:
 
-### Frontend (`web/`)
+48000.00
 
-El sistema de diseño está en `src/app/globals.css`: negro y blanco puros,
-bordes duros sin radios, condensada en mayúsculas para los titulares,
-monoespaciada para todo dato medible, y un solo acento verde reservado para
-señalar.
+El inventario se maneja por unidades disponibles y está separado de la información pública del catálogo.
 
-Dos piezas cargan con más historia de la que aparentan y tienen el porqué
-escrito al lado:
+Un producto puede estar:
 
-- `src/hooks/useRevelar.ts` — un solo IntersectionObserver para toda la
-  página, con cola para que los elementos no aparezcan todos en bloque.
-- `src/components/catalogo/FondoBotanico.tsx` — las ramas de la portada. La
-  ilustración va como máscara CSS y no como imagen: pesa seis veces menos y
-  el color se decide desde la hoja de estilos.
+Activo y disponible.
+Activo pero agotado.
+Inactivo.
 
-## El panel de administración
+Un producto agotado puede seguir apareciendo en el catálogo, pero no puede agregarse a un pedido.
 
-Vive en `/admin` y es la única forma de administrar el sitio: catálogo,
-secciones, productos y kits, recetas, preguntas frecuentes, sedes, el aviso de
-la portada y el buzón de preguntas.
+Los servicios no utilizan inventario. Esto permite que una asesoría o una clase tenga el mismo sistema de catálogo sin tratarla como si fuera un producto físico.
 
-Entra con una contraseña compartida —no hay usuarios ni roles: lo usa una
-persona— que se cambia por el token del backend en `/api/admin-auth`. La
-contraseña nunca sale del servidor de Next y el token del backend nunca viaja
-en el bundle.
+Los movimientos de inventario indican explícitamente qué operación se quiere realizar:
 
-Los productos se despliegan con un clic para ver su ficha, las notas de cata,
-el inventario por sede y los archivos sin abrir el formulario. **El inventario
-solo se ve acá**: el catálogo público muestra en qué sedes se consigue un
-producto, con su dirección y su horario, pero nunca cuántas unidades hay.
+fijar
+sumar
+restar
 
-> Hubo un chatbot de WhatsApp que administraba el catálogo por chat. Se
-> descartó. Si alguna vez hace falta, está en el historial de git —los cuatro
-> commits del 22 de septiembre de 2026— junto con su webhook, su cola de
-> fotos y su medidor de gasto.
+Esto evita confundir, por ejemplo, “llegaron 10 unidades” con “ahora quedan 10 unidades”.
 
-## Pruebas
+Frontend
 
-```bash
-cd api && php artisan test          # 89 pruebas
-cd web && npx tsc --noEmit && npx eslint src
-```
+El frontend está desarrollado con Next.js.
 
-Las pruebas cubren lo que duele si se rompe: el ajuste de stock (donde está la
-plata), la separación entre productos y servicios, que borrar algo avise antes
-de llevarse por delante lo que lo usa, y que el inventario no se escape al
-catálogo público.
+Los estilos generales se encuentran en:
 
-## Despliegue
+web/src/app/globals.css
 
-Ver [DESPLIEGUE.md](DESPLIEGUE.md).
+El diseño utiliza principalmente blanco y negro, bordes rectos y tipografías diferentes para títulos y datos técnicos.
+
+Algunos componentes importantes son:
+
+web/src/hooks/useRevelar.ts
+web/src/components/catalogo/FondoBotanico.tsx
+
+useRevelar se utiliza para las animaciones de entrada de los elementos mientras se hace scroll.
+
+FondoBotanico contiene el recurso gráfico utilizado en algunas partes de la página principal.
+
+Panel administrativo
+
+El panel está disponible en:
+
+/admin
+
+Desde allí se puede administrar:
+
+Productos.
+Categorías.
+Kits.
+Recetas.
+Preguntas frecuentes.
+Sedes.
+Contenido de la página principal.
+Preguntas recibidas.
+Inventario.
+
+El inventario es información interna. Los usuarios solamente pueden consultar en qué sedes está disponible un producto, junto con la información de la sede.
+
+Las credenciales y tokens utilizados por el panel se manejan mediante variables de entorno y no deben incluirse directamente en el código fuente.
+
+WhatsApp
+
+El proyecto no utiliza una pasarela de pagos.
+
+El usuario agrega los productos al carrito y, al finalizar, se genera un mensaje con el pedido que posteriormente se abre en WhatsApp.
+
+Antes de generar el pedido se vuelve a consultar la disponibilidad de los productos para evitar que se realice un pedido de algo que se agotó mientras el catálogo estaba cargado.
+
+Pruebas
+
+Para ejecutar las pruebas del backend:
+
+cd api
+php artisan test
+
+Para revisar el frontend:
+
+cd web
+npx tsc --noEmit
+npx eslint src
+
+Las pruebas cubren principalmente el manejo del inventario, productos y servicios, eliminación de registros y separación entre la información pública y administrativa.
+
+Despliegue
+
+La información relacionada con el despliegue se encuentra en:
+
+DESPLIEGUE.md
+
+Los datos sensibles, contraseñas, tokens, claves de API y variables de entorno deben mantenerse fuera del repositorio.
